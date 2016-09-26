@@ -14,7 +14,7 @@ integers defined by the rule $a\star b=2^a+b$. This operator is not
 associative, so we need to insert parentheses to indicate the meaning;
 however, right associativity is implied whenever there's any doubt,
 so that $a\star b\star c$ means $a\star(b\star c)$. Notice that $a\star b
-\star c=2^a+a^b+c$, so the partial commutative law $a\star b\star c=b\star a
+\star c=2^a+2^b+c$, so the partial commutative law $a\star b\star c=b\star a
 \star c$ is valid. We can use $\star$ to assign a number $v(T)$ to each binary
 tree~$T$, by saying that $v(\Lambda)=0$ and $v(T)=v(T_l)\star v(T_r)$ when
 $T$ is nonempty.
