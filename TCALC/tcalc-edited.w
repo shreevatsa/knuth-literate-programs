@@ -57,7 +57,7 @@ for $n>1$. (Thus, $L(n)=\lg n(\lg\lg n)(\lg\lg\lg n)\ldots\,$, rounding
 each factor down to an integer and continuing until that integer reaches~1).
 Then it can be shown that $f(n)=\lfloor cL(n)/2^{\lg*n}\rfloor-2$ when
 $n$ has the special form $2\uparrow\uparrow m-1$ (namely a stack of 2s
-minus one): 1, 3, 7, 65535, $2^{65536}-1$, etc. Here $\lg*1=0$ and
+minus one): 1, 3, 15, 65535, $2^{65536}-1$, etc. Here $\lg*1=0$ and
 $\lg*n=1+\lg*\lfloor\lg n\rfloor$ when $n>1$. I conjecture that
 $f(n)\le\lfloor cL(n)/2^{\lg*n}\rfloor-2$ for all $n>0$. It is quite easy
 to prove the weaker bound $f(n)\le4L(n)-1$ by induction.
