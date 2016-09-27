@@ -26,6 +26,7 @@ From [Knuth's website](https://cs.stanford.edu/~uno/programs.html):
 <table>
 
 <tr>
+<td></td>
 <td><a href="programs/sham.w">SHAM</a></td>
 <td>Enumerates symmetrical Hamiltonian cycles (December 1992)</td>
 <td>Needs SGB</td>
@@ -36,6 +37,7 @@ From [Knuth's website](https://cs.stanford.edu/~uno/programs.html):
 </tr>
 
 <tr>
+<td></td>
 <td><a href="programs/obdd.w.gz">OBDD</a></td>
 <td>Enumerates perfect matchings of bipartite graphs (May 1996)</td>
 <td>Needs SGB</td>
@@ -45,6 +47,7 @@ From [Knuth's website](https://cs.stanford.edu/~uno/programs.html):
 <td>1996-05-06</td>
 
 <tr>
+<td rowspan="2"></td>
 <td rowspan="2"><a href="programs/reflect.w.gz">REFLECT</a>; also a
 <a href="programs/reflect.ch.gz">change file for REFLECT</a></td>
 <td rowspan="2">Enumerates equivalence classes of reflection networks, aka CC systems
@@ -64,6 +67,7 @@ From [Knuth's website](https://cs.stanford.edu/~uno/programs.html):
 
 
 <tr>
+<td></td>
 <td><a href="programs/hull.w">HULL</a>,
 <a href="programs/hulls.w">HULLS</a>,
 <a href="programs/hullt.w">HULLT</a>,
@@ -76,12 +80,18 @@ From [Knuth's website](https://cs.stanford.edu/~uno/programs.html):
 </tr>
 
 <tr>
+<td></td>
 <td><a href="programs/tcalc.w.gz">TCALC</a></td>
 <td>Interactively calculates with humungous numbers (December 1994)</td>
-<td>Representing integers as binary trees.</td>
+<td>Representing integers as binary trees. Note for instance that Section 4 is used only in Section 5. So we can do both bottom-up and top-down, without being tied to either.</td>
+<td>28 pages</td>
+<td>64 sections</td>
+<td>34359 bytes in .w</td>
+<td>1999-04-22</td>
 </tr>
 
 <tr>
+<td></td>
 <td><a href="programs/decagon.w.gz">DECAGON</a>; also a
 <a href="programs/decagon-star.ch.gz">change file for DECAGON (stars)</a>;
 also a
@@ -94,6 +104,7 @@ stars)</a></td>
 </tr>
 
 <tr>
+<td rowspan="2"></td>
 <td><a href="programs/antislide.w.gz">ANTISLIDE</a>; also a
 <a href="programs/antislide-nocorner.ch.gz">change file for ANTISLIDE</a></td>
 <td>Finds solutions to Strijbos's antisliding block puzzle (November 1994)</td>
@@ -105,6 +116,7 @@ stars)</a></td>
 </tr>
 
 <tr>
+<td rowspan="3"></td>
 <td><a href="programs/setset.w">SETSET</a></td>
 <td>Enumerates nonisomorphic unplayable hands in the game of SET&#174; (February 2001)</td>
 </tr>
@@ -120,6 +132,7 @@ stars)</a></td>
 </tr>
 
 <tr>
+<td></td>
 <td><a href="programs/sliding.w">SLIDING</a></td>
 <td>Finds solutions to sliding block puzzles (November 2001; revised January 2009)</td>
 </tr>
