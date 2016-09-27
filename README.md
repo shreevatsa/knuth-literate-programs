@@ -281,6 +281,7 @@ in the corrections to pages 235--394 that appear on that webpage</td>
 <td><a href="programs/strongchain.w">STRONGCHAIN</a></td>
 <td>finds shortest strong addition chains, also called Lucas chains or
 Chebyshev chains (August 2000)</td>
+<td>Looks like a good program to read.</td>
 </tr>
 
 <tr>
@@ -389,6 +390,7 @@ graph in a hypercube (June 2005)</td>
 <tr>
 <td><a href="programs/lp.w">LP</a></td>
 <td>An expository implementation of linear programming (August 2005)</td>
+<td>I must read this. Maybe I'll finally understand the simplex method</td>
 </tr>
 
 <tr>
@@ -438,6 +440,7 @@ using the `greedy footprint' method (February 2006, revised October 2010)</td>
 <tr>
 <td><a href="programs/tictactoe.tgz">TICTACTOE</a>, a gzipped tar file <tt>tictactoe.tgz</tt></td>
 <td>Various programs used when preparing the tic-tac-toe examples in Section 7.1.2 (March 2006)</td>
+<td>tictactoe0 (also tictactoe1) is basically just the full program in one section, followed by an index</td>
 </tr>
 
 <tr>
