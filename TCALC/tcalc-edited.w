@@ -800,7 +800,7 @@ stating its value. However, a small binary tree can have a
 super-astronomical value; there is in fact a tree with six nodes whose
 numerical value involves more decimal digits than there are molecules in the
 universe! So we use power-of-two notation whenever the value of a
-subtree exceeds a given |thrsehold|.
+subtree exceeds a given |threshold|.
 
 If |threshold=0|, for example, the printed representation of~19,
 a tree of seven nodes, takes five lines:
