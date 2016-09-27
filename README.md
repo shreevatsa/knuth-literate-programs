@@ -135,27 +135,56 @@ stars)</a></td>
 <td></td>
 <td><a href="programs/sliding.w">SLIDING</a></td>
 <td>Finds solutions to sliding block puzzles (November 2001; revised January 2009)</td>
+<td></td>
+<td>30 pages</td>
+<td>58 sections</td>
+<td>40808 bytes in .w</td>
+<td>2009-01-30</td>
 </tr>
 
 <tr>
+<td></td>
 <td><a href="programs/straighten.w">STRAIGHTEN</a></td>
 <td>Computes irreducible matrix representations of permutations (August 2003)</td>
+<td></td>
+<td>11 pages</td>
+<td>20 sections</td>
+<td>11485 bytes in .w</td>
+<td>2003-08-14</td>
 </tr>
 
 <tr>
+<td></td>
 <td><a href="programs/domination.w">DOMINATION</a></td>
 <td>Computes the covering relation for an interesting partial ordering
 of multiset permutations (August 2003)</td>
+<td></td>
+<td>6 pages</td>
+<td>7 sections</td>
+<td>4043 bytes in .w</td>
+<td>2003-08-14</td>
 </tr>
 
 <tr>
+<td></td>
 <td><a href="programs/fog2mf.w">FOG2MF</a></td>
 <td>Rudimentary conversion from Fontographer to METAFONT (August 1996)</td>
+<td></td>
+<td>7 pages</td>
+<td>6 sections</td>
+<td>5310 bytes in .w</td>
+<td>1997-02-20</td>
 </tr>
 
 <tr>
+<td></td>
 <td><a href="programs/lagfib.w">LAGFIB</a></td>
 <td>Calculator of weights related to the random number generator below (July 1997)</td>
+<td></td>
+<td>6 pages</td>
+<td>9 sections</td>
+<td>2646 bytes in .w</td>
+<td>1997-07-29</td>
 </tr>
 
 <tr>
