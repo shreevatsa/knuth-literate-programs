@@ -1,0 +1,358 @@
+% a font devised for typesetting certain "Celtic paths"
+% (see program CELTIC-PATHS for more details)
+%                         --- Don Knuth, August 2010
+
+mode_setup;
+quad#:=13u#;
+define_pixels(u,d);
+font_size 13u#;
+
+pickup pencircle scaled d;
+thick_pen=savepen;
+
+numeric s; s=1.5u*sqrt2;
+z0l=(s,13u); z0=(0,13u); z0r=(0,13u-s);
+z1l=(8u,13u); z1=(6.5u,13u); z1r=(5u,13u);
+z2l=(13u,13u-s); z2=(13u,13u); z2r=(13u-s,13u);
+z3l=(13u,5u); z3=(13u,6.5u); z3r=(13u,8u);
+z4l=(13u-s,0); z4=(13u,0); z4r=(13u,s);
+z5l=(5u,0); z5=(6.5u,0); z5r=(8u,0);
+z6l=(0,s); z6=(0,0); z6r=(s,0);
+z7l=(0,8u); z7=(0,6.5u); z7r=(0,5u);
+z10=dir -45;
+z11=down;
+z12=dir -135;
+z13=left;
+z14=dir 135;
+z15=up;
+z16=dir 45;
+z17=right;
+
+path p[][];
+for i=0 upto 7:
+ for j=0 upto 7:
+   if i<>j:
+    if (i-j) mod 8 <> 1:
+     if (j-i) mod 8 <> 1:
+      if (i mod 2 = 1) or (j mod 2 = 1):
+        p[i][j]=z[i]l{z[i+10]}...z[j]r{-z[j+10]};
+      fi
+     fi
+    fi
+   fi
+ endfor
+endfor
+
+path p[][]l;
+for j=0 step 2 until 6:
+  p[j][(j+3)mod 8]l=p[j][(j+3)mod 8]--z[(j+2)mod 8]--cycle;
+  p[j][(j+5)mod 8]l=p[j][(j+5)mod 8]--z[(j+4)mod 8]--z[(j+2)mod 8]--cycle;
+  p[j+1][(j+3)mod 8]l=p[j+1][(j+3)mod 8]--z[(j+2)mod 8]--cycle;
+  p[j+1][(j+4)mod 8]l=p[j+1][(j+4)mod 8]--z[(j+2)mod 8]--cycle;
+  p[j+1][(j+5)mod 8]l=p[j+1][(j+5)mod 8]--z[(j+4)mod 8]--z[(j+2)mod 8]--cycle;
+  p[j+1][(j+6)mod 8]l=p[j+1][(j+6)mod 8]--z[(j+4)mod 8]--z[(j+2)mod 8]--cycle;
+  p[j+1][(j+7)mod 8]l=p[j+1][(j+7)mod 8]--z[(j+6)mod 8]
+                         --z[(j+4)mod 8]--z[(j+2)mod 8]--cycle;
+endfor
+
+def filland(expr p,q) =
+  begingroup picture regp,regq;
+  regp:=nullpicture;
+  addto regp contour p;
+  addto regp doublepath p withpen currentpen;
+  cull regp keeping (1,infinity);
+%display regp inwindow currentwindow; errmessage "regp";
+  regq:=nullpicture;
+  addto regq contour q;
+  addto regq doublepath q withpen currentpen;
+  cull regq keeping (1,infinity);
+%display regq inwindow currentwindow; errmessage "regq";
+  addto regp also regq;
+%display regp inwindow currentwindow; errmessage "regp";
+  cull regp keeping (2,2);
+%display regp inwindow currentwindow; errmessage "regp";
+  addto currentpicture also regp;
+  endgroup
+enddef;
+  
+
+def begincchar(expr c) =
+  beginchar(c,quad#,quad#,0);
+  pickup thick_pen;
+  z0l=(s,13u); z0=(0,13u); z0r=(0,13u-s);
+  z1l=(8u,13u); z1=(6.5u,13u); z1r=(5u,13u);
+  z2l=(13u,13u-s); z2=(13u,13u); z2r=(13u-s,13u);
+  z3l=(13u,5u); z3=(13u,6.5u); z3r=(13u,8u);
+  z4l=(13u-s,0); z4=(13u,0); z4r=(13u,s);
+  z5l=(5u,0); z5=(6.5u,0); z5r=(8u,0);
+  z6l=(0,s); z6=(0,0); z6r=(s,0);
+  z7l=(0,8u); z7=(0,6.5u); z7r=(0,5u);
+  z10=dir -45;
+  z11=down;
+  z12=dir -135;
+  z13=left;
+  z14=dir 135;
+  z15=up;
+  z16=dir 45;
+  z17=right;
+enddef;
+
+boolean charstopping;
+charstopping:=false;
+
+def endcchar =
+  if charstopping:
+    showit;
+    errmessage decimal charcode;
+  fi
+  endchar;
+enddef;
+
+begincchar(oct"40");
+fill z0--z2--z4--z6--cycle;
+draw z0--z2--z4--z6--cycle;
+endcchar;
+
+def singlechar(expr c,i,j) = % "white" is on left of p[i][j]
+  begincchar(c);
+  draw p[i][j]l;
+  fill p[i][j]l;
+  draw p[j][i]l;
+  fill p[j][i]l;
+  if j mod 2 = 0: draw z[j]l--z[j]r; fi
+  endcchar;
+  begincchar(c+1);
+  draw p[i][j];
+  filldraw p[j][i]l;
+  if j mod 2 = 0: draw z[j]l--z[j]r; fi
+  endcchar;
+enddef;
+
+singlechar(oct"44",3,0);
+singlechar(oct"46",5,0);
+singlechar(oct"50",1,3);
+singlechar(oct"52",1,4);
+singlechar(oct"54",1,5);
+singlechar(oct"56",1,6);
+singlechar(oct"60",1,7);
+singlechar(oct"62",2,5);
+singlechar(oct"64",2,7);
+singlechar(oct"66",3,5);
+singlechar(oct"70",3,6);
+singlechar(oct"72",3,7);
+singlechar(oct"74",4,7);
+singlechar(oct"76",5,7);
+
+def doublecharwbw(expr c,i,j,ii,jj) = % two arcs, no overlap, middle black
+  begincchar(c);
+  fill p[i][j]l;
+  draw p[i][j]l;
+  filland(p[j][i]l,p[jj][ii]l);
+  fill p[ii][jj]l;
+  draw p[ii][jj]l;
+  if j mod 2 = 0: draw z[j]l--z[j]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+  begincchar(c+1);
+  draw p[i][j];
+  filland(p[j][i]l,p[jj][ii]l);
+  fill p[ii][jj]l;
+  draw p[ii][jj]l;
+  if j mod 2 = 0: draw z[j]l--z[j]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+  begincchar(c+2);
+  fill p[i][j]l;
+  draw p[i][j]l;
+  filland(p[j][i]l,p[jj][ii]l);
+  draw p[ii][jj];
+  if j mod 2 = 0: draw z[j]l--z[j]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+  begincchar(c+3);
+  draw p[i][j];
+  filland(p[j][i]l,p[jj][ii]l);
+  draw p[ii][jj];
+  if j mod 2 = 0: draw z[j]l--z[j]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+enddef;
+
+def doublecharbwb(expr c,i,j,ii,jj) = % two arcs, no overlap, middle white
+  begincchar(c);
+  draw p[j][i]l;
+  fill p[j][i]l;
+  filland(p[i][j]l,p[ii][jj]l);
+  draw p[jj][ii]l;
+  fill p[jj][ii]l;
+  if j mod 2 = 0: draw z[j]l--z[j]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+  begincchar(c+3);
+  draw p[j][i]l;
+  fill p[j][i]l;
+  draw p[i][j];
+  draw p[ii][jj];
+  draw p[jj][ii]l;
+  fill p[jj][ii]l;
+  if j mod 2 = 0: draw z[j]l--z[j]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+enddef;
+
+doublecharwbw(oct"100",5,7,1,3);
+doublecharbwb(oct"104",1,7,5,3);
+doublecharwbw(oct"110",5,0,1,3);
+doublecharbwb(oct"114",2,7,5,3);
+doublecharwbw(oct"120",5,7,1,4);
+doublecharbwb(oct"124",1,7,6,3);
+doublecharbwb(oct"130",3,0,7,5);
+doublecharbwb(oct"134",1,7,5,2);
+doublecharwbw(oct"140",4,7,1,3);
+doublecharbwb(oct"144",1,6,5,3);
+doublecharwbw(oct"150",5,0,1,3);
+doublecharbwb(oct"154",2,7,6,3);
+doublecharbwb(oct"160",3,0,7,4);
+doublecharbwb(oct"164",1,6,5,2);
+
+path cuttings;  % what got cut off
+
+tertiarydef a cutbefore b =  % tries to cut as little as possible
+  begingroup save t;
+  (t, whatever) = a intersectiontimes b;
+  if t<0:
+    cuttings:=point 0 of a;
+    a
+  else: cuttings:= subpath (0,t) of a;
+    subpath (t,length a) of a
+  fi
+  endgroup
+enddef;
+
+tertiarydef a cutafter b =
+  reverse (reverse a  cutbefore  b)
+  hide(cuttings:=reverse cuttings)
+enddef;
+
+def doublechar(expr c,i,j,ii,jj) = % i j under ii jj; (i ii j jj) ctrclkwise
+  begincchar(c);
+  filland(p[i][j]l,p[jj][ii]l);
+  filland(p[i][j]l,p[ii][jj]l);
+  filland(p[j][i]l,p[jj][ii]l);
+  filland(p[j][i]l,p[ii][jj]l);
+  draw p[ii][jj];
+  draw p[jj][ii];
+  if ii mod 2 = 0: draw z[ii]l--z[ii]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+  begincchar(c+1);
+  draw p[i][j] cutafter p[jj][ii];
+  filland(p[i][j]l,p[ii][jj]l);
+  filland(p[j][i]l,p[jj][ii]l);
+  filland(p[j][i]l,p[ii][jj]l);
+  draw p[ii][jj];
+  draw p[jj][ii];
+  if ii mod 2 = 0: draw z[ii]l--z[ii]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+  begincchar(c+2);
+  filland(p[i][j]l,p[jj][ii]l);
+  filland(p[i][j]l,p[ii][jj]l);
+  filland(p[j][i]l,p[jj][ii]l);
+  draw p[j][i] cutafter p[ii][jj];
+  draw p[ii][jj];
+  draw p[jj][ii];
+  if ii mod 2 = 0: draw z[ii]l--z[ii]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+  begincchar(c+3);
+  draw p[i][j] cutafter p[jj][ii];
+  filland(p[i][j]l,p[ii][jj]l);
+  filland(p[j][i]l,p[jj][ii]l);
+  draw p[j][i] cutafter p[ii][jj];
+  draw p[ii][jj];
+  draw p[jj][ii];
+  if ii mod 2 = 0: draw z[ii]l--z[ii]r; fi
+  if jj mod 2 = 0: draw z[jj]l--z[jj]r; fi
+  endcchar;
+enddef;
+
+
+doublechar(oct"170",4,1,0,3);
+doublechar(oct"174",5,2,6,3);
+doublechar(oct"200",7,4,0,5);
+doublechar(oct"204",6,1,7,2);
+doublechar(oct"210",5,1,0,3);
+doublechar(oct"214",5,2,7,3);
+doublechar(oct"220",5,1,7,4);
+doublechar(oct"224",6,1,7,3);
+doublechar(oct"230",7,3,0,5);
+doublechar(oct"234",5,1,7,2);
+doublechar(oct"240",4,1,7,3);
+doublechar(oct"244",5,1,6,3);
+doublechar(oct"250",6,1,0,3);
+doublechar(oct"254",5,2,0,3);
+doublechar(oct"260",5,2,7,4);
+doublechar(oct"264",6,1,7,4);
+doublechar(oct"270",7,1,0,5);
+doublechar(oct"274",4,1,7,2);
+doublechar(oct"300",4,1,6,3);
+doublechar(oct"304",6,3,0,5);
+doublechar(oct"310",7,1,0,3);
+doublechar(oct"314",3,1,5,2);
+doublechar(oct"320",5,3,7,4);
+doublechar(oct"324",6,1,7,5);
+doublechar(oct"330",7,1,0,5);
+doublechar(oct"334",3,1,7,2);
+doublechar(oct"340",4,1,5,3);
+doublechar(oct"344",6,3,7,5);
+doublechar(oct"350",6,1,0,5);
+doublechar(oct"354",7,2,0,3);
+doublechar(oct"360",4,1,5,2);
+doublechar(oct"364",6,3,7,4);
+
+def lambdachar(expr a,b,c,d) =
+  begincchar(8a+4b+2c+d);
+  draw p[3][7]; draw p[7][3];
+  if a=0: filland(p[1][5]l,p[3][7]l); else: draw p[1][5] cutbefore p[3][7]; fi
+  if b=0: filland(p[3][7]l,p[5][1]l); else: draw p[5][1] cutafter p[3][7]; fi
+  if c=0: filland(p[5][1]l,p[7][3]l); else: draw p[5][1] cutbefore p[7][3]; fi
+  if d=0: filland(p[7][3]l,p[1][5]l); else: draw p[1][5] cutafter p[7][3]; fi
+  endcchar;
+enddef;
+
+lambdachar(0,0,0,0);
+lambdachar(0,0,0,1);
+lambdachar(0,0,1,0);
+lambdachar(0,0,1,1);
+lambdachar(0,1,0,0);
+lambdachar(0,1,0,1);
+lambdachar(0,1,1,0);
+lambdachar(0,1,1,1);
+lambdachar(1,0,0,0);
+lambdachar(1,0,0,1);
+lambdachar(1,0,1,0);
+lambdachar(1,0,1,1);
+lambdachar(1,1,0,0);
+lambdachar(1,1,0,1);
+lambdachar(1,1,1,0);
+lambdachar(1,1,1,1);
+
+font_quad:=13u#;
+font_normal_space:=13u#;
+font_normal_stretch:=0;
+font_normal_shrink:=0;
+font_identifier:="CELTICB";
+font_coding_scheme:="bizarre";
+
+bye.
+showit; errmessage "blank";
+charstopping:=true;
+
+
+secondarydef p then q =
+  begingroup pair t; t=p intersectiontimes q;
+  subpath (0,xpart t) of p & subpath(ypart t,1) of q
+  endgroup
+enddef;
+
