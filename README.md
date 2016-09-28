@@ -18,6 +18,26 @@ So I've done that here.
 
 Looking at examples first will be good before you read the [paper](http://www.literateprogramming.com/knuthweb.pdf).
 
+Knuth's examples:
+
+- Paper (Generating Primes: WEB)
+- Bentley articles (Random generation, wc: WEB)
+- TeX (WEB)
+- METAFONT (WEB)
+- Included with CWEB distribution (https://www.ctan.org/tex-archive/web/c_cpp/cweb/examples)
+- Stanford GraphBase (30+: CWEB)
+- MMIXWARE (10: CWEB)
+- The list of programs below.
+
+Other people's examples:
+
+- see e.g. http://www.math.umd.edu/~hking/MorseExtract.w
+-
+
+Also:
+
+- https://github.com/izabera/ulam/ which has un-literate-d Knuth's ULAM :-)
+
 # List
 
 From [Knuth's website](https://cs.stanford.edu/~uno/programs.html):
