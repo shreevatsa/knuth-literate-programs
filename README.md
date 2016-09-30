@@ -20,19 +20,21 @@ Looking at examples first will be good before you read the [paper](http://www.li
 
 Knuth's examples:
 
-- Paper (Generating Primes: WEB)
-- Bentley articles (Random generation, wc: WEB)
-- TeX (WEB)
-- METAFONT (WEB)
-- Included with CWEB distribution (https://www.ctan.org/tex-archive/web/c_cpp/cweb/examples)
-- Stanford GraphBase (30+: CWEB)
-- MMIXWARE (10: CWEB)
-- The list of programs below.
+- In WEB:
+  - Literate programming paper (Generating Primes): See also http://www.pd.infn.it/TeX/doc/web/ online at e.g. http://www.cs.tufts.edu/~nr/cs257/archive/don-knuth/web.pdf
+  - Bentley articles (Random generation, wc)
+  - glue.web (Fixed-Point Glue Setting)
+  - TeX
+  - METAFONT
+- In CWEB:
+  - Included with CWEB distribution (https://www.ctan.org/tex-archive/web/c_cpp/cweb/examples)
+  - Stanford GraphBase (30+)
+  - MMIXWARE (10)
+  - The list of programs on his website.
 
 Other people's examples:
 
 - see e.g. http://www.math.umd.edu/~hking/MorseExtract.w
--
 
 Also:
 

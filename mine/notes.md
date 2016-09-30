@@ -100,12 +100,20 @@ I think one challenge that comes up time and again, with literate programming, i
 
 > Readability. Interspersing "real" code and tests will make it harder to read the real code.
 
-So we may need to make it impossible
-
 ----------------------------------------------------------------------
 
 See also:
 
 https://programmers.stackexchange.com/questions/135218/what-is-the-difference-between-writing-test-cases-for-bdd-and-tdd
+
+----------------------------------------------------------------------
+
+The more I see literate programming, the more I feel that the biggest barrier is that programmers will not get used to seeing only the displayed output, rather than the raw source code. They are too used to WYSIWYG :-) Knuth is used to writing a book, where the typeset version is the "reality" that he looks at the most, and the "markup language" (TeX) that produces this reality is considered just something you edit when you need. Programmers want to think of the source code as the reality.
+
+Perhaps the editor should display the code as typeset (e.g. when you open the `.w` file, the editor might show you the typeset version), except that when you declare intent to edit a section (or paragraph?) it drops you into source code. Note that Knuth uses TeX for even his comments: things like $p_ord^2$.
+
+----------------------------------------------------------------------
+
+Knuth puts "This code is used in section ..." at the *end* of each section, but I feel it makes more sense for it to be at the beginning (instead/also), because it sets the context for what the section is about. E.g. see section 21 in Knuth's primes.web (LP paper).
 
 ----------------------------------------------------------------------
