@@ -117,3 +117,43 @@ Perhaps the editor should display the code as typeset (e.g. when you open the `.
 Knuth puts "This code is used in section ..." at the *end* of each section, but I feel it makes more sense for it to be at the beginning (instead/also), because it sets the context for what the section is about. E.g. see section 21 in Knuth's primes.web (LP paper).
 
 ----------------------------------------------------------------------
+
+Programmers understand that they should make each function not-too-long and understandable by itself in isolation (but in practice possibly with some context about where it's called from) -- when it gets too long, move a part of the function into its own function, etc. -- but Literate Programming takes it further and says that your entire program must consist of such understandable sections. This can be higher level than a single function, and also lower level like blocks of code.
+
+Some of the limitations Knuth was trying to solve have been solved by language features (and also people not caring so much about performance), but some are real.
+
+----------------------------------------------------------------------
+
+Thimbleby understands that "It is assumed that C programmers are probably prejudiced in favor of a constant-width font..." !
+
+----------------------------------------------------------------------
+
+Thimbleby points out that (his) Cweb: "In fact, these are really options which should have been provided by quite separate software tools."
+
+This is a general feature of many systems designed by Knuth, including TeX -- they are diametrically opposed to the philosophy of "one thing well" and aim to be a self-contained useful system, including an input processor, output processor, and everything in between, rather than using standard libraries for that purpose.
+
+----------------------------------------------------------------------
+
+https://steve-yegge.blogspot.com/2008/02/portrait-of-n00b.html -- to someone who thinks of "literate programming" as "commenting profusely", Steve Yegge here seems to be the very antithesis. But ironically, with Grok (cross-references, etc.) he has produced the closest thing to WEB that is used widely (tens of thousands of Google programmers).
+
+----------------------------------------------------------------------
+
+http://lambda-the-ultimate.org/node/3663#comment-51865 (about "Literate Haskell")
+
+> One traditional LP feature that Haskell rightfully rejects is that of allowing the LP system to define its own code abstractions, i.e. being able to name code fragments and reuse them by name. That feature of older LP systems seems to have just been a workaround for languages with limited abstraction mechanisms, and detracted from what the focus of those systems should have been.
+> In the classic systems like (C)WEB, this contributed to a problematic distance between the LP sources and the code which the compiler or interpreter saw. Any system that involves running some sort of tangle & weave operations as separate tasks so that the compiler sees something different than the programmer is ultimately doomed.
+
+----------------------------------------------------------------------
+
+http://lambda-the-ultimate.org/node/3663#comment-51909
+
+> I used Leo for organizing a major rewrite (9? years ago). Literate programming was 'ok', but the major revelation for me was the usefulness of outline editors.
+> Since then I've been complaining about having to put code (and documentation) in "files".
+
+----------------------------------------------------------------------
+
+Daly of Axiom: http://lambda-the-ultimate.org/node/3663#comment-62440
+
+Like a novel, parts that are invalidated may need to be rewritten.
+
+----------------------------------------------------------------------
