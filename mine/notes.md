@@ -124,6 +124,8 @@ Some of the limitations Knuth was trying to solve have been solved by language f
 
 ----------------------------------------------------------------------
 
+http://www.harold.thimbleby.net/cv/files/cweb.pdf
+
 Thimbleby understands that "It is assumed that C programmers are probably prejudiced in favor of a constant-width font..." !
 
 ----------------------------------------------------------------------
@@ -155,5 +157,243 @@ http://lambda-the-ultimate.org/node/3663#comment-51909
 Daly of Axiom: http://lambda-the-ultimate.org/node/3663#comment-62440
 
 Like a novel, parts that are invalidated may need to be rewritten.
+
+----------------------------------------------------------------------
+
+Another example (on a poor blog post) of a programmer complaining about not being able to see the "real" source code: https://hackaday.com/2016/06/06/learn-to-program-with-literate-programming/#comment-3047421
+
+----------------------------------------------------------------------
+
+Knuth interview: https://web.archive.org/web/20000302101053/http://www.clbooks.com/nbb/knuth.html
+
+He mentions some literate programming (CWeb, Stanford GraphBase)
+
+----------------------------------------------------------------------
+
+An excellent summary of the advantages of literate programming, from
+
+Glenn Strong, _A Literate Programming Tool for Concurrent Clean_, May 15, 2001
+
+https://www.cs.tcd.ie/publications/tech-reports/reports.01/TCD-CS-2001-13.pdf
+
+[BEGIN QUOTE]
+
+#### 1.2 The advantages of literate programming
+
+Various advantages are claimed for literate programming. They can
+be summarised under two main headings.
+
+##### 1.2.1 Improved programs
+
+Most users of literate programming systems claim that they produce
+better programs when they use literate programming techniques. In
+general, the reasons for this vary, but include
+
+1. The greater care that is taken when writing each section of the
+program. Because the programmer is thinking about the reader
+of the program (even if such a reader is completely hypothetical),
+greater care is taken over each section of code as it is written.
+
+2. The greater freedom allowed by the use of chunks. Sections of
+code can be isolated without the need to place them within separate
+functions (procedures, methods, whatever the programming
+language allows). In general, it does not always make sense to
+move a small section of code into a separate subroutine, even if
+the clarity of the program might benefit from having the code
+isolated. Put simply, it is not always practical to formulate arguments
+and prepare a subroutine, even if the clarity of the code
+might benefit from it.
+
+3. The close association between the program code and the specifi-
+cation for what the code should do. In most cases the documentation
+for each code chunk acts not as a description of what the
+code does, but what it should do. When the program does not
+behave as the documentation says it should, it is the program
+that is at fault. The division of the program into small chunks (a
+typical chunk will be about a half-dozen to a dozen lines of code)
+usually makes it quite simple to identify when a program is not
+consistent with its specification.
+
+##### 1.2.2 Improved documentation
+
+There is little question that literate programs are better documented
+than programs produced by more usual means.
+
+1. The documentation exists. This may seem trivial, but many software
+projects are documented poorly if at all. Once the program
+has been written, the job is usually seen as done. From the point
+of view of programming this is correct, of course, but when it
+becomes necessary to maintain the program the lack of documentation
+can be a major problem. By forcing the documentation
+to be developed at the same time as the program itself, literate
+programming ensures that all code is documented.
+
+2. The program documentation is usually correct. That it, the program
+documentation usually describes the algorithms and data
+structures used by the program accurately. The close association
+between the code and documentation means that the documentation
+is far more likely to be updated as the code is changed,
+rather than at some future date (which often never arrives).
+
+3. The program documentation is usually also far more usable than
+normal documentation. The ability to present documentation
+side by side with the actual code which implements the features
+being discussed clarifies the situation greatly. Also, the navigation
+material produced by most literate programming tools (automatic
+indexing and cross referencing of identifiers, for instance,
+or hypertext tools) improve comprehension of the program. This
+is a great boon to program maintenance, as it allows a programmer
+to trace questionable sections of the program. Returning to
+a program after an interval of, say, a year makes it clear how
+useful this is.
+
+[END QUOTE]
+
+----------------------------------------------------------------------
+
+"prettyprinting remains the most contentious issue
+within the literate programming community"
+
+----------------------------------------------------------------------
+
+A thought exercise: Take an existing codebase, and suppose that you want to give someone a "guided tour of the codebase". How would you do this, while adding absolutely *minimal* comments? The tools you can use are: dividing the code into sections, and putting them in some order. ("Read this, then read that... the most important stuff is here...".) That may give a better idea of literate programming than "comment a lot".
+
+----------------------------------------------------------------------
+
+A reason for scepticism about literate programming: it assumes that these coincide:
+
+- The organization/order for exposition (formatting for publication, e.g. publishing your entire program as a book or article, for someone to read)
+- The organization/order for making the program maintainable (easier to change, easier to debug)
+
+Making programs easy to change has not typically been on top of Knuth's priorities: beyond the stage of fixing bugs, he prefers to make programs stable, and to understand the program fully and simply *re-edit* it (make a new program) when it substantially changes.
+
+----------------------------------------------------------------------
+
+Knuth in "Fixed-point glue setting":
+
+> As I gain more experience with WEB, I am finding
+> that it significantly improves my ability to write reliable
+> programs quickly. This is a pleasant surprise,
+> since I had designed WEB mainly as a documentation
+> tool.
+
+Note also that it's called "WEB System of Structured Documentation" and "CWEB System of Structured Documentation".
+
+----------------------------------------------------------------------
+
+Thimbleby, warp:
+
+> "One of the main reasons
+> why literate programming is unsuitable for general publication purposes is that its conventions need
+> explaining to readers"
+
+Mentions an important wrinkle:
+
+> Just as there is a continuum from laboratory notebooks to polished published results, there is a
+> continuum from explaining entire programs, as required for instance for internal documentation, to
+> explaining specific code and algorithms for journal publication.
+
+Do you want to publish your entire program (including routine parts that are not interesting), or selectively publish the important parts that you actually want others to read?
+
+----------------------------------------------------------------------
+
+Thimbleby, warp
+
+> Code and documentation are interleaved in a file, and as they are adjacent in
+> the same file it is *very* much easier to keep them consistent. Reducing the obstacles for editing both
+> together, and increasing pride in the polished results, has an invigorating effect on programming, as
+> well as on dissemination
+
+----------------------------------------------------------------------
+
+More:
+
+> In the past, few people wrote literate programs using tools they had not written themselves, because
+> if you built your own tool, you understood its behaviour and building your own system was easier than
+> fathoming out the workings of someone else’s tools. Furthermore, most tools make assumptions, and
+> circumventing the imposed approach to fit in with a particular project may be harder than starting from
+> scratch. Today, only a few literate programming tools have survived the test of time.
+
+> Despite its advantages, after almost 20 years the use of literate programming for publishing
+> code in the mainstream literature is now negligible. In whatever ways people may be using literate
+> programming internally in software development projects (in lab notebook type uses), it is evidently not
+> addressing the needs of the broader research community for publication. Probably the main reason for
+> literate programming failing to survive in the literature is that it imposes its own styles and conventions
+> (e.g., modules), which adds significantly to the ‘noise’ of a paper and makes it hard to conform to
+> journal style requirements
+
+----------------------------------------------------------------------
+
+> many errors in their use
+> were undetectable (e.g., there would be no warning if you failed to shift the > key and accidentally
+> typed a dot instead: //.—which would be just ignored comment). In short, they suffered from all of
+> the problems of conventional literate programming codes, @[, @;, @’ and so on (there are over 30
+> such codes, plus a collection of cryptic TEX macros, such as \0). Indeed when Knuth and Levy say of
+> the @’ code that ‘this code is dangerous’ you know something is wrong, and to be avoided for a
+> reliable system!
+
+----------------------------------------------------------------------
+
+Maybe it's time to start compiling a bibliography of Literate Programming reading material.
+
+(See Nelson Beebe's bibliography too: http://ftp.math.utah.edu/pub/tex/bib/litprog.html ordered by name at http://www.literateprogramming.com/litprog-bib.pdf)
+
+1982 Fixed-Point Glue Setting: An Example of WEB, Donald E. Knuth
+https://tug.org/TUGboat/tb03-1/tb05knuth.pdf
+Also included as a nice hyperlinked PDF (but without the preamble) in TeX distributions (`texdoc glue`):
+http://northstar-www.dartmouth.edu/doc/texmf-dist/doc/generic/knuth/tex/glue.pdf
+http://math.sut.ac.th/lab/software/texlive/texmf-dist/doc/generic/knuth/tex/glue.pdf
+
+1983-09 The WEB System of Structured Documentation (STAN-CS-83-980), Donald E. Knuth
+http://infolab.stanford.edu/pub/cstr/reports/cs/tr/83/980/CS-TR-83-980.pdf
+210 pages (11 pages WEB manual, plus details) (R42 in Knuth's CV)
+
+1983-09 Literate Programming (STAN-CS-83-981), Donald E. Knuth
+[Not available online, not even listed in Knuth's CV, supposedly 15 pages]
+
+1984-08 Literate Programming in C: Cweb manual, Harold W. Thimblebly
+Not online, just "Cweb manual" at http://www.harold.thimbleby.net/cv/publications.html
+University of York, techreport HT331, abstract in Beebe's bibtex:
+>   {\bf Cweb} is a system of structured documentation based of Knuth's {\tt WEB}. The philosophy behind both {\bf cweb} and {\tt WEB} is that an experienced programmer, who wants to provide the best possible documentation of his or her software products, needs two things simultaneously: a language for formatting and a language for programming. When both are appropriately combined we obtain a system much more useful than either language separately. {\bf Cweb} combines {\bf C} source with ({\bf di}){\bf troff} (or {\bf nroff}) documentation (whereas {\tt WEB} operates with Pascal and \TeX). The full facilities of {\bf C} and {\bf troff} are available to the user.\par {\bf Cweb} operates effectively with existing Unix text and program development tools, such as {\bf make}, {\bf tbl}, {\bf eqn}. If speed is important, {\bf cweb} has a built-in formatter which is much faster (and less resource consuming) the {\bf troff} for drafting or using with a lineprinter.
+
+1984-09 Literate Programming, Donald E. Knuth
+[Published] http://comjnl.oxfordjournals.org/content/27/2/97
+[Submitted] http://www.literateprogramming.com/knuthweb.pdf = http://homepages.cwi.nl/~storm/teaching/reader/Knuth84.pdf = http://www.cs.tufts.edu/~nr/cs257/archive/don-knuth/web.pdf
+[What font?] http://www.cs.upc.edu/~eipec/pdf/web.pdf
+Knuth's paper copy-pasted into a slideshow by a couple of students:
+http://cs.haifa.ac.il/~shuly/teaching/05/programming-languages/presentations/03.pdf
+
+1993-12-07 Interview, Knuth
+https://web.archive.org/web/20000302101053/http://www.clbooks.com/nbb/knuth.html
+
+1994 Literate Programming Simplified, Ramsey
+http://www.literateprogramming.com/lpsimp.pdf
+
+1994-08-18 Literate Programming Library
+https://www.desy.de/user/projects/LitProg.html
+
+1994-08-23 Literate Programming FAQ, David B. Thompson
+http://vasc.ri.cmu.edu/old_help/Programming/Literate/literate-FAQ.gz
+
+1994-10-17 Literate Programming -- Propaganda and Tools, Christopher Lee
+http://vasc.ri.cmu.edu/old_help/Programming/Literate/literate.html
+Linked from https://cs.stanford.edu/~uno/lp.html but not so great
+
+2000 Literate Programming, Harold Thimbleby in The Encyclopedia of Computer Science
+http://www.harold.thimbleby.net/cv/files/litprog.pdf
+A short, 2-page encyclopedia entry for Literate Programming: good introduction.
+
+2001-05-15 A Literate Programming Tool for Concurrent Clean, Glenn Strong
+https://www.cs.tcd.ie/publications/tech-reports/reports.01/TCD-CS-2001-13.pdf
+16 pages. The second half of the paper (section 4 onwards) is about pretty-printing, but the rest is great.
+
+2003-06-25 Explaining code for publication, Harold Thimbleby
+https://www.harold.thimbleby.net/cv/files/warp.pdf
+24 pages. Has a lot of great quotes about Literate Programming (see notes
+above), and presents a light-weight system based on extracting the documentation
+from comments: but uses XML so that the documentation-extractor stays
+simple. (Very important!)
+
+
 
 ----------------------------------------------------------------------

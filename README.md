@@ -21,20 +21,23 @@ Looking at examples first will be good before you read the [paper](http://www.li
 Knuth's examples:
 
 - In WEB:
+  - glue.web (Fixed-Point Glue Setting) http://northstar-www.dartmouth.edu/doc/texmf-dist/doc/generic/knuth/tex/glue.pdf https://tug.org/TUGboat/tb03-1/tb05knuth.pdf
   - Literate programming paper (Generating Primes): See also http://www.pd.infn.it/TeX/doc/web/ online at e.g. http://www.cs.tufts.edu/~nr/cs257/archive/don-knuth/web.pdf
   - Bentley articles (Random generation, wc)
-  - glue.web (Fixed-Point Glue Setting)
   - TeX
   - METAFONT
 - In CWEB:
   - Included with CWEB distribution (https://www.ctan.org/tex-archive/web/c_cpp/cweb/examples)
-  - Stanford GraphBase (30+)
-  - MMIXWARE (10)
+  - Stanford GraphBase (32 programs)
+  - MMIXWARE (10 programs)
   - The list of programs on his website.
 
 Other people's examples:
 
 - see e.g. http://www.math.umd.edu/~hking/MorseExtract.w
+- Thimbleby's Java code at http://www.harold.thimbleby.net/cv/files/cpp.pdf (pages 13 to 15) which does not use any literate-programming features.
+- Norman Ramsey, "A simple solver for linear equations containing nonlinear operators" http://docs.lib.purdue.edu/cgi/viewcontent.cgi?article=2241&context=cstech
+- Les Carr's "Animated Code Annotator": http://users.ecs.soton.ac.uk/lac/annann.html -- shows the evolution of a file through its diffs / commit history for a file.
 
 Also:
 
