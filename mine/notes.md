@@ -334,9 +334,17 @@ More:
 
 ----------------------------------------------------------------------
 
+Thimbleby's ideas about using XML in comments (instead of a bunch of control codes) made me look into whether something like that exists for JavaScript. Looks like there is some precedent: see https://msdn.microsoft.com/en-us/library/bb514138.aspx and http://www.kraigbrockschmidt.com/2013/02/06/xml-tags-code-intellisense/
+
+
+----------------------------------------------------------------------
+
 Maybe it's time to start compiling a bibliography of Literate Programming reading material.
 
-(See Nelson Beebe's bibliography too: http://ftp.math.utah.edu/pub/tex/bib/litprog.html ordered by name at http://www.literateprogramming.com/litprog-bib.pdf)
+- One already exists at Nelson Beebe's bibliography: http://ftp.math.utah.edu/pub/tex/bib/litprog.html ordered by name at http://www.literateprogramming.com/litprog-bib.pdf
+- Yet to read: https://www.desy.de/user/projects/LitProg/FAQs.html https://www.desy.de/user/projects/LitProg/Samples.html
+
+Already read:
 
 1982 Fixed-Point Glue Setting: An Example of WEB, Donald E. Knuth
 https://tug.org/TUGboat/tb03-1/tb05knuth.pdf
@@ -394,6 +402,9 @@ above), and presents a light-weight system based on extracting the documentation
 from comments: but uses XML so that the documentation-extractor stays
 simple. (Very important!)
 
-
+2011?  literate-programming.rb, Ryan Tomayko
+http://timelessrepo.com/literate-programming.html
+Someone who has actually looked at literate programming.
+Not later than 2011, going by date of https://news.ycombinator.com/item?id=2089912
 
 ----------------------------------------------------------------------
