@@ -336,6 +336,51 @@ More:
 
 Thimbleby's ideas about using XML in comments (instead of a bunch of control codes) made me look into whether something like that exists for JavaScript. Looks like there is some precedent: see https://msdn.microsoft.com/en-us/library/bb514138.aspx and http://www.kraigbrockschmidt.com/2013/02/06/xml-tags-code-intellisense/
 
+----------------------------------------------------------------------
+
+From Weinberg, "The Psychology of Computer Programming" (1971), Chapter 1 "Reading Programs".
+
+> ... Even programmers do not read programs.
+>
+> But isn't it quite proper that only the machine should read programs?
+> Weren't the programs written for the machine? Yes and no. Even if we
+> were not concerned with program modification and with the interfaces
+> between programs, reading programs might not be such a bad idea
+> from the point of view of learning about programming.
+>
+> Programming is, among other things, a kind of writing. One way to
+> learn writing is to write, but in all other forms of writing, one also reads.
+> We read examples—both good and bad—to facilitate learning. But how
+> many programmers learn to write programs by reading programs? A
+> few, but not many. And with the advent of terminals, things are getting
+> worse, for the programmer may not even see his own program in a form
+> suitable for reading. In the old days—which in computing is not so long
+> ago—we had less easy access to machines and couldn't afford to wait
+> for learning from actual machine runs. Turnaround was often so bad that
+> programmers would while away the time by reading each others'
+> programs. Some even went so far as to read programs from the program
+> library—which in those days was still a library in the old sense of the
+> term.
+>
+> But, alas, times change. Just as television has turned the heads of the
+> young from the old-fashioned joys of book reading, so have terminals
+> and generally improved turnaround made the reading of programs the
+> mark of a hopelessly old-fashioned programmer. Late at night, when the
+> grizzled old-timer is curled up in bed with a sexy subroutine or a
+> mystifying macro, the young blade is busily engaged in a dialogue with his
+> terminal. No doubt it is much more thrilling to be face to face with
+> the giant computer than merely wrapped in quiet contemplation of the
+> work of others. But is it more edifying?
+>
+> A young novelist of our time was recently asked who were his favorite
+> authors. He responded simply that he never read novels, as his ideas
+> were so new and superior to anyone else's that reading would only be a
+> waste of his time. As you might expect, his work did not support his
+> thesis. Perhaps the same could be said for some of our radical young
+> programmers. Perhaps there is something to be gained from reading
+> other people's programs—if only the amusement engendered by their bad
+> examples. ...
+
 
 ----------------------------------------------------------------------
 
