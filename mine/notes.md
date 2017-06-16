@@ -453,3 +453,15 @@ Someone who has actually looked at literate programming.
 Not later than 2011, going by date of https://news.ycombinator.com/item?id=2089912
 
 ----------------------------------------------------------------------
+
+Some problems with Knuth-style literate programming:
+
+- he assumes one wants to read and understand the whole program, keep the whole thing in their head. (He has a nearly superhuman ability to do this, but most others don't want this: they want to understand pieces at a time, not the book-sized program as a whole.)
+
+- It's optimized for printing on paper, not so great when jumping around on screen.
+
+- When looking at a section, there is a lot of "context" that is relevant: what are the local variables defined outside this section, what invariants will hold when this is called, etc. These are hard to figure out by looking at the section in isolation.
+
+----------------------------------------------------------------------
+
+TODO for myself: get all the *early* Knuth programs and documentation (in WEB) that came out of the TeX project: TeX (tex, tripman, glue), TeXware (pooltype, tftopl, pltotf, dvitype), mf (mf, trapman), mfware (gftype, gftopk, gftodvi, mft), etc (vftovp, vptovf), web (weave, tangle, webman). Put them up.
