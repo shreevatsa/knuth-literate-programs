@@ -4,7 +4,7 @@ This sequence
 $$(U_1,U_2,\ldots{})=(1,2,3,4,6,8,11,13,16,18,26,\ldots{})$$
 is defined by setting $U_1=1$, $U_2=2$, and thereafter letting
 $U_{n+1}$ be the smallest number greater than $U_n$ that can be
-writtin $U_j+U_k$ for exactly one pair $(j,k)$ with $1\le j<k\le n$.
+written $U_j+U_k$ for exactly one pair $(j,k)$ with $1\le j<k\le n$.
 (Such a number must exist; otherwise the pair $(j,k)=(n-1,n)$ would
 qualify and lead to a contradiction.)
 
@@ -39,20 +39,20 @@ of Jud McCranie.
 
 @d gsize 1000
 @d m 10000
-@d nsize 10000000
+@d nsize (1<<14)
 @d nmax (32*nsize) /* we will find all Ulam numbers less than |nmax| */
 
 @c
 #include <stdio.h>
 unsigned int ubit[nsize+1], vbit[nsize+1];
-char table[256];
+char decode[64]; /* table for computing the ruler function */
 int count[gsize],example[gsize];
 
 main()
 {
   register unsigned int j,jj,k,kk,kq,kr,del,c,n,u,prevu,gap;
-  @<Set up the |table|@>;
-  gap=1, count[1]=1, example[1]=2;
+  @<Set up the |decode| table@>;
+  gap=1;
   ubit[0]=0x6, kr=n=prevu=2, kq=0, kk=4; /* $U_1=1$, $U_2=2$ */
   while (1) {
     @<Update $w_k\ldots w_{2k-1}$ from $u_0\ldots u_{k-1}$@>;
@@ -63,7 +63,7 @@ main()
     if (del>gap) {
       if (del>=gsize) {
         fprintf(stderr,"Unexpectedly large gap (%d)! Recompile me...\n",del);
-        return;
+        return -666;
       }
       gap=del;
       printf("New gap %d: U_%d=%d, U_%d=%d\n",gap,n-1,prevu,n,k);
@@ -111,14 +111,13 @@ while (!u) {
   u=ubit[kq];
 }
 kk=u&-u; /* now we must calculate $|kr|=\lg|kk|$ */
-if (kk&0xffff0000) kr=16,u=kk>>16;@+else kr=0,u=kk;
-if (u&0xff00) kr+=8, u>>=8;
-if (u&0xf0) kr+=4, u>>=4;
-kr+=table[u];
+kr=decode[(mhmartin*kk)>>27];
 n++;
 
-@ @<Set up the |table|@>=
-for (j=2;j<256;j<<=1) table[j]=1+table[j>>1];
+@ @d mhmartin 0x07dcd629
+
+@<Set up the |decode| table@>=
+for (k=0,j=1;j;k++,j<<=1) decode[(mhmartin*j)>>27]=k;
 
 @ @<Print gap stats@>=
 for (j=1;j<=gap;j++) if (count[j])

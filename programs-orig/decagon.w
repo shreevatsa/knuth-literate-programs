@@ -51,11 +51,14 @@ now considerably more complicated than I thought it would be.
 @d eps (argc>2) /* causes PostScript output, one file per solution */
 @d debug (argc>3) /* enables regular consistency checks */
 @d verbose (argc>4) /* causes extra printout */
+@d sin SIN /* get around bug in clang */
+@d cos COS /* get around bug in clang */
 
 @s node int
 
 @p
 #include <stdio.h>
+@h
 
 @<Type definitions@>@;
 @<Global variables@>@;

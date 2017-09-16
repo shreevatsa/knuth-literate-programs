@@ -1,12 +1,12 @@
 \datethis
-@*Intro. This program constructs segments of the ``sieve of Erasthosthenes,''
+@*Intro. This program constructs segments of the ``sieve of Eratosthenes,''
 and outputs the largest prime gaps that it finds. More precisely, it
 works with sets of prime numbers between $s_i$ and $s_{i+1}=s_i+\delta$,
 represented as an array of bits, and it examines these arrays for
 $t$ consecutive intervals beginning with $s_i$ for $i=0$, 1, \dots~$t-1$.
 Thus it scans all primes between $s_0$ and $s_t$.
 
-Let $p_k$ be the $k$th prime number. The sieve of Eratotosthenes determines
+Let $p_k$ be the $k$th prime number. The sieve of Eratosthenes determines
 all primes $\le N$ by starting with the set $\{2,3,\ldots,N\}$ and striking
 out the nonprimes: After we know $p_1$ through $p_{k-1}$, the next remaining
 element is $p_k$, and we strike out the numbers $p_k^2$, $p_k(p_k+1)$,
@@ -55,13 +55,12 @@ primes between $s_0$ and $s_t$ are also output, so that we can keep
 track of gaps between primes that are
 found by different instances of this program.
 
-@d del 1000000000LL /* the segment size $\delta$, a multiple of 128 */
-@d kmax 51000000 /* an index such that $p_{kmax}^2>s_t$ */
+@d del 100000000LL /* the segment size $\delta$, a multiple of 128 */
+@d kmax 10000 /* an index such that $p_{kmax}^2>s_t$ */
 
 @c
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 FILE *infile, *outfile;
 unsigned int prime[kmax]; /* $|prime|[k]=p_{k+1}$ */
 unsigned int start[kmax]; /* indices for initializing a segment */
@@ -74,20 +73,17 @@ int bestgap=256; /* lower bound for gap reporting */
 unsigned long long sv[11]; /* bit patterns for the smallest primes */
 int rem[11]; /* shift amounts for the smallest primes */
 char nu[0x10000]; /* table for counting bits */
-int timer;
 
 main(int argc, char*argv[])
 {
   register j,k;
   unsigned long long x,y,z,s,ss;
   int d,ii,kk;
-  timer=time(0);
   @<Initialize the bit-counting table@>;
   @<Process the command line and input the primes@>;
   @<Get ready for the first segment@>;
   for (ii=0;ii<tt;ii++) @<Do segment |ii|@>;
   @<Report the final prime@>;
-  printf("(Finished; the last segment took %d sec.)\n",time(0)-timer);
 }  
 
 @ @<Process the command line and input the primes@>=
@@ -176,7 +172,7 @@ for (k=1;prime[k]<32 && k<kk;k++) {
   for (x=0,y=1LL<<start[k]; x!=y; x=y, y|=y<<prime[k]);
   sv[k]=x, rem[k]=64%prime[k];
 }
-d=k; /* |d| is the smallest nontiny prime */
+d=k; /* |d| is the index of the smallest nontiny prime */
 
 @ @<Get ready for the first segment@>=
 @<Initialize the active primes@>;
@@ -186,10 +182,7 @@ sieve[1+del/128]=-1; /* store a sentinel */
 @ @<Do segment |ii|@>=
 {
   s=ss, ss=s+del; /* $s=s_i$, $|ss|=s_{i+1}$ */
-  j=time(0);
-  printf("Beginning segment %llu (after %d sec)\n",s,j-timer);
-  fflush(stdout);
-  timer=j;
+  printf("Beginning segment %llu\n",s);
   @<Initialize the sieve from the tiny primes@>;
   @<Sieve in the previously active primes@>;
   @<Sieve in the newly active primes@>;

@@ -9,8 +9,8 @@
 @x
 #include "gb_graph.h"
 @y
-#include "gb_rand.h"
 #include "gb_graph.h"
+#include "gb_rand.h"
 @z
 @x
 main()
@@ -47,13 +47,13 @@ main(argc,argv)
     else xrnd=kkk-(xrnd % 100);
     yrnd=gb_next_rand();
     if (yrnd&0x1000000) {
-      v->x.i=xrnd-kkk/2;
-      v->y.i=(yrnd%kkk)-kkk/2;
+      v->x.I=xrnd-kkk/2;
+      v->y.I=(yrnd%kkk)-kkk/2;
     } else {
-      v->x.i=(yrnd%kkk)-kkk/2;
-      v->y.i=xrnd-kkk/2;
+      v->x.I=(yrnd%kkk)-kkk/2;
+      v->y.I=xrnd-kkk/2;
     }
-    if (n<150) printf("point %s=(%d,%d)\n",v->name,v->x.i,v->y.i);
+    if (n<150) printf("point %s=(%d,%d)\n",v->name,v->x.I,v->y.I);
   }
 @z
 

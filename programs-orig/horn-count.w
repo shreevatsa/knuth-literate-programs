@@ -12,11 +12,15 @@ in the next section below.
 @d nfactorial 120
 @d final_level (nn-1) /* the first element that is never in a solution */
 @d verbose (n<5)
+@d log LOG /* get around bug in clang */
+@d logl LOGL /* ditto */
 
 @c
 #include <stdio.h>
+@h@#
 char f[nn];
-unsigned char perm[nfactorial][nn], iperm[nfactorial][nn]; /* perms and inverses */
+unsigned char perm[nfactorial][nn], iperm[nfactorial][nn];
+      /* perms and inverses */
 int link[nfactorial]; /* links in the lists of permutations */
 int wait[nn]; /* heads of those lists */
 int disc[nn]; /* permutations discarded at each level */

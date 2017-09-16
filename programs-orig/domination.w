@@ -107,7 +107,7 @@ for (l=0;l<m;l++) for (ll=l+1;ll<m;ll++) {
     if (s<0) dom=1;
   }
   if (dom) rel[l][ll]=1;
-fin:@;
+fin: continue;
 }
 
 @ Hey, I'm just using brute force today.
@@ -118,7 +118,7 @@ for (l=0;l<m;l++) for (ll=l+1;ll<m;ll++) {
     for (j=l+1;j<ll;j++) if (rel[l][j] && rel[j][ll]) goto nope;
     red[l][ll]=1;
   }
-nope:@;
+nope: continue;
 }
 
 @ @<Print...@>=

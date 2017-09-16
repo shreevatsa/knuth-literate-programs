@@ -31,13 +31,15 @@ line argument $n$ is given. A second command-line argument causes the
 full search tree to be printed, and a third argument makes the output
 even more verbose.
 
-@d max_level 100 /* at most this many rows in a solution */
+@d max_level 1000 /* at most this many rows in a solution */
 @d max_degree 6000 /* at most this many branches per search tree node */
 @d max_cols 6000 /* at most this many columns */
 @d max_nodes 1000000 /* at most this many nonzero elements in the matrix */
+@d verbose Verbose
 
 @c
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 @<Type definitions@>@;
@@ -53,24 +55,22 @@ main(argc,argv)
   if (verbose) sscanf(argv[1],"%d",&spacing);
   @<Initialize the data structures@>;
   @<Backtrack through all solutions@>;
-  printf("Altogether %d solutions,",count);
-  if (hupdates) printf(" after %u%09d updates", hupdates, updates);
-  else printf(" after %d updates", updates);
-  if (hpurifs) printf(" and %u%09d cleansings.\n", hpurifs, purifs);
-  else printf(" and %d cleansings.\n", purifs);
+  printf("Altogether %lld solutions,",count);
+  printf(" after %lld updates", updates);
+  printf(" and %lld cleansings.\n", purifs);
   if (verbose) @<Print a profile of the search tree@>;
   exit(0);
 }
 
 @ @<Global...@>=
 int verbose; /* $>0$ to show solutions, $>1$ to show partial ones too */
-int count=0; /* number of solutions found so far */
-unsigned int hupdates,updates; /* number of times we deleted a list element */
-unsigned int hpurifs,purifs; /* number of times we purified a list element */
+unsigned long long count; /* number of solutions found so far */
+unsigned long long updates; /* number of times we deleted a list element */
+unsigned long long purifs; /* number of times we purified a list element */
 int spacing=1; /* if |verbose|, we output solutions when |count%spacing==0| */
-int profile[max_level][max_degree]; /* tree nodes of given level and degree */
-unsigned int upd_prof[max_level]; /* updates at a given level */
-unsigned int pur_prof[max_level]; /* purifications at a given level */
+unsigned long long profile[max_level][max_degree]; /* tree nodes of given level and degree */
+unsigned long long upd_prof[max_level]; /* updates at a given level */
+unsigned long long pur_prof[max_level]; /* purifications at a given level */
 int maxb=0; /* maximum branching factor actually needed */
 int maxl=0; /* maximum level actually reached */
 
@@ -141,7 +141,7 @@ print_row(p)
   } while (q!=p);
   for (q=p->col->head.down,k=1;q!=p;k++)
     if (q==&(p->col->head)) {
-      printf("\n");@+return; /* row not in its column! */
+      printf("\n");@+return 0; /* row not in its column! */
     }@+else q=q->down;
   printf(" (%d of %d)\n",k,p->col->len);
 }
@@ -301,7 +301,6 @@ cover(c)
       nn->col->len--;
     }
   updates+=k;
-  if (updates>=1000000000) hupdates++,updates-=1000000000;
   upd_prof[level]+=k;
 }
 
@@ -362,6 +361,7 @@ if (verbose) {
 @ @<Local...@>=
 register int minlen;
 register int j,k,x;
+long long xx,tt;
 
 @ @<Record solution and |goto recover|@>=
 {
@@ -369,7 +369,7 @@ register int j,k,x;
   if (verbose) {
     profile[level+1][0]++;
     if (count%spacing==0) {
-      printf("%d:\n",count);
+      printf("%lld:\n",count);
       for (k=0;k<=level;k++) print_row(choice[k]);
     }
   }
@@ -386,18 +386,18 @@ register int j,k,x;
 
 @ @<Print a profile...@>=
 {
-  x=1; /* the root node doesn't show up in the profile */
+  xx=1; /* the root node doesn't show up in the profile */
   for (level=1;level<=maxl+1;level++) {
-    j=0;
+    tt=0;
     for (k=0;k<=maxb;k++) {
-      printf("%6d",profile[level][k]);
-      j+=profile[level][k];
+      printf("%10lld",profile[level][k]);
+      tt+=profile[level][k];
     }
-    printf("%8d nodes, %u updates, %u cleansings\n",
-      j,upd_prof[level-1],pur_prof[level-1]);
-    x+=j;
+    printf("%16lld nodes, %llu updates, %llu cleansings\n",
+      tt,upd_prof[level-1],pur_prof[level-1]);
+    xx+=tt;
   }
-  printf("Total %d nodes.\n",x);
+  printf("Total %lld nodes.\n",xx);
 }
 
 @* Color barriers. Finally, here's the new material related to coloring.
@@ -434,8 +434,6 @@ purify(p)
       }
     }@+else if (rr!=p) kk++, rr->color=-1;
   updates+=k, purifs+=kk;
-  if (updates>=1000000000) hupdates++,updates-=1000000000;
-  if (purifs>=1000000000) hpurifs++,purifs-=1000000000;
   upd_prof[level]+=k, pur_prof[level]+=kk;
 }
 
@@ -474,7 +472,7 @@ void show_state()
   for (k=0;k<level;k++) print_row(choice[k]);
   printf("Max level so far: %d\n",maxl);
   printf("Max branching so far: %d\n",maxb);
-  printf("Solutions so far: %d\n",count);
+  printf("Solutions so far: %lld\n",count);
 }
 
 @*Index.

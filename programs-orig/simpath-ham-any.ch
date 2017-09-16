@@ -5,11 +5,11 @@
 @d dummy maxn+1 /* code for a dummy vertex adjacent to all */
 @z
 @x
-      else printf(" -> %d(%s,%d) #%d\n",u->num,u->name,a->len,m);
+      else printf(" -> %ld(%s,%ld) #%d\n",u->num,u->name,a->len,m);
     }
   }
 @y
-      else printf(" -> %d(%s,%d) #%d\n",u->num,u->name,a->len,m);
+      else printf(" -> %ld(%s,%ld) #%d\n",u->num,u->name,a->len,m);
     }
   }
   arcto[m++]=dummy;

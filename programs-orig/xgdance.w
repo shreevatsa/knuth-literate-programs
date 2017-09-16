@@ -151,7 +151,7 @@ print_row(p)
   } while (q!=p);
   for (q=p->col->head.down,k=1;q!=p;k++)
     if (q==&(p->col->head)) {
-      printf("\n");@+return; /* row not in its column! */
+      printf("\n");@+return 0; /* row not in its column! */
     }@+else q=q->down;
   printf(" (%d of %d)\n",k,p->col->len);
 }

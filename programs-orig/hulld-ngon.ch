@@ -9,8 +9,8 @@
 @x
 #include "gb_graph.h"
 @y
-#include "gb_rand.h"
 #include "gb_graph.h"
+#include "gb_rand.h"
 @z
 @x
 int n=128;
@@ -48,31 +48,31 @@ main(argc,argv)
   for (kk=0;kk<n; kk++) mapping[kk]=kk;
   for (kk=0,v=g->vertices; kk<n; kk++,v++) {
     kkk=gb_next_rand() % (n-kk);
-    v->x.i=mapping[kkk];
+    v->x.I=mapping[kkk];
     mapping[kkk]=mapping[n-kk-1];
-    sprintf(str,"%d",v->x.i);
+    sprintf(str,"%d",v->x.I);
     v->name=gb_save_string(str);
   }
 @z
 @x
 int ccw(u,v,w)
   Vertex *u,*v,*w;
-{@+register double wx=(double)w->x.i, wy=(double)w->y.i;
-  register double det=((double)u->x.i-wx)*((double)v->y.i-wy)
-         -((double)u->y.i-wy)*((double)v->x.i-wx);
+{@+register double wx=(double)w->x.I, wy=(double)w->y.I;
+  register double det=((double)u->x.I-wx)*((double)v->y.I-wy)
+         -((double)u->y.I-wy)*((double)v->x.I-wx);
   Vertex *uu=u,*vv=v,*ww=w,*t;
   if (det==0) {
     det=1;
-    if (u->x.i>v->x.i || (u->x.i==v->x.i && (u->y.i>v->y.i ||
-         (u->y.i==v->y.i && u->z.i>v->z.i)))) {
+    if (u->x.I>v->x.I || (u->x.I==v->x.I && (u->y.I>v->y.I ||
+         (u->y.I==v->y.I && u->z.I>v->z.I)))) {
            t=u;@+u=v;@+v=t;@+det=-det;
     }
-    if (v->x.i>w->x.i || (v->x.i==w->x.i && (v->y.i>w->y.i ||
-         (v->y.i==w->y.i && v->z.i>w->z.i)))) {
+    if (v->x.I>w->x.I || (v->x.I==w->x.I && (v->y.I>w->y.I ||
+         (v->y.I==w->y.I && v->z.I>w->z.I)))) {
            t=v;@+v=w;@+w=t;@+det=-det;
     }
-    if (u->x.i>v->x.i || (u->x.i==v->x.i && (u->y.i>v->y.i ||
-         (u->y.i==v->y.i && u->z.i<v->z.i)))) {
+    if (u->x.I>v->x.I || (u->x.I==v->x.I && (u->y.I>v->y.I ||
+         (u->y.I==v->y.I && u->z.I<v->z.I)))) {
            det=-det;
     }
   }
@@ -84,7 +84,7 @@ int ccw(u,v,w)
 @y
 int ccw(u,v,w)
   Vertex *u,*v,*w;
-{@+register det=1,ux=u->x.i,vx=v->x.i,wx=w->x.i,t;
+{@+register det=1,ux=u->x.I,vx=v->x.I,wx=w->x.I,t;
   if (ux>vx) {
     t=ux;@+ux=vx;@+vx=t;@+det=-det;
     }

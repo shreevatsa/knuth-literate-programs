@@ -1,6 +1,8 @@
 \datethis
 \def\[#1]{[\hbox{$\mkern1mu\thickmuskip=\thinmuskip#1\mkern1mu$}]} % Iverson
 \input epsf
+\let\possiblyflakyepsfbox=\epsfbox
+\def\epsfbox#1{\hbox{\possiblyflakyepsfbox{#1}}}
 
 @*Intro. I'm experimenting with what may be a new twist(?) on dynamic
 programming. It's motivated by ``Bayesian networks'' that form a binary tree.

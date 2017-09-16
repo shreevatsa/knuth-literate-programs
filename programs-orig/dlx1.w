@@ -101,7 +101,7 @@ Here is the overall structure:
 
 @d max_level 500 /* at most this many rows in a solution */
 @d max_cols 100000 /* at most this many columns */
-@d max_nodes 10000000 /* at most this many nonzero elements in the matrix */
+@d max_nodes 25000000 /* at most this many nonzero elements in the matrix */
 @d bufsize (9*max_cols+3) /* a buffer big enough to hold all column names */
 
 @c
@@ -162,6 +162,10 @@ choices are shown during verbose tracing;
 `\.C$\langle\,$positive integer$\,\rangle$' limits the levels on which
 choices are shown in the periodic state reports;
 \item{$\bullet$}
+`\.l$\langle\,$nonnegative integer$\,\rangle$' gives a {\it lower\/} limit,
+relative to the maximum level so far achieved, to the levels on which
+choices are shown during verbose tracing;
+\item{$\bullet$}
 `\.t$\langle\,$positive integer$\,\rangle$' causes the program to
 stop after this many solutions have been found;
 \item{$\bullet$}
@@ -182,6 +186,8 @@ int randomizing; /* has `\.s' been specified? */
 int vbose=show_basics+show_warnings; /* level of verbosity */
 int spacing; /* solution $k$ is output if $k$ is a multiple of |spacing| */
 int show_choices_max=1000000; /* above this level, |show_choices| is ignored */
+int show_choices_gap=1000000; /* below level |maxl-show_choices_gap|,
+    |show_details| is ignored */
 int show_levels_max=1000000; /* above this level, state reports stop */
 int maxl=0; /* maximum level actually reached */
 char buf[bufsize]; /* input buffer */
@@ -207,13 +213,14 @@ case 's': k|=(sscanf(argv[j]+1,""O"d",&random_seed)-1),randomizing=1;@+break;
 case 'd': k|=(sscanf(argv[j]+1,""O"lld",&delta)-1),thresh=delta;@+break;
 case 'c': k|=(sscanf(argv[j]+1,""O"d",&show_choices_max)-1);@+break;
 case 'C': k|=(sscanf(argv[j]+1,""O"d",&show_levels_max)-1);@+break;
+case 'l': k|=(sscanf(argv[j]+1,""O"d",&show_choices_gap)-1);@+break;
 case 't': k|=(sscanf(argv[j]+1,""O"lld",&maxcount)-1);@+break;
 case 'T': k|=(sscanf(argv[j]+1,""O"lld",&timeout)-1);@+break;
 default: k=1; /* unrecognized command-line option */
 }
 if (k) {
-  fprintf(stderr,
-    "Usage: "O"s [v<n>] [m<n>] [s<n>] [d<n>] [c<n>] [C<n>] [T<n>] < foo.dlx\n",
+  fprintf(stderr, "Usage: "O"s [v<n>] [m<n>] [s<n>] [d<n>]"
+       " [c<n>] [C<n>] [l<n>] [t<n>] [T<n>] < foo.dlx\n",
                             argv[0]);
   exit(-1);
 }
@@ -259,13 +266,17 @@ relative order.
 Exception: In the node |nd[c]| that is the header for the list of
 column~|c|, we use the |col| field to hold the {\it length\/} of that
 list (excluding the header node itself).
-We also might use its |spare| fields for special purposes.
+We also might use its |spare| field for special purposes.
 The alternative names |len| for |col| and |aux| for |spare|
 are used in the code so that this nonstandard semantics will be more clear.
 
 A {\it spacer\/} node has |col<=0|. Its |up| field points to the start
 of the preceding row; its |down| field points to the end of the following row.
 Thus it's easy to traverse a row circularly, in either direction.
+
+If all rows have length |m|, we can do without the spacers by simply
+working modulo~|m|. But the majority of my applications have rows of
+variable length, so I've decided not to use that trick.
 
 [{\it Historical note:\/} An earlier version of this program, {\mc DLX0},
 was almost identical to this one except that it used doubly linked lists
@@ -445,7 +456,7 @@ else o,cl[last_col].next=cl[last_col].prev=last_col;
 o,nd[last_col].up=nd[last_col].down=last_col;
 last_col++;
 
-@ I'm putting the the row number into the spacer that follows it, as a
+@ I'm putting the row number into the spacer that follows it, as a
 possible debugging aid. But the program doesn't currently use that information.
 
 @<Input the rows@>=
@@ -607,6 +618,14 @@ if (mems>=timeout) {
 column that is being covered. Thus a node is never removed from a list
 twice.
 
+Note: I could have saved some mems in this routine, and in similar
+routines below, by not updating the |len| fields of secondary columns.
+But I chose not to make such an optimization because it might well be
+misleading: The insertion of a mem-free new branch `|if (cc<second)|'
+can be costly since it makes hardware branch prediction less effective.
+Furthermore those |len| fields are in column header nodes, which tend
+to remain in cache memory where they're readily accessible.
+
 @<Sub...@>=
 void cover(int c) {
   register int cc,l,r,rr,nn,uu,dd,t;
@@ -633,7 +652,7 @@ void cover(int c) {
 processing its rows from bottom to top, since covering was done
 from top to bottom. But while writing this
 program I realized that, amazingly, no harm is done if the
-rows are processed in any order whatsoever. So I'll go downward again,
+rows are processed again in the same order. So I'll go downward again,
 just to prove the point. Whether we go up or down, the pointers
 execute an exquisitely choreo\-graphed dance that returns them almost
 magically to their former state.
@@ -670,7 +689,7 @@ various orders, I~almost convinced myself that I'd be able
 to blithely ignore the ordering---I could apparently
 undo the covering of column $a$ then $b$ by uncovering $a$ first.
 However, that argument is fallacious: When $a$ is uncovered, it
-can resuscite elements in column~$b$ that would mess up the
+can resuscitate elements in column~$b$ that would mess up the
 uncovering of~$b$. The choreography is delicate indeed.
 
 (Incidentally, the |cover| and |uncover| routines both went to the right.
@@ -690,10 +709,12 @@ select one of them at random.
 
 @<Set |best_col| to  the best column for branching@>=
 t=max_nodes;
-if ((vbose&show_details) && level<show_choices_max)
-   fprintf(stderr,"Level "O"d:",level);
+if ((vbose&show_details) &&
+    level<show_choices_max && level>=maxl-show_choices_gap)
+  fprintf(stderr,"Level "O"d:",level);
 for (o,k=cl[root].next;k!=root;o,k=cl[k].next) {
-  if ((vbose&show_details) && level<show_choices_max)
+  if ((vbose&show_details) &&
+      level<show_choices_max && level>=maxl-show_choices_gap)
     fprintf(stderr," "O".8s("O"d)",cl[k].name,nd[k].len);
   if (o,nd[k].len<=t) {
     if (nd[k].len<t) best_col=k,t=nd[k].len,p=1;
@@ -703,7 +724,8 @@ for (o,k=cl[root].next;k!=root;o,k=cl[k].next) {
     }
   }
 }
-if ((vbose&show_details) && level<show_choices_max)
+if ((vbose&show_details) &&
+    level<show_choices_max && level>=maxl-show_choices_gap)
   fprintf(stderr," branching on "O".8s("O"d)\n",cl[best_col].name,t);
 
 @ @<Record solution and |goto recover|@>=
@@ -712,6 +734,7 @@ if ((vbose&show_details) && level<show_choices_max)
   if (spacing && (count mod spacing==0)) {
     printf(""O"lld:\n",count);
     for (k=0;k<=level;k++) print_row(choice[k],stdout);
+    fflush(stdout);
   }
   if (count>=maxcount) goto done;
   goto recover;
@@ -759,11 +782,11 @@ void print_progress(void) {
   fprintf(stderr," after "O"lld mems: "O"lld sols,",mems,count);
   for (f=0.0,fd=1.0,l=0;l<level;l++) {
     c=nd[choice[l]].col,d=nd[c].len;
-    for (k=0,p=nd[c].down;p!=choice[l];k++,p=nd[p].down) ;
-    fd*=d,f+=k/fd; /* choice |l| is |k+1| of |d| */
+    for (k=1,p=nd[c].down;p!=choice[l];k++,p=nd[p].down) ;
+    fd*=d,f+=(k-1)/fd; /* choice |l| is |k| of |d| */
     fprintf(stderr," "O"c"O"c",
       k<10? '0'+k: k<36? 'a'+k-10: k<62? 'A'+k-36: '*',
-      d<10? '0'+d: d<36? 'a'+d-10: k<62? 'A'+d-36: '*');
+      d<10? '0'+d: d<36? 'a'+d-10: d<62? 'A'+d-36: '*');
     if (l>=show_levels_max) {
       fprintf(stderr,"...");
       break;

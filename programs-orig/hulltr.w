@@ -40,8 +40,8 @@ int ccs; /* calls on |ccw| */
 
 @*Data structures.
 For now, each vertex is represented by two coordinates stored in the
-utility fields |x.i| and |y.i|. I'm also putting a serial number into
-|z.i|, so that I can check whether different algorithms generate
+utility fields |x.I| and |y.I|. I'm also putting a serial number into
+|z.I|, so that I can check whether different algorithms generate
 identical hulls.
 
 We use separate nodes for the current convex hull. These nodes have
@@ -81,7 +81,7 @@ init_area(working_storage);
 @<Initialize the array of nodes@>;
 o,u=g->vertices;
 v=u+1;
-u->z.i=0; v->z.i=1;
+u->z.I=0; v->z.I=1;
 p=++next_node;
 ooo,head->succ=head->pred=head->right=p;
 oo,p->succ=p->pred=head;
@@ -144,7 +144,7 @@ vertices that were previously part of the hull.
 @<Find convex hull of |g|@>=
 @<Initialize the data structures@>;
 for (oo,vv=g->vertices+2;vv<g->vertices+g->n;vv++) {
-  vv->z.i=++serial_no;
+  vv->z.I=++serial_no;
   o,q=head->pred;
   replaced=0;
   o,u=head->vert;
@@ -363,22 +363,22 @@ $$ccw(u,v,w)=\left\vert\matrix{u(x)&u(y)&1\cr v(x)&v(y)&1\cr w(x)&w(y)&1\cr}
 @<Proc...@>=
 int ccw(u,v,w)
   Vertex *u,*v,*w;
-{@+register double wx=(double)w->x.i, wy=(double)w->y.i;
-  register double det=((double)u->x.i-wx)*((double)v->y.i-wy)
-         -((double)u->y.i-wy)*((double)v->x.i-wx);
+{@+register double wx=(double)w->x.I, wy=(double)w->y.I;
+  register double det=((double)u->x.I-wx)*((double)v->y.I-wy)
+         -((double)u->y.I-wy)*((double)v->x.I-wx);
   Vertex *uu=u,*vv=v,*ww=w,*t;
   if (det==0) {
     det=1;
-    if (u->x.i>v->x.i || (u->x.i==v->x.i && (u->y.i>v->y.i ||
-         (u->y.i==v->y.i && u->z.i>v->z.i)))) {
+    if (u->x.I>v->x.I || (u->x.I==v->x.I && (u->y.I>v->y.I ||
+         (u->y.I==v->y.I && u->z.I>v->z.I)))) {
            t=u;@+u=v;@+v=t;@+det=-det;
     }
-    if (v->x.i>w->x.i || (v->x.i==w->x.i && (v->y.i>w->y.i ||
-         (v->y.i==w->y.i && v->z.i>w->z.i)))) {
+    if (v->x.I>w->x.I || (v->x.I==w->x.I && (v->y.I>w->y.I ||
+         (v->y.I==w->y.I && v->z.I>w->z.I)))) {
            t=v;@+v=w;@+w=t;@+det=-det;
     }
-    if (u->x.i>v->x.i || (u->x.i==v->x.i && (u->y.i>v->y.i ||
-         (u->y.i==v->y.i && u->z.i<v->z.i)))) {
+    if (u->x.I>v->x.I || (u->x.I==v->x.I && (u->y.I>v->y.I ||
+         (u->y.I==v->y.I && u->z.I<v->z.I)))) {
            det=-det;
     }
   }

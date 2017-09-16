@@ -35,8 +35,8 @@ P 1 1 00 01 10 11 12\cr
 obtained by rotating the original shape, then transposing and rotating again.
 The values of $s$ and $t$ depend on the symmetry of the piece; six cases
 $(1,1)$, $(1,2)$, $(2,1)$, $(2,2)$, $(4,1)$, and $(4,2)$ can arise,
-for pieces with no symmetry, swastika symmetry, double-reflection symmetry,
-$180^\circ$ symmetry, reflection symmetry, and full symmetry.
+for pieces with full symmetry, swastika symmetry, double-reflection symmetry,
+$180^\circ$ symmetry, reflection symmetry, and no symmetry.
 If $s$ had been 2 instead of~4, only the first, second, fifth, and sixth
 of these eight orientations would have been generated.
 
@@ -53,6 +53,8 @@ in the exact cover problem, namely
 
 @c
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 @<Global variables@>@;
 @<Subroutines@>;

@@ -22,6 +22,11 @@ unsigned long long ubit[nsize+1], vbit[nsize+1];
     k=kr+(kq<<6);
 @z
 @x
+        fprintf(stderr,"Unexpectedly large gap (%d)! Recompile me...\n",del);
+@y
+        fprintf(stderr,"Unexpectedly large gap (%lld)! Recompile me...\n",del);
+@z
+@x
       printf("New gap %d: U_%d=%d, U_%d=%d\n",gap,n-1,prevu,n,k);
       fflush(stdout);
     }
@@ -57,10 +62,21 @@ del=(u<<kr)+c, c=(u>>(31-kr))>>1;
 del=(u<<kr)+c, c=(u>>(63-kr))>>1;
 @z
 @x
-if (kk&0xffff0000) kr=16,u=kk>>16;@+else kr=0,u=kk;
+kr=decode[(mhmartin*kk)>>27];
+n++;
+
+@ @d mhmartin 0x07dcd629
+
+@<Set up the |decode| table@>=
+for (k=0,j=1;j;k++,j<<=1) decode[(mhmartin*j)>>27]=k;
 @y
-if (kk&0xffffffff00000000) kr=32,u=kk>>32;@+else kr=0,u=kk;
-if (u&0xffff0000) kr+=16,u>>=16;
+kr=decode[(mhmartin*kk)>>58];
+n++;
+
+@ @d mhmartin 0x03f79d71b4ca8b09LL
+
+@<Set up the |decode| table@>=
+for (k=0,j=1;j;k++,j<<=1) decode[(mhmartin*j)>>58]=k;
 @z
 @x
   printf("gap %d occurred %d time%s, last was %d\n",

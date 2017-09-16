@@ -20,7 +20,7 @@ be made, and the second is a seed value for the random number generator.
   if (verbose) sscanf(argv[1],"%d",&spacing);
   @<Initialize the data structures@>;
   @<Backtrack through all solutions@>;
-  printf("Altogether %d solutions, after %u updates.\n",count,updates);
+  printf("Altogether %lld solutions, after %.15g updates.\n",count,updates);
   if (verbose) @<Print a profile of the search tree@>;
 @y
   if (verbose) {
@@ -133,6 +133,8 @@ for (cur_col=root.next;cur_col!=&root;cur_col=cur_col->next)
     tot_updates+=upd_prof_est[level];
   }
   printf("Total %20.1f nodes, %20.1f updates.\n",tot_nodes,tot_updates);
+  printf("(i.e. approximately %.4g nodes and %.4g updates)\n",
+                             tot_nodes,tot_updates);
 }
   
 @*Index.

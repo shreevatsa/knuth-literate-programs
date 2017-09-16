@@ -1,6 +1,7 @@
 \datethis
-\ifpdftex \input supp-pdf \else \input epsf \fi
-
+\input epsf
+\let\possiblyflakyepsfbox=\epsfbox
+\def\epsfbox#1{\hbox{\possiblyflakyepsfbox{#1}}}
 \def\caret/{\smash{\lower4pt\hbox to0pt{\hss$\scriptscriptstyle\land$\hss}}}
 \def\qcaret/{`\thinspace\caret/\thinspace'} % quoted caret
 @s delete unknown
@@ -26,7 +27,7 @@ and top to bottom, deciding whether or not that cell is occupied, and
 combining results for all boundary configurations that are equivalent
 as far as future decisions are concerned. For example, we might have a
 polyomino that starts out like this:
-$$\ifpdftex\convertMPtoPDF{polyomino.2}{1}{1}\else\epsfbox{polyomino.2}\fi$$
+$$\epsfbox{polyomino.2}$$
 (This partial polyomino obviously has more than 54 cells already, but large
 examples will help clarify the concepts that are needed in the program below.)
 
@@ -693,7 +694,7 @@ of jumping from one loop into the body of another.
 The program could be made faster if I would look at high speed for
 special cases like subcomponents of the form \.{(0--00-)}, since
 that subcomponent is equivalent to \.{()} with respect to the
-connectivity measure we are computing. But I~intentially avoided tricky
+connectivity measure we are computing. But I~intentionally avoided tricky
 optimizations in order to keep this program simpler and easier to verify.
 
 On the other hand, I do

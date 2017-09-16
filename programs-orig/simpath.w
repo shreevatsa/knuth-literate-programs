@@ -16,9 +16,9 @@ out of my way to be inefficient.
 
 @d maxn 255 /* maximum number of vertices; at most 255 */
 @d maxm 2000 /* maximum number of edges */
-@d logmemsize 24
-@d memsize (1<<logmemsize) /* warning: we need $|maxn|*|memsize|\le2^{32}$ */
-@d loghtsize 24
+@d logmemsize 27
+@d memsize (1<<logmemsize)
+@d loghtsize 25
 @d htsize (1<<loghtsize)
 
 @c
@@ -32,6 +32,7 @@ unsigned long long tail,boundary,head; /* queue pointers */
 unsigned int htable[htsize]; /* hash table */
 unsigned int htid; /* ``time stamp'' for hash entries */
 int htcount; /* number of entries in the hash table */
+int wrap=1; /* wraparound counter for hash table clearing */
 Vertex *vert[maxn+1];
 int arcto[maxm]; /* destination number of each arc */
 int firstarc[maxn+2]; /* where arcs from a vertex start in |arcto| */
@@ -40,7 +41,7 @@ int serial,newserial; /* state numbers */
 @<Subroutines@>@;
 @#
 main(int argc, char* argv[]) {
-  register int i,j,jj,jm,k,km,l,ll,m,n,t;
+  register int i,j,jj,jm,k,km,l,ll,m,n,t,hash;
   register Graph *g;
   register Arc *a,*b;
   register Vertex *u,*v;
@@ -69,7 +70,7 @@ if (n>maxn) {
   exit(-3);
 }
 if (g->m>2*maxm) {  
-  fprintf(stderr,"Sorry, that graph has %d edges; ",(g->m+1)/2);
+  fprintf(stderr,"Sorry, that graph has %ld edges; ",(g->m+1)/2);
   fprintf(stderr,"I can't handle more than %d!\n",maxm);
   exit(-3);
 }
@@ -152,13 +153,13 @@ with our homegrown integer-only representation.
 for (m=0,k=1;k<=n;k++) {
   firstarc[k]=m;
   v=vert[k];
-  printf("%d(%s)\n",v->num,v->name);
+  printf("%ld(%s)\n",v->num,v->name);
   for (a=v->arcs;a;a=a->next) {
     u=a->tip;
     if (u->num>k) {
       arcto[m++]=u->num;
-      if (a->len==1) printf(" -> %d(%s) #%d\n",u->num,u->name,m);
-      else printf(" -> %d(%s,%d) #%d\n",u->num,u->name,a->len,m);
+      if (a->len==1) printf(" -> %ld(%s) #%d\n",u->num,u->name,m);
+      else printf(" -> %ld(%s,%ld) #%d\n",u->num,u->name,a->len,m);
     }
   }
 }
@@ -217,7 +218,7 @@ We ensure that |head-tail| never exceeds |memsize|.
 @<Initialize the queue@>;
 for (i=0;i<m;i++) {
   printf("#%d:\n",i+1); /* announce that we're beginning a new arc */
-  fprintf(stderr,"Beginning arc %d (serial=%d,head-tail=%ld)\n",
+  fprintf(stderr,"Beginning arc %d (serial=%d,head-tail=%lld)\n",
                  i+1,serial,head-tail);
   fflush(stderr);
   @<Process arc |i|@>;
@@ -239,12 +240,16 @@ is impossible; 1 means the winning state, when a simple path has been
 completed. The other states are 2 or more.
 
 The output format on |stdout| simply shows the identifying numbers of a state
-and its two succesors, in hexadecimal.
+and its two successors, in hexadecimal.
 
 @d trunc(addr) ((addr)&(memsize-1))
 
 @<Process arc |i|@>=
-boundary=head,htcount=0,htid=(i+1)<<logmemsize;
+boundary=head,htcount=0,htid=(i+wrap)<<logmemsize;
+if (htid==0) {
+  for (hash=0;hash<htsize;hash++) htable[hash]=0;
+  wrap++, htid=1<<logmemsize;
+}
 newserial=serial+((head-tail)/(ll+1-jj));
 j=jj,k=arcto[i],l=ll;
 while (jj<=n && firstarc[jj+1]==i+1) jj++;
@@ -279,7 +284,6 @@ else {
   mate[j]=0,mate[k]=0;
   mate[jm]=km,mate[km]=jm;
   printstate(j,jj,ll);
-  mate[jm]=j,mate[km]=k,mate[j]=jm,mate[k]=km; /* restore original state */
 }
 done:
 
@@ -318,6 +322,7 @@ void printstate(int j,int jj,int ll) {
     if (head+ss-tail>memsize) {
       fprintf(stderr,"Oops, I'm out of memory (memsize=%d, serial=%d)!\n",
              memsize,serial);
+      fflush(stdout);
       exit(-69);
     }
     @<Move the current state into position after |head|, and compute |hash|@>;

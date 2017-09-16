@@ -134,7 +134,7 @@ int mdigs; /* our multiprecision arithmetic routine uses this many octabytes */
 ull table[maxm+2][10][maxdigs]; /* precomputed tables of $j\cdot k^m$ */
 ull z[maxdigs]; /* temporary buffer for bignums */
 
-@ Here's a macro that delivers a given digit (nybble) of a mutlibyte number.
+@ Here's a macro that delivers a given digit (nybble) of a multibyte number.
 
 @d nybb(a,p) (int)((a[p/15]>>(4*(p%15)))&0xf)
 

@@ -228,7 +228,7 @@ FILE *restart_file; /* file for learned clauses to be used in a restart */
 char *restart_name; /* its name */
 FILE *learned_file; /* file for output of every learned clause */
 char *learned_name; /* its name */
-int learn_save=10000; /* theshold for not outputting to |learned_file| */
+int learn_save=10000; /* threshold for not outputting to |learned_file| */
 ullng learned_out; /* this many learned clauses have been output */
 FILE *polarity_infile; /* file for input of literal polarities */
 char *polarity_in_name; /* its name */

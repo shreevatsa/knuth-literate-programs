@@ -1,5 +1,7 @@
 \datethis
 \input epsf
+\let\possiblyflakyepsfbox=\epsfbox
+\def\epsfbox#1{\hbox{\possiblyflakyepsfbox{#1}}}
 \def\adj{\mathrel{\!\mathrel-\mkern-8mu\mathrel-\mkern-8mu\mathrel-\!}}
    % adjacent vertices
 @* Introduction. This program generates all spanning trees of a given
@@ -401,7 +403,7 @@ pointers are not needed by the main algorithm. So we can equate
 illustrated in the introduction. Since |A| is a parallel node and since
 each leftmost child is initially designated, |init_tree| sets
 |A->val=1|, |B->val=0|, |C->val=1|, |D->val=0|, and the first spanning
-tree consists of edges $\it aceg$. All four branch nodes are initiallly
+tree consists of edges $\it aceg$. All four branch nodes are initially
 uneasy. (That's just a coincidence, not a general rule.)
 
 The current state of the algorithm can be indicated by writing each
@@ -534,7 +536,7 @@ when changing the |val| fields.
 
 The amortized cost of those loops is constant per new spanning tree.
 But it can be instructive to search for an algorithm that is entirely
-loopfree, in the sense that the number of operations per new tree
+loopless, in the sense that the number of operations per new tree
 is bounded (once the algorithm has initialized itself in linear time).
 
 Loopless algorithms tend to run slower than their loopy counterparts,

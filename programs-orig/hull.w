@@ -37,8 +37,8 @@ int ccs; /* calls on |ccw| */
 
 @*Data structures.
 For now, each vertex is represented by two coordinates stored in the
-utility fields |x.i| and |y.i|. I'm also putting a serial number into
-|z.i|, so that I can check whether different algorithms generate
+utility fields |x.I| and |y.I|. I'm also putting a serial number into
+|z.I|, so that I can check whether different algorithms generate
 identical hulls.
 
 A vertex |v| in the convex hull also has a successor |v->succ| and
@@ -53,9 +53,9 @@ or, if |NULL|, there's no next instruction; or, if a pointer to the
 smallest possible instruction, we will do something special to update
 the current convex hull.
 
-@d succ u.v
-@d pred v.v
-@d inst w.a
+@d succ u.V
+@d pred v.V
+@d inst w.A
 
 @ @<Initialize the array of instructions@>=
 first_inst=(Arc*)gb_alloc((4*g->n-2)*sizeof(Arc),working_storage);
@@ -78,7 +78,7 @@ init_area(working_storage);
 @<Initialize the array of instructions@>;
 o,u=g->vertices;
 v=u+1;
-u->z.i=0; v->z.i=1;
+u->z.I=0; v->z.I=1;
 oo,u->succ=u->pred=v;
 oo,v->succ=v->pred=u;
 oo,first_inst->tip=u;@+first_inst->next=first_inst;
@@ -104,7 +104,7 @@ vertices that were previously part of the hull.
 @<Find convex hull of |g|@>=
 @<Initialize the data structures@>;
 for (oo,vv=g->vertices+2;vv<g->vertices+g->n;vv++) {
-  vv->z.i=++serial_no;
+  vv->z.I=++serial_no;
   @<Follow the instructions; |continue| if |vv| is inside the current hull@>;
   @<Update the convex hull, knowing that |vv| lies outside the consecutive
      hull vertices |u| and |v|@>;
@@ -184,22 +184,22 @@ $$ccw(u,v,w)=\left\vert\matrix{u(x)&u(y)&1\cr v(x)&v(y)&1\cr w(x)&w(y)&1\cr}
 @<Proc...@>=
 int ccw(u,v,w)
   Vertex *u,*v,*w;
-{@+register double wx=(double)w->x.i, wy=(double)w->y.i;
-  register double det=((double)u->x.i-wx)*((double)v->y.i-wy)
-         -((double)u->y.i-wy)*((double)v->x.i-wx);
+{@+register double wx=(double)w->x.I, wy=(double)w->y.I;
+  register double det=((double)u->x.I-wx)*((double)v->y.I-wy)
+         -((double)u->y.I-wy)*((double)v->x.I-wx);
   Vertex *uu=u,*vv=v,*ww=w,*t;
   if (det==0) {
     det=1;
-    if (u->x.i>v->x.i || (u->x.i==v->x.i && (u->y.i>v->y.i ||
-         (u->y.i==v->y.i && u->z.i>v->z.i)))) {
+    if (u->x.I>v->x.I || (u->x.I==v->x.I && (u->y.I>v->y.I ||
+         (u->y.I==v->y.I && u->z.I>v->z.I)))) {
            t=u;@+u=v;@+v=t;@+det=-det;
     }
-    if (v->x.i>w->x.i || (v->x.i==w->x.i && (v->y.i>w->y.i ||
-         (v->y.i==w->y.i && v->z.i>w->z.i)))) {
+    if (v->x.I>w->x.I || (v->x.I==w->x.I && (v->y.I>w->y.I ||
+         (v->y.I==w->y.I && v->z.I>w->z.I)))) {
            t=v;@+v=w;@+w=t;@+det=-det;
     }
-    if (u->x.i>v->x.i || (u->x.i==v->x.i && (u->y.i>v->y.i ||
-         (u->y.i==v->y.i && u->z.i<v->z.i)))) {
+    if (u->x.I>v->x.I || (u->x.I==v->x.I && (u->y.I>v->y.I ||
+         (u->y.I==v->y.I && u->z.I<v->z.I)))) {
            det=-det;
     }
   }

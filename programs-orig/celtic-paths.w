@@ -1,4 +1,6 @@
 \input epsf
+\let\possiblyflakyepsfbox=\epsfbox
+\def\epsfbox#1{\hbox{\possiblyflakyepsfbox{#1}}}
 \font\celtica=celtica13 \font\celticb=celticb13
 \datethis
 @*Intro. This quick-and-dirty program prepares \TeX\ files for use with

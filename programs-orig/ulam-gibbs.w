@@ -2,6 +2,8 @@
 \font\logo=logo10
 \def\MP{{\logo METAPOST}}
 \input epsf
+\let\possiblyflakyepsfbox=\epsfbox
+\def\epsfbox#1{\hbox{\possiblyflakyepsfbox{#1}}}
 
 @f mod TeX
 \let\mod=\bmod
@@ -107,7 +109,7 @@ To enable everything, you can say `\.{v-1}'.
 @d show_compression_stats 2 /* reports details of |is_ulam| encoding */
 @d show_histograms 4 /* reports Ulams and misses mod $\lambda$ */
 @d show_gap_stats 8 /* gives histogram and examples of every gap */
-@d show_record_gaps 16 /* reports every gap that exceeded all precedessors */
+@d show_record_gaps 16 /* reports every gap that exceeded all predecessors */
 @d show_record_outliers 32 /* reports outliers that exceeded earlier ones */
 @d show_outlier_details 64 /* reports insertion or deletion of all outliers */
 @d show_record_cutoffs 128 /* reports residue cutoffs for near outliers */
@@ -171,7 +173,7 @@ int maxgap=2000; /* the largest gap for which we keep histogram data */
 int outliers=1000000;
   /* maximum number of outliers and near-outliers to remember */
 int isize=100000; /* total size of the two indexes (is always even) */
-double thresh=100; /* theshold for remembering a near-outlier */
+double thresh=100; /* threshold for remembering a near-outlier */
 ullng mems,last_mems; /* mem count */
 clock_t last_clock; /* the last time we called |clock()| */
 ullng bytes; /* memory used by main data structures */

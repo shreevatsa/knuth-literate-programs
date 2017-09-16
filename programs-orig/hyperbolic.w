@@ -1,5 +1,8 @@
 \datethis
 \input epsf
+\let\possiblyflakyepsfbox=\epsfbox
+\def\epsfbox#1{\hbox{\possiblyflakyepsfbox{#1}}}
+
 @* Introduction. This program computes numerical coordinates so that I can
 experiment with some of the fascinating patterns that arise when the
 hyperbolic plane is tiled with $36^\circ$-$45^\circ$-$90^\circ$ triangles.

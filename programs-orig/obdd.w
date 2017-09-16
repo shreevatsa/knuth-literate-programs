@@ -58,7 +58,7 @@ the mate of |red[k]| instead of to |red[k]| itself.
       black[k]=v;
       if (u<u->mate) red[k]=u,parity[k]=0;
       else red[k]=u->mate,parity[k]=1;
-      if (verbose) printf("%d: %s--%s%s\n",k,black[k]->name,red[k]->name,
+      if (vbose) printf("%d: %s--%s%s\n",k,black[k]->name,red[k]->name,
                             parity[k]? "*" : "");
       k++;
     }
@@ -70,7 +70,7 @@ the mate of |red[k]| instead of to |red[k]| itself.
 Vertex *black[mm*nn*2], *red[mm*nn*2];
 int parity[mm*nn*2];
 int edges; /* total number of edges */
-int verbose; /* set nonzero when debugging */
+int vbose; /* set nonzero when debugging */
 int sols, pseudo_sols; /* counts the solutions and cases of two half-cycles */
 
 @ @<Local variables@>=
@@ -212,7 +212,7 @@ int intersect(f,g)
   hinode=max_nodes-1;
   @<Construct the template in upper memory@>;
   @<Construct the reduced OBDD in lower memory, using the template@>;
-  if (verbose) printf(" ... unreduced size %d, reduced %d\n",
+  if (vbose) printf(" ... unreduced size %d, reduced %d\n",
                                  max_nodes-hinode, curnode);
   return curnode-1;
 }

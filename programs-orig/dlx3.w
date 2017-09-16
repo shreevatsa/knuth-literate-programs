@@ -2,6 +2,7 @@
 @s node int
 @s mod and
 \let\Xmod=\bmod % this is CWEB magic for using "mod" instead of "%"
+\def\dts{\mathinner{\ldotp\ldotp}}
 
 \datethis
 @*Intro. This program is part of a series of ``exact cover solvers'' that
@@ -12,45 +13,66 @@ in order to learn how different approaches work in practice.
 
 The basic input format for all of these solvers is described at the beginning
 of program {\mc DLX1}, and you should read that description now if you are
-unfamiliar with it.
+unfamiliar with it. Please read also the opening paragraphs of {\mc DLX2},
+which adds ``color controls'' to nonprimary columns.
 
-{\mc DLX2} extends {\mc DLX1} by allowing ``color controls,'' which give
-considerably more flexibility to nonprimary columns: Any row that specifies
-a ``color'' in a nonprimary column will rule out all rows that don't
-specify the same color in that column. But any number of rows whose
-nonprimary columns agree in color are allowed. (The previous
-situation was the special case in which every row corresponds to a
-distinct color.)
+{\mc DLX3} extends {\mc DLX2} by allowing the column totals to be
+more flexible: Instead of insisting that each primary column occurs
+exactly once in the chosen rows, we prescribe an {\it interval\/} of
+permissible values $[a_j\dts b_j]$ for each primary column~$j$, and we find all
+solutions in which the sum $s_1s_2\ldots s_n$ of chosen rows satisfies
+$a_j\le s_j\le b_j$ for such~$j$. 
+(In a sense this represents a generalization from sets to
+{\it multisets\/}, although the rows themselves are still sets.)
 
-The input format is extended so that, if \.{xx} is the name of a nonprimary
-column, rows can contain entries of the form \.{xx:a}, where \.a is
-a single character (denoting a color).
+These bounds appear in the first ``column-naming'' line of input:
+You can write `$a_j$\.:$b_j$\.{\char"7C}' just before the column name.
+But $a_j$ and the colon can be omitted if $a_j=b_j$;
+both can be omitted if $a_j=b_j=1$.
 
 Here, for example, is a simple test case:
 $$
 \vcenter{\halign{\tt#\cr
 \char"7C\ A simple example of color controls\cr
-A B C \char"7C\ X Y\cr
+A B 2:3{\char"7C}C \char"7C\ X Y\cr
 A B X:0 Y:0\cr
 A C X:1 Y:1\cr
-X:0 Y:1\cr
+C X:0\cr
 B X:1\cr
 C Y:1\cr}}
 $$
-The row \.{X:0 Y:1} will be deleted, because it has no primary columns.
-The unique solution consists of rows \.{A C X:1 Y:1} and \.{B X:1}.
+The unique solution consists of rows \.{A C X:1 Y:1}, \.{B X:1}, \.{C Y:1}.
 
-If the input contains no color specifications, the behavior of {\mc DLX2}
-will almost exactly match that of~{\mc DLX1}, except for having a
+There's a subtle distinction between a primary column
+with bounds $[0\dts1]$ and a secondary column with no bounds, because
+every row is required to include at least one primary column.
+
+If the input contains no column-bound specifications, the behavior of {\mc DLX3}
+will almost exactly match that of~{\mc DLX2}, except for having a
 slightly longer program and taking a bit longer to input the rows.
 
-[{\it Historical note:\/} My first program for color-controlled exact
-covering was {\mc GDANCE}, written in November 2000 when I was thinking
-about two-dimensional de Bruijn sequences. Later I came gradually to
-realize that the idea has many, many other applications. Indeed, in 2016
-I~noticed that the general constraint satisfaction problem can actually
-be regarded as a special case, when the allowable joint constraints are
-explicitly~listed.]
+[{\it Historical note:\/} My first program for multiset exact
+covering was {\mc MDANCE}, written in August 2004 when I was thinking
+about packing various sizes of bricks into boxes. That program allowed
+users to specify arbitrary column sums, and it had the same structure
+as this one, but it was less general than
+{\mc DLX3} because it didn't allow lower bounds to be less than upper bounds.
+Later I came gradually to
+realize that the ideas have many, many other applications.]
+
+@ The introduction of lower bounds adds a new twist. Suppose, for example,
+all lower bounds $a_j$ are zero, while all upper bounds $b_j$ exceed or
+equal the number of rows using that column. Then the column doesn't
+impose any constraint whatsoever, and all $2^m$ subsets of the $m$~rows
+are solutions to the problem.
+
+We can't expect a user to be so foolish as to present us with such a case.
+But we might well end up with a subproblem of that form; and then
+there seems to be no point in listing all of the solutions.
+
+Thus we distinguish ``core solutions'' from ``total solutions,'' where
+the number of total solutions is the sum of $2^k$ over all core solutions
+that have $k$ free rows.
 
 @ After this program finds all solutions, it normally prints their total
 number on |stderr|, together with statistics about how many
@@ -73,8 +95,8 @@ Here is the overall structure:
 @d mod % /* used for percent signs denoting remainder in \CEE/ */
 
 @d max_level 500 /* at most this many rows in a solution */
-@d max_cols 100000 /* at most this many columns */
-@d max_nodes 10000000 /* at most this many nonzero elements in the matrix */
+@d max_cols 1000 /* at most this many columns */
+@d max_nodes 100000000 /* at most this many nonzero elements in the matrix */
 @d bufsize (9*max_cols+3) /* a buffer big enough to hold all column names */
 
 @c
@@ -89,7 +111,8 @@ typedef unsigned long long ullng; /* ditto */
 @<Global variables@>;
 @<Subroutines@>;
 main (int argc, char *argv[]) {
-  register int cc,i,j,k,p,pp,q,r,t,cur_node,best_col;
+  register int cc,i,j,k,p,pp,q,r,s,t,
+         cur_node,best_col,stage,score,best_s,best_l;
   @<Process the command line@>;
   @<Input the column names@>;
   @<Input the rows@>;
@@ -99,19 +122,10 @@ main (int argc, char *argv[]) {
     @<Report the column totals@>;
   imems=mems, mems=0;
   @<Solve the problem@>;
-done:@+if (sanity_checking) sanity();
-  if (vbose&show_tots)
+done:@+if (vbose&show_tots)
     @<Report the column totals@>;
   if (vbose&show_profile) @<Print the profile@>;
-  if (vbose&show_basics) {
-    fprintf(stderr,"Altogether "O"llu solution"O"s, "O"llu+"O"llu-"O"llu mems,",
-                                count,count==1?"":"s",imems,mems,lmems);
-    bytes=last_col*sizeof(column)+last_node*sizeof(node)+maxl*sizeof(int);
-    fprintf(stderr," "O"llu updates, "O"llu cleansings,",
-                                updates,cleansings);
-    fprintf(stderr," "O"llu bytes, "O"llu nodes.\n",
-                                bytes,nodes);
-  }
+  if (vbose&show_basics) @<Give statistics about the run@>;
 }
 
 @ You can control the amount of output, as well as certain properties
@@ -167,9 +181,11 @@ int show_choices_gap=1000000; /* below level |maxl-show_choices_gap|,
 int show_levels_max=1000000; /* above this level, state reports stop */
 int maxl=0; /* maximum level actually reached */
 char buf[bufsize]; /* input buffer */
-ullng count; /* solutions found so far */
+ullng count; /* core solutions found so far */
+double totcount; /* total solutions found so far */
+int noncore; /* does |totcount| exceed |count|? */
 ullng rows; /* rows seen so far */
-ullng imems,mems,lmems; /* mem counts */
+ullng imems,mems; /* mem counts */
 ullng updates; /* update counts */
 ullng cleansings; /* cleansing counts */
 ullng bytes; /* memory used by main data structures */
@@ -202,6 +218,21 @@ if (k) {
   exit(-1);
 }
 if (randomizing) gb_init_rand(random_seed);
+
+@ The program doesn't compute or report |totcount| unless necessary.
+
+@<Give statistics about the run@>=
+{
+  fprintf(stderr,"Altogether "O"llu solution"O"s",
+                              count,count==1?"":"s");
+  if (noncore) fprintf(stderr," ("O".12g total)",totcount);
+  fprintf(stderr,", "O"llu+"O"llu mems,",imems,mems);
+  fprintf(stderr," "O"llu updates, "O"llu cleansings,",
+                              updates,cleansings);
+  bytes=last_col*sizeof(column)+last_node*sizeof(node)+maxl*sizeof(int);
+  fprintf(stderr," "O"llu bytes, "O"llu nodes.\n",
+                              bytes,nodes);
+}
 
 @*Data structures.
 Each column of the input matrix is represented by a \&{column} struct,
@@ -266,10 +297,20 @@ typedef struct node_struct {
   int color; /* the color specified by this node, if any */
 } node;
 
-@ Each \&{column} struct contains three fields:
+@ Each \&{column} struct contains five fields:
 The |name| is the user-specified identifier;
 |next| and |prev| point to adjacent columns, when this
-column is part of a doubly linked list.
+column is part of a doubly linked list;
+|bound| is the maximum number of rows from this column that can
+be added to the current partial solution;
+|slack| is the difference between this column's given upper and lower bounds.
+As computation proceeds, |bound| might change but |slack| will not.
+
+A column can be removed from the active list of ``unfinished columns'' when its
+|bound| field is reduced to zero. A removed column is said to be ``covered'';
+all of its remaining rows are then blocked from further participation.
+Furthermore, we will remove a column when we find that it has no unblocked
+rows; that situation can arise if |bound<=slack|.
 
 As backtracking proceeds, nodes
 will be deleted from column lists when their row has been blocked by
@@ -277,12 +318,16 @@ other rows in the partial solution.
 But when backtracking is complete, the data structures will be
 restored to their original state.
 
-We count one mem for a simultaneous access to the |prev| and |next| fields.
+We count one mem for a simultaneous access to the |prev| and |next| fields,
+or for a simultaneous access to |bound| and |slack|.
+
+The |bound| and |slack| fields of secondary columns are not used.
 
 @<Type...@>=
 typedef struct col_struct {
   char name[8]; /* symbolic identification of the column, for printing */
   int prev,next; /* neighbors of this column */
+  int bound,slack; /* residual capacity of this column */
 } column;
 
 @ @<Glob...@>=
@@ -300,33 +345,38 @@ that its |name| is empty.
 
 @ A row is identified not by name but by the names of the columns it contains.
 Here is a routine that prints a row, given a pointer to any of its
-nodes. It also prints the position of the row in its column.
+nodes. It also prints the position of the row in its column, relative
+to a given head location.
 
 @<Sub...@>=
-void print_row(int p,FILE *stream) {
+void print_row(int p,FILE *stream,int head,int score) {
   register int k,q;
-  if (p<last_col || p>=last_node || nd[p].col<=0) {
-    fprintf(stderr,"Illegal row "O"d!\n",p);
-    return;
+  if (p==nd[head].col) fprintf(stream," null "O".8s",cl[p].name);
+  else {
+    if (p<last_col || p>=last_node || nd[p].col<=0) {
+      fprintf(stderr,"Illegal row "O"d!\n",p);
+      return;
+    }
+    for (q=p;;) {
+      fprintf(stream," "O".8s",cl[nd[q].col].name);
+      if (nd[q].color)
+        fprintf(stream,":"O"c",nd[q].color>0? nd[q].color: nd[nd[q].col].color);
+      q++;
+      if (nd[q].col<=0) q=nd[q].up;
+          /* |-nd[q].col| is actually the row number */
+      if (q==p) break;
+    }
   }
-  for (q=p;;) {
-    fprintf(stream," "O".8s",cl[nd[q].col].name);
-    if (nd[q].color)
-      fprintf(stream,":"O"c",nd[q].color>0? nd[q].color: nd[nd[q].col].color);
-    q++;
-    if (nd[q].col<=0) q=nd[q].up; /* |-nd[q].col| is actually the row number */
-    if (q==p) break;
-  }
-  for (q=nd[nd[p].col].down,k=1;q!=p;k++) {
+  for (q=head,k=1;q!=p;k++) {
     if (q==nd[p].col) {
       fprintf(stream," (?)\n");@+return; /* row not in its column! */
     }@+else q=nd[q].down;
   }
-  fprintf(stream," ("O"d of "O"d)\n",k,nd[nd[p].col].len);
+  fprintf(stream," ("O"d of "O"d)\n",k,score);
 }
 @#
 void prow(int p) {
-  print_row(p,stderr);
+  print_row(p,stderr,nd[nd[p].col].down,nd[nd[p].col].len);
 }
 
 @ When I'm debugging, I might want to look at one of the current column lists.
@@ -338,10 +388,13 @@ void print_col(int c) {
     fprintf(stderr,"Illegal column "O"d!\n",c);
     return;
   }
-  if (c<second)
-    fprintf(stderr,"Column "O".8s, length "O"d, neighbors "O".8s and "O".8s:\n",
-        cl[c].name,nd[c].len,cl[cl[c].prev].name,cl[cl[c].next].name);
-  else fprintf(stderr,"Column "O".8s, length "O"d:\n",cl[c].name,nd[c].len);
+  fprintf(stderr,"Column "O".8s",cl[c].name);
+  if (c<second) {
+    if (cl[c].slack || cl[c].bound!=1)
+       fprintf(stderr," ("O"d,"O"d)",cl[c].bound-cl[c].slack,cl[c].bound);
+    fprintf(stderr,", length "O"d, neighbors "O".8s and "O".8s:\n",
+        nd[c].len,cl[cl[c].prev].name,cl[cl[c].next].name);
+  }@+else fprintf(stderr,", length "O"d:\n",nd[c].len);
   for (p=nd[c].down;p>=last_col;p=nd[p].down) prow(p);
 }
 
@@ -390,13 +443,7 @@ while (1) {
 }
 if (!last_col) panic("No columns");
 for (;o,buf[p];) {
-  for (j=0;j<8 && (o,!isspace(buf[p+j]));j++) {
-    if (buf[p+j]==':' || buf[p+j]=='|')
-              panic("Illegal character in column name");
-    o,cl[last_col].name[j]=buf[p+j];
-  }
-  if (j==8 && !isspace(buf[p+j])) panic("Column name too long");
-  @<Check for duplicate column name@>;
+  @<Scan a column name, possibly prefixed by bounds@>;
   @<Initialize |last_col| to a new column with an empty list@>;
   for (p+=j+1;o,isspace(buf[p]);p++) ;
   if (buf[p]=='|') {
@@ -410,6 +457,42 @@ o,cl[root].prev=second-1; /* |cl[second-1].next=root| since |root=0| */
 last_node=last_col; /* reserve all the header nodes and the first spacer */
 o,nd[last_node].col=0;
 
+@ @<Scan a column name, possibly prefixed by bounds@>=
+if (second==max_cols) stage=0;@+else stage=2;
+start_name:@+for (j=0;j<8 && (o,!isspace(buf[p+j]));j++) {
+    if (buf[p+j]==':') {
+      if (stage) panic("Illegal `:' in column name");
+      @<Convert the prefix to an integer, |q|@>;
+      r=q,stage=1;
+      goto start_name;
+    }@+else if (buf[p+j]=='|') {
+      if (stage>1) panic("Illegal `|' in column name");
+      @<Convert the prefix...@>;
+      if (q==0) panic("Upper bound is zero");
+      if (stage==0) r=q;
+      else if (r>q) panic("Lower bound exceeds upper bound");
+      stage=2;
+      goto start_name;
+    }
+    o,cl[last_col].name[j]=buf[p+j];
+  }
+  switch (stage) {
+case 1: panic("Lower bound without upper bound");
+case 0: q=r=1;
+case 2: break;
+  }
+  if (j==0) panic("Column name empty");
+  if (j==8 && !isspace(buf[p+j])) panic("Column name too long");
+  @<Check for duplicate column name@>;
+
+@ @<Convert the prefix to an integer, |q|@>=
+for (q=0,pp=p;pp<p+j;pp++) {
+  if (buf[pp]<'0' || buf[pp]>'9') panic("Illegal digit in bound spec");
+  q=10*q+buf[pp]-'0';
+}
+p=pp+1;
+while (j) cl[last_col].name[--j]=0;
+
 @ @<Check for duplicate column name@>=
 for (k=1;o,strncmp(cl[k].name,cl[last_col].name,8);k++) ;
 if (k<last_col) panic("Duplicate column name");
@@ -417,10 +500,11 @@ if (k<last_col) panic("Duplicate column name");
 @ @<Initialize |last_col| to a new column with an empty list@>=
 if (last_col>max_cols) panic("Too many columns");
 if (second==max_cols)
- oo,cl[last_col-1].next=last_col,cl[last_col].prev=last_col-1;
+ oo,cl[last_col-1].next=last_col,cl[last_col].prev=last_col-1,
+ o,cl[last_col].bound=q,cl[last_col].slack=q-r; 
 else o,cl[last_col].next=cl[last_col].prev=last_col;
- /* |nd[last_col].len=0| */
 o,nd[last_col].up=nd[last_col].down=last_col;
+ /* |nd[last_col].len=0| */
 last_col++;
 
 @ I'm putting the row number into the spacer that follows it, as a
@@ -529,8 +613,8 @@ provide some reassurance that the algorithm isn't badly screwed up.
 
 @*The dancing.
 Our strategy for generating all exact covers will be to repeatedly
-choose always the column that appears to be hardest to cover, namely the
-column with shortest list, from all columns that still need to be covered.
+choose an active primary column and to branch on the ways to reduce
+the possibilities for covering that column.
 And we explore all possibilities via depth-first search.
 
 The neat part of this algorithm is the way the lists are maintained.
@@ -542,7 +626,14 @@ their former neighbors, because we do no garbage collection.
 The basic operation is ``covering a column.'' This means removing it
 from the list of columns needing to be covered, and ``blocking'' its
 rows: removing nodes from other lists whenever they belong to a row of
-a node in this column's list.
+a node in this column's list. We cover the chosen column when it has
+|bound=1| and |slack=0|.
+
+There's also an auxiliary operation called ``tweaking a column,'' used when
+covering is inappropriate. In that case we simply block the topmost row
+in the column's list; we also remove that row temporarily from the list.
+(The tweaking operation, whose beauties will be described below,
+is a new dance step! It was introduced in the {\mc MDANCE} program of 2004.)
 
 @<Solve the problem@>=
 level=0;
@@ -550,35 +641,41 @@ forward: nodes++;
 if (vbose&show_profile) profile[level]++;
 if (sanity_checking) sanity();
 @<Do special things if enough |mems| have accumulated@>;
-@<Set |best_col| to the best column for branching@>;
-cover(best_col);
+@<Set |best_col| to the best column for branching, and let |score| be
+  its branching degree@>;
+if (score<=0) goto backdown; /* not enough rows left in this column */
+if (score==infty) @<Record a solution and |goto backdown|@>;
+scor[level]=score,first_tweak[level]=0;
+  /* for diagnostics only, so no mems charged */
 oo,cur_node=choice[level]=nd[best_col].down;
-advance:@+if (cur_node==best_col) goto backup;
-if ((vbose&show_choices) && level<show_choices_max) {
-  fprintf(stderr,"L"O"d:",level);
-  print_row(cur_node,stderr);
-}
-@<Cover all other columns of |cur_node|@>;
-if (o,cl[root].next==root) @<Record solution and |goto recover|@>;
-if (++level>maxl) {
-  if (level>=max_level) {
-    fprintf(stderr,"Too many levels!\n");
-    exit(-4);
+o,cl[best_col].bound--; /* one mem will be charged later */
+if (cl[best_col].bound==0 && cl[best_col].slack==0) cover(best_col,1);
+else {
+  o,first_tweak[level]=cur_node;
+  if (cl[best_col].bound==0) {
+    o,p=cl[best_col].prev,q=cl[best_col].next;
+    oo,cl[p].next=q,cl[q].prev=p; /* deactivate |best_col| */
   }
-  maxl=level;
 }
-goto forward;
-backup: uncover(best_col);
-if (level==0) goto done;
+advance:@+@<If |cur_node| is off limits, |goto backup|; also tweak if needed@>;
+if ((vbose&show_choices) && level<show_choices_max) @<Report the current move@>;
+if (cur_node>last_col)
+  @<Cover or partially cover all other columns of |cur_node|'s row@>;
+@<Increase |level| and |goto forward|@>;
+backup:@+@<Restore the original state of |best_col|@>;
+backdown:@+if (level==0) goto done;
 level--;
-oo,cur_node=choice[level],best_col=nd[cur_node].col;
-recover: @<Uncover all other columns of |cur_node|@>;
+oo,cur_node=choice[level],best_col=nd[cur_node].col,score=scor[level];
+if (cur_node<last_col) @<Reactivate |best_col| and |goto backup|@>;
+ @<Uncover or partially uncover all other columns of |cur_node|'s row@>;
 oo,cur_node=choice[level]=nd[cur_node].down;@+goto advance;
 
 @ @<Glob...@>=
 int level; /* number of choices in current partial solution */
 int choice[max_level]; /* the node chosen on each level */
 ullng profile[max_level]; /* number of search tree nodes on each level */
+int first_tweak[max_level]; /* original top of column before tweaking */
+int scor[max_level]; /* for reports of progress */
 
 @ @<Do special things if enough |mems| have accumulated@>=
 if (delta && (mems>=thresh)) {
@@ -590,6 +687,63 @@ if (mems>=timeout) {
   fprintf(stderr,"TIMEOUT!\n");@+goto done;
 }
 
+@ @<Increase |level| and |goto forward|@>=
+if (++level>maxl) {
+  if (level>=max_level) {
+    fprintf(stderr,"Too many levels!\n");
+    exit(-4);
+  }
+  maxl=level;
+}
+goto forward;
+
+@ @<Report the current move@>=
+{
+  fprintf(stderr,"L"O"d:", level);
+  if (cl[best_col].bound==0 && cl[best_col].slack==0)
+    print_row(cur_node,stderr,nd[best_col].down,score);
+  else print_row(cur_node,stderr,first_tweak[level],score);
+}
+
+@ @<Reactivate |best_col| and |goto backup|@>=
+{
+  best_col=cur_node;
+  o,p=cl[best_col].prev,q=cl[best_col].next;
+  oo,cl[p].next=cl[q].prev=best_col; /* reactivate |best_col| */
+  goto backup;
+}
+
+@ In the normal cases treated by {\mc DLX1} and {\mc DLX2}, we want to
+back up after trying all rows in the column; this happens when |cur_node|
+has advanced to |best_col|, the column's header node.
+
+In the other cases, we've been tweaking this column. Then
+we back up when fewer than |bound+1-slack| rows remain in the column's list.
+(The current value of |bound| is one less than its original value
+on entry to this level.)
+
+Notice that we might reach a situation where the list is empty
+(that is, |cur_node=best_col|), yet we don't want to back up.
+This can happen when |bound-slack<0|. In such cases the move at
+this level is null: No row is added to the solution, and the
+column becomes inactive.
+
+@<If |cur_node| is off limits, |goto backup|...@>=
+if ((o,cl[best_col].bound==0) && (cl[best_col].slack==0)) {
+  if (cur_node==best_col) goto backup;
+}@+else if (oo,nd[best_col].len<=cl[best_col].bound-cl[best_col].slack)
+  goto backup;
+else if (cur_node!=best_col) tweak(cur_node);
+else if (cl[best_col].bound!=0) {
+  o,p=cl[best_col].prev,q=cl[best_col].next;
+  oo,cl[p].next=q,cl[q].prev=p; /* deactivate |best_col| */
+}
+
+@ @<Restore the original state of |best_col|@>=
+if ((o,cl[best_col].bound==0) && (cl[best_col].slack==0)) uncover(best_col,1);
+else o,untweak(best_col,first_tweak[level]);
+oo,cl[best_col].bound++;
+
 @ When a row is blocked, it leaves all lists except the list of the
 column that is being covered. Thus a node is never removed from a list
 twice.
@@ -599,15 +753,13 @@ purified. (Such nodes have |color<0|. Note that |color| and |col| are
 stored in the same octabyte; hence we pay only one mem to look at
 them both.)
 
-We could save even more time by not updating the |len| fields of secondary
-columns. Instead of suppressing that calculation, this program calculates
-how much would be saved.
-
 @<Sub...@>=
-void cover(int c) {
+void cover(int c,int deact) {
   register int cc,l,r,rr,nn,uu,dd,t;
-  o,l=cl[c].prev,r=cl[c].next;
-  oo,cl[l].next=r,cl[r].prev=l;
+  if (deact) {
+    o,l=cl[c].prev,r=cl[c].next;
+    oo,cl[l].next=r,cl[r].prev=l;
+  }
   updates++;
   for (o,rr=nd[c].down;rr>=last_col;o,rr=nd[rr].down)
     for (nn=rr+1;nn!=rr;) {
@@ -622,7 +774,6 @@ void cover(int c) {
         updates++;
         o,t=nd[cc].len-1;
         o,nd[cc].len=t;
-        if (cc>=second) lmems+=2;
       }
       nn++;
     }
@@ -638,7 +789,7 @@ execute an exquisitely choreo\-graphed dance that returns them almost
 magically to their former state.
 
 @<Subroutines@>=
-void uncover(int c) {
+void uncover(int c,int deact) {
   register int cc,l,r,rr,nn,uu,dd,t;
   for (o,rr=nd[c].down;rr>=last_col;o,rr=nd[rr].down)
     for (nn=rr+1;nn!=rr;) {
@@ -652,21 +803,27 @@ void uncover(int c) {
         oo,nd[uu].down=nd[dd].up=nn;
         o,t=nd[cc].len+1;
         o,nd[cc].len=t;
-        if (cc>=second) lmems+=2;
       }
       nn++;
     }
-  o,l=cl[c].prev,r=cl[c].next;
-  oo,cl[l].next=cl[r].prev=c;
+  if (deact) {
+    o,l=cl[c].prev,r=cl[c].next;
+    oo,cl[l].next=cl[r].prev=c;
+  }
 }
 
-@ @<Cover all other columns of |cur_node|@>=
+@ @<Cover or partially cover all other columns...@>=
 for (pp=cur_node+1;pp!=cur_node;) {
   o,cc=nd[pp].col;
   if (cc<=0) o,pp=nd[pp].up;
   else {
-    if (!nd[pp].color) cover(cc);
-    else if (nd[pp].color>0) purify(pp);
+    if (cc<second) {
+      oo,cl[cc].bound--;
+      if (cl[cc].bound==0) cover(cc,1);
+    }@+else {
+      if (!nd[pp].color) cover(cc,1);
+      else if (nd[pp].color>0) purify(pp);
+    }
     pp++;
   }
 }
@@ -674,13 +831,18 @@ for (pp=cur_node+1;pp!=cur_node;) {
 @ We must go leftward as we uncover the columns, because we went
 rightward when covering them.
 
-@<Uncover all other columns of |cur_node|@>=
+@<Uncover or partially uncover all other columns...@>=
 for (pp=cur_node-1;pp!=cur_node;) {
   o,cc=nd[pp].col;
   if (cc<=0) o,pp=nd[pp].down;
   else {
-    if (!nd[pp].color) uncover(cc);
-    else if (nd[pp].color>0) unpurify(pp);
+    if (cc<second) {
+      if (o,cl[cc].bound==0) uncover(cc,1);
+      o,cl[cc].bound++;
+    }@+else {
+      if (!nd[pp].color) uncover(cc,1);
+      else if (nd[pp].color>0) unpurify(pp);
+    }
     pp--;
   }
 }
@@ -709,7 +871,6 @@ void purify(int p) {
           updates++;
           o,t=nd[cc].len-1;
           o,nd[cc].len=t;
-          if (cc>=second) lmems+=2;
         }
         nn++;
       }
@@ -737,7 +898,6 @@ void unpurify(int p) {
           oo,nd[uu].down=nd[dd].up=nn;
           o,t=nd[cc].len+1;
           o,nd[cc].len=t;
-          if (cc>=second) lmems+=2;
         }
         nn--;
       }
@@ -745,57 +905,208 @@ void unpurify(int p) {
   }
 }
 
+@ Now let's look at tweaking, which is deceptively simple. When this
+subroutine is called, node |n| is the topmost in its column.
+Tweaking is important because the column remains active and on a par
+with all other active columns.
+
+@<Sub...@>=
+void tweak(int n) {
+  register int cc,nn,uu,dd,t;
+  for (nn=n+1;;) {
+    if (o,nd[nn].color>=0) {
+      o,uu=nd[nn].up,dd=nd[nn].down;
+      cc=nd[nn].col;
+      if (cc<=0) {
+        nn=uu;
+        continue;
+      }
+      oo,nd[uu].down=dd,nd[dd].up=uu;
+      updates++;
+      o,t=nd[cc].len-1;
+      o,nd[cc].len=t;
+    }
+    if (nn==n) break;
+    nn++;
+  }
+}
+
+@ The punch line occurs when we consider untweaking. Consider, for
+example, a column $c$ whose rows from top to bottom are $x$, $y$,~$z$.
+Then the |up| fields for $(c,x,y,z)$ are initially $(z,c,x,y)$, and the
+|down| fields are $(x,y,z,c)$. After we've tweaked $x$, they've become
+$(z,c,c,y)$ and $(y,y,z,c)$; after we've subsequently tweaked $y$, they've
+become $(z,c,c,c)$ and $(z,y,z,c)$. Notice that $x$ still points to~$y$,
+and $y$ still points to~$z$. So we can restore the original state
+if we restore the |up| pointers in $y$ and $z$, as well as the |down|
+pointer in~$c$. The value of~$x$ has been saved in the |first_tweak|
+array for the current level; and that's sufficient to solve the puzzle.
+
+We also have to resuscitate the rows by reinstating them in their columns.
+That can be done top-down, as in |uncover|; in essence, a sequence of
+tweaks is like a partial covering. 
+
+@<Sub...@>=
+void untweak(int c,int x) {
+  register int z,cc,nn,uu,dd,t,k,rr,qq;
+  oo,z=nd[c].down,nd[c].down=x;
+  for (rr=x,k=0,qq=c; rr!=z; o,qq=rr,rr=nd[rr].down) {
+    o,nd[rr].up=qq,k++;
+    for (nn=rr+1;nn!=rr;) {
+      if (o,nd[nn].color>=0) {
+        o,uu=nd[nn].up,dd=nd[nn].down;
+        cc=nd[nn].col;
+        if (cc<=0) {
+          nn=uu;
+          continue;
+        }
+        oo,nd[uu].down=nd[dd].up=nn;
+        o,t=nd[cc].len+1;
+        o,nd[cc].len=t;
+      }
+      nn++;
+    }
+  }
+  o,nd[rr].up=qq; /* |rr=z| */
+  oo,nd[c].len+=k;
+}
+
 @ The ``best column'' is considered to be a column that minimizes the
-number of remaining choices. If there are several candidates, we
+branching degree. If there are several candidates, we
 choose the leftmost --- unless we're randomizing, in which case we
 select one of them at random.
 
-@<Set |best_col| to  the best column for branching@>=
-t=max_nodes;
+Consider a column that has four rows $\{w,x,y,z\}$, and suppose its |bound|
+is~3. If the |slack| is zero, we've got to choose either |w| or |x|,
+so the branching degree is~2. But if |slack=1|, we have three choices,
+|w| or |x| or |y|; if |slack=2|, there are four choices; and if |slack>=3|,
+there are five, including the ``null'' choice.
+
+In general, the branching degree turns out to be $l+s-b+1$, where
+$l$~is the length of the column, $b$ is the current bound, and
+$s$ is the minimum of $b$ and the slack. This formula gives degree
+$\le0$ if and only if |l| is too small to satisfy the column
+constraint; in such cases we will backtrack immediately.
+(It would have been possible to detect this condition early,
+before updating all the data structures and increasing |level|. But that would
+make the downdating process much more difficult and error-prone. Therefore
+I wait to discover such anomalies until column-choosing time.)
+
+Let's assign the score |l+s-b+1| to each column. If two columns have the
+same score, I prefer the one with smaller |s|, because slack columns
+are less constrained. If two columns with the same |s| have the same
+score, I (counterintuitively)
+prefer the one with larger~|b| (hence larger~|l|), because
+that tends to reduce the size of the final search tree. 
+
+Consider, for instance, the following example taken from {\mc MDANCE}:
+If we want to choose 2 rows from 4 in one column, and 3 rows from 5 in another,
+where all slacks are zero, and if the columns are otherwise independent,
+it turns out that the number of nodes per level if we choose the smaller
+column first is $(1,3,6,6\cdot3,6\cdot6,6\cdot10)$. But if we choose
+the larger column first it is $(1,3,6,10,10\cdot3,10\cdot6)$, which is
+smaller in the middle levels.
+
+Another special case also deserves mention: A column is completely
+unconstrained when |s=b>=l|. Such columns are {\it never\/} selected
+as ``best''; if all columns have this property, we've found a core
+solution, as mentioned above.
+
+@d infty max_nodes /* the ``score'' of a completely unconstrained column */
+
+@<Set |best_col| to  the best column for branching...@>=
+score=infty;
 if ((vbose&show_details) &&
     level<show_choices_max && level>=maxl-show_choices_gap)
   fprintf(stderr,"Level "O"d:",level);
 for (o,k=cl[root].next;k!=root;o,k=cl[k].next) {
+  o,s=cl[k].slack;@+if (s>cl[k].bound) s=cl[k].bound;
   if ((vbose&show_details) &&
-      level<show_choices_max && level>=maxl-show_choices_gap)
-    fprintf(stderr," "O".8s("O"d)",cl[k].name,nd[k].len);
-  if (o,nd[k].len<=t) {
-    if (nd[k].len<t) best_col=k,t=nd[k].len,p=1;
-    else {
-      p++; /* this many columns achieve the min */
-      if (randomizing && (mems+=4,!gb_unif_rand(p))) best_col=k;
+      level<show_choices_max && level>=maxl-show_choices_gap) {
+    if (cl[k].bound!=1 || s!=0) fprintf(stderr," "O".8s("O"d:"O"d,"O"d)",
+                      cl[k].name,cl[k].bound-s,cl[k].bound,
+                                 nd[k].len+s-cl[k].bound+1);
+    else fprintf(stderr," "O".8s("O"d)",cl[k].name,nd[k].len);
+  }
+  if ((o,nd[k].len>cl[k].bound) || (s<cl[k].bound)) {
+    t=nd[k].len+s-cl[k].bound+1;
+    if (t<=score) {
+      if (t<score || s<best_s || (s==best_s && nd[k].len>best_l))
+        score=t,best_col=k,best_s=s,best_l=nd[k].len,p=1;
+      else if (s==best_s && nd[k].len==best_l) {
+        p++; /* this many columns achieve the min */
+        if (randomizing && (mems+=4,!gb_unif_rand(p))) best_col=k;
+      }
     }
   }
 }
 if ((vbose&show_details) &&
-    level<show_choices_max && level>=maxl-show_choices_gap)
-  fprintf(stderr," branching on "O".8s("O"d)\n",cl[best_col].name,t);
+    level<show_choices_max && level>=maxl-show_choices_gap) {
+  if (score<infty)
+    fprintf(stderr," branching on "O".8s("O"d)\n",cl[best_col].name,score);
+  else fprintf(stderr," core solution\n");
+}
 
-@ @<Record solution and |goto recover|@>=
+@ @<Record a solution and |goto backdown|@>=
 {
   count++;
+  @<Set |p| to the number of rows remaining@>;
+  if (p && !noncore) noncore=1,totcount=count-1;
+  if (noncore) {
+    register double f=1.0;
+    while (p>60) f*=1LL<<60,p-=60;
+    f*=1LL<<p;
+    totcount+=f;
+  }
   if (spacing && (count mod spacing==0)) {
     printf(""O"lld:\n",count);
-    for (k=0;k<=level;k++) print_row(choice[k],stdout);
+    for (k=0;k<level;k++) {
+      pp=choice[k];
+      cc=pp<last_col? pp: nd[pp].col;
+      if (!first_tweak[k]) print_row(pp,stdout,nd[cc].down,scor[k]);
+      else print_row(pp,stdout,first_tweak[k],scor[k]);
+    }
+    if (p) @<Print the free rows@>;
     fflush(stdout);
   }
   if (count>=maxcount) goto done;
-  goto recover;
+  goto backdown;
+}
+
+@ @<Set |p| to the number of rows remaining@>=
+for (o,p=0,cc=cl[root].next;cc!=root;o,cc=cl[cc].next) {
+  o,p+=nd[cc].len;
+  cover(cc,0);
+}
+for (cc=cl[root].prev;cc!=root;o,cc=cl[cc].prev) uncover(cc,0);
+
+@ @<Print the free rows@>=
+{
+  printf(" and "O"d free row"O"s:\n",p,p==1?"":"s");
+  for (cc=cl[root].next;cc!=root;cc=cl[cc].next) {
+    for (r=nd[cc].down;r!=cc;r=nd[r].down)
+      print_row(r,stdout,nd[cc].down,nd[cc].len);
+    cover(cc,0);
+  }
+  for (cc=cl[root].prev;cc!=root; cc=cl[cc].prev) uncover(cc,0);
 }
 
 @ @<Sub...@>=
 void print_state(void) {
-  register int l;
+  register int l,p,c,q;
   fprintf(stderr,"Current state (level "O"d):\n",level);
   for (l=0;l<level;l++) {
-    print_row(choice[l],stderr);
+    p=choice[l];
+    c=(p<last_col? p: nd[p].col);
+    if (!first_tweak[l]) print_row(p,stderr,nd[c].down,scor[l]);
+    else print_row(p,stderr,first_tweak[l],scor[l]);
     if (l>=show_levels_max) {
       fprintf(stderr," ...\n");
       break;
     }
   }
-  fprintf(stderr," "O"lld solutions, "O"lld mems, and max level "O"d so far.\n",
-                              count,mems,maxl);
+  fprintf(stderr," "O"lld "O"ssols, "O"lld mems, and max level "O"d so far.\n",
+                              count,noncore?"core ":"",mems,maxl);
 }
       
 @ During a long run, it's helpful to have some way to measure progress.
@@ -824,8 +1135,11 @@ void print_progress(void) {
   register double f,fd;
   fprintf(stderr," after "O"lld mems: "O"lld sols,",mems,count);
   for (f=0.0,fd=1.0,l=0;l<level;l++) {
-    c=nd[choice[l]].col,d=nd[c].len;
-    for (k=1,p=nd[c].down;p!=choice[l];k++,p=nd[p].down) ;
+    p=choice[l],d=scor[l];
+    c=(p<last_col? p: nd[p].col);
+    if (!first_tweak[l]) p=nd[c].down;
+    else p=first_tweak[l];
+    for (k=1;p!=choice[l];k++,p=nd[p].down) ;
     fd*=d,f+=(k-1)/fd; /* choice |l| is |k| of |d| */
     fprintf(stderr," "O"c"O"c",
       k<10? '0'+k: k<36? 'a'+k-10: k<62? 'A'+k-36: '*',

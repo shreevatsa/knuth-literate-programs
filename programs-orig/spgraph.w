@@ -19,6 +19,7 @@ can compare that program with {\mc GRAYSPAN}.)
 @c
 #include "gb_graph.h"
 #include "gb_save.h"
+@h@#
 @<Global variables@>@;
 @<Subroutines@>@;
 main (int argc, char*argv[])

@@ -19,7 +19,7 @@ generality, but it could be easily modified.
 #include <math.h>
 #include <time.h>
 @h
-time_t clock;
+time_t clokk;
 double A[m+2][256]; /* pixel data (darknesses), bordered by zero */
 int board[10][10];
 Graph *gg;
@@ -384,8 +384,8 @@ said), we output the matrix as a PostScript file with resolution
 printf("%%!PS\n");
 printf("%%%%BoundingBox: 0 0 %d %d\n",n,m);
 printf("%%%%Creator: togpap\n");
-clock=time(0);
-printf("%%%%CreationDate: %s",ctime(&clock));
+clokk=time(0);
+printf("%%%%CreationDate: %s",ctime(&clokk));
 printf("%%%%Pages: 1\n");
 printf("%%%%EndProlog\n");
 printf("%%%%Page: 1 1\n");

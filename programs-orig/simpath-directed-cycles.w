@@ -13,12 +13,28 @@ I've tried to make this program simple, whenever I had to
 choose between simplicity and efficiency. But I haven't gone
 out of my way to be inefficient.
 
-(I hacked this code by extending {\mc SIMPATH}, the undirected version.)
+(Notes, 30 November 2015: My original version of this program,
+written in August 2008, was hacked from {\mc SIMPATH}. I~don't
+think I used it much at that time, if at all, because
+I made a change in February 2010 to make it compile without
+errors. Today I'm making two fundamental changes:
+(i) Each ``frontier'' in {\mc SIMPATH} was required
+to be an interval of vertices, according to the vertex numbering.
+Now the elements of each frontier are listed explicitly; so
+I needn't waste space by including elements that don't really
+participate in frontier activities. (ii)~I do {\it not\/}
+renumber the vertices.
+The main advantage of these two changes is
+that I can put a dummy vertex at the end, with arcs to and from
+every other vertex; then we get all the simple {\it paths\/} instead 
+of all the simple {\it cycles}, while the frontiers stay the same size
+except for the dummy element. And we can modify this program to get all
+the oriented {\it Hamiltonian\/} paths as well.)
 
 @d maxn 90 /* maximum number of vertices; at most 126 */
 @d maxm 2000 /* maximum number of arcs */
 @d logmemsize 27
-@d memsize (1<<logmemsize) /* warning: we need $|maxn|*|memsize|\le2^{32}$ */
+@d memsize (1<<logmemsize)
 @d loghtsize 24
 @d htsize (1<<loghtsize)
 
@@ -33,7 +49,11 @@ unsigned long long tail,boundary,head; /* queue pointers */
 unsigned int htable[htsize]; /* hash table */
 unsigned int htid; /* ``time stamp'' for hash entries */
 int htcount; /* number of entries in the hash table */
+int wrap=1; /* wraparound counter for hash table clearing */
 Vertex *vert[maxn+1];
+int f[maxn+2],ff[maxn+2]; /* elements of the current and the next frontier */
+int s,ss; /* the sizes of |f| and |ff| */
+int curfront[maxn+1],nextfront[maxn+1]; /* inverse frontier map */
 int arcto[maxm]; /* destination number of each arc */
 int firstarc[maxn+2]; /* where arcs from a vertex start in |arcto| */
 char mate[maxn+3]; /* encoded state */
@@ -41,12 +61,11 @@ int serial,newserial; /* state numbers */
 @<Subroutines@>@;
 @#
 main(int argc, char* argv[]) {
-  register int i,j,jj,jm,k,km,l,ll,m,n,t;
+  register int i,j,jj,jm,k,km,l,ll,m,n,p,t,hash,sign;
   register Graph *g;
   register Arc *a,*b;
   register Vertex *u,*v;
   @<Input the graph@>;
-  @<Renumber the vertices@>;
   @<Reformat the arcs@>;
   @<Do the algorithm@>;
 }
@@ -69,41 +88,10 @@ if (n>maxn) {
   exit(-3);
 }
 if (g->m>maxm) {  
-  fprintf(stderr,"Sorry, that graph has %d arcs; ",(g->m+1)/2);
+  fprintf(stderr,"Sorry, that graph has %ld arcs; ",(g->m+1)/2);
   fprintf(stderr,"I can't handle more than %d!\n",maxm);
   exit(-3);
 }
-
-@ We create the inverse-arc list for each vertex~|v| (the list of all
-vertices that point to~|v|). Then we use a breadth-first numbering scheme
-to attach a serial number |v->num|.
-
-@d num z.I
-@d invarcs y.A
-
-@<Renumber the vertices@>=
-for (v=g->vertices;v<g->vertices+n;v++) v->num=0,v->invarcs=NULL;
-for (v=g->vertices;v<g->vertices+n;v++) {
-  for (a=v->arcs;a;a=a->next) {
-    register Arc *b=gb_virgin_arc();
-    u=a->tip;
-    b->tip=v;
-    b->next=u->invarcs;
-    u->invarcs=b;
-  }
-}
-vert[1]=g->vertices, g->vertices->num=1;
-for (j=0,k=1;j<k;j++) {
-  v=vert[j+1];
-  for (a=v->arcs;a;a=a->next) {
-    u=a->tip;
-    if (u->num==0) u->num=++k,vert[k]=u;
-  }
-  for (a=v->invarcs;a;a=a->next) {
-    u=a->tip;
-    if (u->num==0) u->num=++k,vert[k]=u;
-  }
-}    
 
 @ The arcs will be either $j\to k$ or $j\gets k$ between vertex number~$j$
 and vertex number~$k$, when $j<k$ and those vertices are adjacent in
@@ -118,28 +106,48 @@ After this step, we forget the GraphBase data structures and just work
 with our homegrown integer-only representation.
 
 @<Reformat the arcs@>=
+@<Make the inverse-arc lists@>;
 for (m=0,k=1;k<=n;k++) {
   firstarc[k]=m;
   v=vert[k];
   printf("%d(%s)\n",k,v->name);
   for (a=v->arcs;a;a=a->next) {
     u=a->tip;
-    if (u->num>k) {
-      arcto[m++]=u->num;
-      if (a->len==1) printf(" -> %d(%s) #%d\n",u->num,u->name,m);
-      else printf(" -> %d(%s,%d) #%d\n",u->num,u->name,a->len,m);
+    if (u>v) {
+      arcto[m++]=u-g->vertices+1;
+      if (a->len==1) printf(" -> %ld(%s) #%d\n",u-g->vertices+1,u->name,m);
+      else printf(" -> %ld(%s,%ld) #%d\n",u-g->vertices+1,u->name,a->len,m);
     }
   }
   for (a=v->invarcs;a;a=a->next) {
     u=a->tip;
-    if (u->num>k) {
-      arcto[m++]=-u->num;
-      if (a->len==1) printf(" <- %d(%s) #%d\n",u->num,u->name,m);
-      else printf(" <- %d(%s,%d) #%d\n",u->num,u->name,a->len,m);
+    if (u>v) {
+      arcto[m++]=-(u-g->vertices+1);
+      if (a->len==1) printf(" <- %ld(%s) #%d\n",u-g->vertices+1,u->name,m);
+      else printf(" <- %ld(%s,%ld) #%d\n",u-g->vertices+1,u->name,a->len,m);
     }
   }
 }
 firstarc[k]=m;
+
+@ To aid in the desired sorting, we first create an inverse-arc
+list for each vertex~|v|, namely a list of vertices that point to~|v|.
+
+@d invarcs y.A
+
+@<Make the inverse-arc lists@>=
+for (v=g->vertices;v<g->vertices+n;v++) v->invarcs=NULL;
+for (v=g->vertices;v<g->vertices+n;v++) {
+  vert[v-g->vertices+1]=v;
+  for (a=v->arcs;a;a=a->next) {
+    register Arc *b=gb_virgin_arc();
+    u=a->tip;
+    b->tip=v;
+    b->len=a->len;
+    b->next=u->invarcs;
+    u->invarcs=b;
+  }
+}
 
 @*The algorithm.        
 Now comes the fun part. We systematically construct a binary decision
@@ -153,10 +161,12 @@ part of a simple path.
 
 Arc |i| runs from vertex |j| to vertex |k=arcto[i]|,
 or from |k=-arcto[i]| to~|j|.
-Let |l| be the maximum vertex number in arcs less than~|i|.
+
+Let $F_i=\{v_1,\ldots,v_s\}$ be the {\it frontier\/} at arc~|i|,
+namely the set of vertex numbers |>=j| that appear in arcs~|<i|.
 
 The state before we decide whether or not to include arc~|i| is
-represented by a table of values |mate[t]|, for $j\le t\le l$,
+represented by a table of values |mate[t]|, for $t\in F_i\cup\{j,k\}$,
 with the following significance:
 If |mate[t]=t|, the previous arcs haven't touched vertex |t|.
 If |mate[t]=u| and |u!=t|, the previous arcs have made a simple directed
@@ -169,54 +179,69 @@ touch it again.
 The |mate| information is all that we need to know about the behavior of
 previous arcs. And it's easily updated when we add the |i|th arc (or not).
 So each ``state'' is equivalent to a |mate| table, consisting of
-|l+1-j| numbers.
+|s| numbers, where $s$ is the size of~$F_i$.
 
 The states are stored in a queue, indexed by 64-bit numbers
 |tail|, |boundary|, and |head|, where |tail<=boundary<=head|.
 Between |tail| and |boundary| are the pre-arc-|i| states that haven't yet
 been processed; between |boundary| and |head| are the post-arc-|i| states
 that will be considered later. The states before |boundary|
-are sequences of |s=l+1-j| bytes each, and the states after |boundary|
-are sequences of |ss=ll+1-jj| bytes each, where |ll| and |jj| are the values of
-|l| and |j| for arc |i+1|.
+are sequences of |s| bytes each, and the states after |boundary|
+are sequences of |ss| bytes each, where |ss| is the size of~$F_{i+1}$.
+
+(Exception: If |s=0|, we use one byte to represent the state, although
+we ignore it when reading from the queue later. In this way
+we know how many states are present.)
 
 Bytes of the queue are stored in |mem|, which wraps around modulo |memsize|.
 We ensure that |head-tail| never exceeds |memsize|.
-
 
 @<Do the algorithm@>=
 for (t=1;t<=n;t++) mate[t]=t;
 @<Initialize the queue@>;
 for (i=0;i<m;i++) {
   printf("#%d:\n",i+1); /* announce that we're beginning a new arc */
-  fprintf(stderr,"Beginning arc %d (serial=%d,head-tail=%ld)\n",
+  fprintf(stderr,"Beginning arc %d (serial=%d,head-tail=%lld)\n",
                  i+1,serial,head-tail);
   fflush(stderr);
   @<Process arc |i|@>;
 }
+printf("%x:0,0\n",
+              serial);
 
-@ @<Initialize the queue@>=
-jj=ll=1;
-mem[0]=mate[1];
-tail=0,head=1;
-serial=2;
-
-@ Each state for a particular arc gets a distinguishing number.
+@ Each state for a particular arc gets a distinguishing number, where
+its ZDD instructions begin.
 Two states are special: 0 means the losing state, when a simple path
 is impossible; 1 means the winning state, when a simple path has been
 completed. The other states are 2 or more.
 
-The output format on |stdout| simply shows the identifying numbers of a state
-and its two succesors, in hexadecimal.
+Initially |i| will be zero, and the queue is empty. We'll want
+|jj| to be the the |j| vertex of arc |i+1|, and |ss| to be the
+size of~$F_{i+1}$. Also |serial| is the identifying number for
+arc~|i+1|.
+
+@<Initialize the queue@>=
+jj=1,ss=0;
+while (firstarc[jj+1]==0) jj++; /* unnecessary unless vertex 1 is isolated */
+tail=head=0;
+serial=2;
+
+@ The output format on |stdout| simply shows the identifying numbers of a state
+and its two successors, in hexadecimal.
 
 @d trunc(addr) ((addr)&(memsize-1))
 
 @<Process arc |i|@>=
-boundary=head,htcount=0,htid=(i+1)<<logmemsize;
-newserial=serial+((head-tail)/(ll+1-jj));
-j=jj,k=arcto[i],l=ll;
-while (jj<=n && firstarc[jj+1]==i+1) jj++;
-ll=(k>l? k: -k>l? -k: l);
+if (ss==0) head++; /* put a dummy byte into the queue */
+boundary=head,htcount=0,htid=(i+wrap)<<logmemsize;
+if (htid==0) {
+  for (hash=0;hash<htsize;hash++) htable[hash]=0;
+  wrap++, htid=1<<logmemsize;
+}
+newserial=serial+(head-tail)/(ss?ss:1);
+j=jj,sign=arcto[i],k=(sign>0?sign:-sign),s=ss;
+for (p=0;p<s;p++) f[p]=ff[p];
+@<Compute |jj| and $F_{i+1}$@>;
 while (tail<boundary) {
   printf("%x:",serial);
   serial++;
@@ -227,19 +252,42 @@ while (tail<boundary) {
   printf("\n");
 }
 
-@ If the target vertex hasn't entered the action yet (that is, if it
-exceeds~|l|), we must update its |mate| entry at this point.
+@ Here we set |nextfront[t]| to |i+1| whenever $t\in F_{i+1}$.
+And we also set |curfront[t]| to |i+1| wheneer $t\in F_i$;
+I~use |i+1|, not~|i|, because the |curfront| array is initially zero.
+
+@<Compute |jj| and $F_{i+1}$@>=
+while (jj<=n && firstarc[jj+1]==i+1) jj++;
+for (p=ss=0;p<s;p++) {
+  t=f[p];
+  curfront[t]=i+1;
+  if (t>=jj) {
+    nextfront[t]=i+1;
+    ff[ss++]=t;
+  }
+}
+if (j==jj && nextfront[j]!=i+1) nextfront[j]=i+1,ff[ss++]=j;
+if (k>=jj && nextfront[k]!=i+1) nextfront[k]=i+1,ff[ss++]=k;
+
+@ This step sets |mate[t]| for all $t\in F_i\cup\{j,k\}$, based on a
+queued state, while taking |s| bytes out of the queue.
 
 @<Unpack a state, and move |tail| up@>=
-for (t=j;t<=l;t++,tail++) {
-  mate[t]=mem[trunc(tail)];
+if (s==0) tail++;
+else {
+  for (p=0;p<s;p++,tail++) {
+    t=f[p];
+    mate[t]=mem[trunc(tail)];
+  }
 }
+if (curfront[j]!=i+1) mate[j]=j;
+if (curfront[k]!=i+1) mate[k]=k;
 
 @ Here's where we update the mates. The order of doing this is carefully
 chosen so that it works fine when |mate[j]=j| and/or |mate[k]=k|.
 
 @<Print the successor if arc |i| is chosen@>=
-if (k>0) {
+if (sign>0) {
   jm=mate[j],km=mate[k];
   if (jm==j) jm=-j;
   if (jm>=0 || km<=0) printf("0"); /* we mustn't touch a saturated vertex */
@@ -248,71 +296,74 @@ if (k>0) {
   else {
     mate[j]=0,mate[k]=0;
     mate[-jm]=km,mate[km]=jm;
-    printstate(j,jj,ll);
-    mate[-jm]=j,mate[km]=k,mate[j]=jm,mate[k]=km; /* restore original state */
-    if (mate[j]==-j) mate[j]=j;
+    printstate(j,jj,i,k);
   }
 }@+else {
-  jm=mate[j],km=mate[-k];
-  if (km==-k) km=k;
+  jm=mate[j],km=mate[k];
+  if (km==k) km=-k;
   if (jm<=0 || km>=0) printf("0"); /* we mustn't touch a saturated vertex */
   else if (km==-j)
     @<Print 1 or 0, depending on whether this arc wins or loses@>@;
   else {
-    mate[j]=0,mate[-k]=0;
+    mate[j]=0,mate[k]=0;
     mate[jm]=km,mate[-km]=jm;
-    printstate(j,jj,ll);
-    mate[jm]=j,mate[km]=-k,mate[j]=jm,mate[-k]=km; /* restore original state */
-    if (mate[-k]==k) mate[-k]=-k;
+    printstate(j,jj,i,k);
   }
 }
 
 @ @<Print the successor if arc |i| is not chosen@>=
-printstate(j,jj,ll);
+printstate(j,jj,i,k);
 
 @ See the note below regarding a change that will restrict consideration
 to Hamiltonian paths. A similar change is needed here.
 
 @<Print 1 or 0, depending on whether this arc wins or loses@>=
 {
-  for (t=j+1;t<=ll;t++) if (t!=(k>0? k: -k)) {
-    if (mate[t] && mate[t]!=t) break;
+  for (p=0;p<s;p++) {
+    t=f[p];
+    if (t!=j && t!=k && mate[t] && mate[t]!=t) break;
   }
-  if (t>ll) printf("1"); /* we win: this cycle is all by itself */
+  if (p==s) printf("1"); /* we win: this cycle is all by itself */
   else printf("0"); /* we lose: there's junk outside this cycle */
 }
 
 @ The |printstate| subroutine does the rest of the work. It makes sure
-that no incomplete paths linger in positions |j| through |jj-1|, which
-are about to disappear; and it puts the contents of |mate[jj]| through
-|mate[ll]| into the queue, checking to see if it was already there.
+that no incomplete paths linger in positions that are about to disappear
+from the current frontier; and it puts the |mate| entries of the next frontier
+into the queue, checking to see if that state was already there.
 
 If `|mate[t]!=t|' is removed from the condition below, we get
-Hamiltonian paths only (I mean, simple paths that include every vertex).
+Hamiltonian cycles only (I mean, simple cycles that include every vertex).
 
 @<Sub...@>=
-void printstate(int j,int jj,int ll) {
-  register int h,hh,ss,t,tt,hash;
-  for (t=j;t<jj;t++)
-    if (mate[t] && mate[t]!=t) break;
-  if (t<jj) printf("0"); /* incomplete junk mustn't be left hanging */
-  else if (ll<jj) printf("0"); /* nothing is viable */
+void printstate(int j,int jj,int i,int k) {
+  register int h,hh,p,t,tt,hash;
+  for (p=0;p<s;p++) {
+    t=f[p];
+    if (nextfront[t]!=i+1 && mate[t] && mate[t]!=t) break;
+  }
+  if (p<s) printf("0"); /* incomplete junk mustn't be left hanging */
+  else if (nextfront[j]!=i+1 && mate[j] && mate[j]!=j) printf("0");
+  else if (nextfront[k]!=i+1 && mate[k] && mate[k]!=k) printf("0");
+  else if (ss==0) printf("%x",
+                               newserial);
   else {
-    ss=ll+1-jj;
     if (head+ss-tail>memsize) {
-      fprintf(stderr,"Oops, I'm out of memory (memsize=%d, serial=%d)!\n",
+      fprintf(stderr,"Oops, I'm out of memory: memsize=%d, serial=%d!\n",
              memsize,serial);
       exit(-69);
     }
     @<Move the current state into position after |head|, and compute |hash|@>;
     @<Find the first match, |hh|, for the current state after |boundary|@>;
     h=trunc(hh-boundary)/ss;
-    printf("%x",newserial+h);
+    printf("%x",
+          newserial+h);
   }
 }
     
 @ @<Move the current state into position after |head|...@>=
-for (t=jj,h=trunc(head),hash=0;t<=ll;t++,h=trunc(h+1)) {
+for (p=0,h=trunc(head),hash=0;p<ss;p++,h=trunc(h+1)) {
+  t=ff[p];
   mem[h]=mate[t];
   hash=hash*31415926525+mate[t];
 }

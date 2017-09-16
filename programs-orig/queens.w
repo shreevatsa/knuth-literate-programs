@@ -5,6 +5,7 @@ is a command-line parameter.
 
 @c
 #include <stdio.h>
+#include <stdlib.h>
 @<Global variables@>@;
 @<Subroutines@>;
 @#
@@ -29,7 +30,7 @@ nn=n+n-2;
 @ @<Glob...@>=
 int param;
 
-@ We proces the cells of the board in ``organ pipe order,'' on the assumption
+@ We process the cells of the board in ``organ pipe order,'' on the assumption
 that---all other things being equal---a move near the center yields more
 constraints on the subsequent search.
 

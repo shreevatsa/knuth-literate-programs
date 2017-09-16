@@ -1,12 +1,12 @@
 \datethis
-@*Intro. This program constructs segments of the ``sieve of Erasthosthenes,''
+@*Intro. This program constructs segments of the ``sieve of Eratosthenes,''
 and outputs the largest prime gaps that it finds. More precisely, it
 works with sets of prime numbers between $s_i$ and $s_{i+1}=s_i+\delta$,
 represented as an array of bits, and it examines these arrays for
 $t$ consecutive intervals beginning with $s_i$ for $i=0$, 1, \dots~$t-1$.
 Thus it scans all primes between $s_0$ and $s_t$.
 
-Let $p_k$ be the $k$th prime number. The sieve of Eratotosthenes determines
+Let $p_k$ be the $k$th prime number. The sieve of Eratosthenes determines
 all primes $\le N$ by starting with the set $\{2,3,\ldots,N\}$ and striking
 out the nonprimes: After we know $p_1$ through $p_{k-1}$, the next remaining
 element is $p_k$, and we strike out the numbers $p_k^2$, $p_k(p_k+1)$,
@@ -93,11 +93,11 @@ might force |qsize| to be small, and that will slow things down because
 primes will be before they're needed.
 
 @d del ((long long)(1<<23)) /* the segment size $\delta$, a multiple of 256 */
-@d qsize (1<<6) /* the queue size $q$ */
+@d qsize (1<<7) /* the queue size $q$ */
 @d kmax 35000000 /* an index such that $p_{kmax}^2>s_t$ */
 @d ksmall 156000 /* an index such that $p_{ksmall}>\delta/4$ */
 @d bestgap 1000 /* lower bound for gap reporting, $\ge512$, a multiple of 4 */
-@d lsize (1<<21) /* size of queue lists, hopefully big enough */
+@d lsize (1<<20) /* size of queue lists, hopefully big enough */
 
 @c
 #include <stdio.h>
@@ -106,10 +106,8 @@ primes will be before they're needed.
 FILE *infile, *outfile;
 unsigned int prime[kmax]; /* $|prime|[k]=p_{k+1}$ */
 unsigned int start[ksmall]; /* indices for initializing a segment */
-struct {
-  unsigned int p; /* a prime queued for a segment */
-  unsigned int s; /* its relative starting point */
-} list[qsize][lsize];  
+unsigned int plist[qsize][lsize]; /* primes queued for a segment */
+unsigned int slist[qsize][lsize]; /* their relative starting points */
 int count[qsize]; /* number of entries in queue lists */
 int countmax; /* the largest count we've needed so far */
 unsigned long long sieve[2+del/256];
@@ -244,7 +242,8 @@ for (k=1;((unsigned long long)prime[k])*prime[k]<s0;k++) {
         exit(-12);
       }
     }
-    list[jj][count[jj]].p=prime[k], list[jj][count[jj]].s=j;
+    plist[jj][count[jj]]=prime[k];
+    slist[jj][count[jj]]=j;
     count[jj]++;
   }
 }
@@ -310,20 +309,20 @@ if (dd>=kk) { /* no large primes are active */
   @<Sieve in the enqueued large primes@>;
 }
 
-@ Each |s| entry in |list| is an offset relative to the beginning of the
-previous segment with |qq=0|. Thus, for example, |list[3][k].s| holds
-a number of the form |ddel*3+x|, |ddel*(3+qsize)+x|, |ddel*(3+2*qsize)+x|, etc.,
+@ Each |slist| entry is an offset relative to the beginning of the
+previous segment with |qq=0|. Thus, for example, |slist[1]| holds
+numbers of the form |ddel+x|, |ddel*(1+qsize)+x|, |ddel*(1+2*qsize)+x|, etc.,
 where $0\le x<|ddel|$.
 
 @<Sieve in the enqueued large primes@>=
 for (j=k=0;k<count[qq];k++) {
-  if (list[qq][k].s>=(qq+1)*ddel) /* big big prime has ``looped'' the queue */
-    list[qq][j].p=list[qq][k].p, list[qq][j].s=list[qq][k].s-qsize*ddel, j++;
+  if (slist[qq][k]>=(qq+1)*ddel) /* big big prime has ``looped'' the queue */
+    plist[qq][j]=plist[qq][k], slist[qq][j]=slist[qq][k]-qsize*ddel, j++;
   else {
     register unsigned int nstart;
-    jj=list[qq][k].s%ddel;
+    jj=slist[qq][k]%ddel;
     sieve[jj>>6] |= 1LL<<(jj&0x3f);
-    nstart=list[qq][k].s+list[qq][k].p;
+    nstart=slist[qq][k]+plist[qq][k];
     jj=(nstart/ddel)%qsize; /* possibly |jj=qq|; that's no problem */
     if (count[jj]==countmax) {
       countmax++;
@@ -332,14 +331,15 @@ for (j=k=0;k<count[qq];k++) {
         exit(-13);
       }
     }
-    list[jj][count[jj]].p=list[qq][k].p;
-    list[jj][count[jj]].s=(jj>=qq? nstart: nstart-qsize*ddel);
+    plist[jj][count[jj]]=plist[qq][k];
+    slist[jj][count[jj]]=(jj>=qq? nstart: nstart-qsize*ddel);
     count[jj]++;
   }
 }
 count[qq]=j;
 
-@ The test is |jj>qq| here, but |jj>=qq| in the previous code. Do you see why?
+@ The test here is `|jj>qq|' when we construct an |slist| entry,
+not `|jj>=qq|' as before. Do you see why?
 
 @<Sieve in the newly active primes@>=
 for (k=kk;((unsigned long long)prime[k])*prime[k]<ss;k++) {
@@ -356,8 +356,8 @@ for (k=kk;((unsigned long long)prime[k])*prime[k]<ss;k++) {
         exit(-14);
       }
     }
-    list[jj][count[jj]].p=prime[k];
-    list[jj][count[jj]].s=(jj>qq? j: j-qsize*ddel);
+    plist[jj][count[jj]]=prime[k];
+    slist[jj][count[jj]]=(jj>qq? j: j-qsize*ddel);
     count[jj]++;
   }
 }

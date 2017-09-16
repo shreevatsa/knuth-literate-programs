@@ -206,7 +206,7 @@ on x86-like computers.)
 place(int x,int k) /* set $a_k=x$ */
 {
   register int j=k, y=x;
-  if (ub[j]==y && lb[j]==y) return;
+  if (ub[j]==y && lb[j]==y) return 0;
   while (ub[j]>y) {
     assign(&ub[j],y); /* the upper bound decreases */
     j--, y--;

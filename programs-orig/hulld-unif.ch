@@ -9,8 +9,8 @@
 @x
 #include "gb_graph.h"
 @y
-#include "gb_rand.h"
 #include "gb_graph.h"
+#include "gb_rand.h"
 @z
 @x
 main()
@@ -40,9 +40,9 @@ main(argc,argv)
   for (kk=0,v=g->vertices; kk<n; kk++,v++) {
     sprintf(str,"%d",kk);
     v->name=gb_save_string(str);
-    v->x.i=gb_next_rand()&0xffff;
-    v->y.i=gb_next_rand()&0xffff;
-    if (n<150) printf("point %s=(%d,%d)\n",v->name,v->x.i,v->y.i);
+    v->x.I=gb_next_rand()&0xffff;
+    v->y.I=gb_next_rand()&0xffff;
+    if (n<150) printf("point %s=(%d,%d)\n",v->name,v->x.I,v->y.I);
   }
 @z
 

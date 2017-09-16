@@ -71,7 +71,7 @@ if (getchar()!=':') goto scan;
 if (scanf("%d %d %d %d",&llx,&lly,&urx,&ury)!=4 || llx!=0 || lly!=0)
   panic("Bad bounding box data!\n");
 if (urx!=n || ury!=m)
-  panic("The image doesn't have the corect width and height!\n");
+  panic("The image doesn't have the correct width and height!\n");
 
 @ @<Glob...@>=
 int llx,lly,urx,ury; /* bounding box parameters */

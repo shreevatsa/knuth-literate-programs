@@ -2,7 +2,7 @@
 
 @*Intro. This program is designed to compose multiplication-skeleton puzzles
 of a type pioneered by Junya Take. For example, consider his puzzle for
-the lettter \.O, in {\sl Journal of Recreational Mathematics\/ \bf38} (2014),
+the letter \.O, in {\sl Journal of Recreational Mathematics\/ \bf38} (2014),
 132:
 $$\vcenter{\halign{\hfil\tt#\cr
 .......\cr
@@ -143,7 +143,7 @@ for (j=0;buf[j] && buf[j]!='\n';j++) {
       }
     oo,rawpat[n][j]=1, k++, last[n]=j+1;
   }
-}
+}    
 
 @*Bignums. We implement elementary decimal addition on nonnegative integers.
 Each integer is represented by an array of bytes, in which the first
@@ -185,7 +185,7 @@ void add(bignum a,bignum b,bignum c,int p) { /* set $a=b+10^p c$ */
     if (d>=10) k=1,d-=10;@+else k=0;
     o,a[i]=d;
   }
-  o,a[0]=i-1;
+  o,a[0]=i-1;  
   if (i>=maxdigs) {
     fprintf(stderr,"Integer overflow, more than %d digits!\n",
                                  maxdigs-1);
@@ -372,7 +372,6 @@ For example, we know that $a=2208068$, $b=357029$,
 $d=4$ leads to a valid puzzle for the \.O~pattern; so does
 $a=302208068$, $b=357029$, $d=4$. The extra prefix `30' doesn't
 introduce any unwanted 4's into the partial products or the total product.
-This version of the program does {\it not\/} look for such extensions.
 
 @ Such considerations lead us to a standard backtracking scheme
 that takes the following overall form, if we follow the recipe of
@@ -525,7 +524,7 @@ for (o,kk=0,j=choice[k][0];kk<m;kk++) if (oo,id[kk]!=id[k]) {
       oo,oo,oo,choice[kk][ii]=choice[kk][i],where[kk][choice[kk][i]]=ii,
       choice[kk][i]=j,where[kk][j]=i;
   }
-}
+}  
 
 @ The data structures that I've got don't seem to need any updating
 (other than what has already been done during the tests),
@@ -548,8 +547,6 @@ for (k=m-1;k>=0;k--)
   @<If constraint $c_k$ isn't totally satisfied, |goto nope|@>;
 @<If constraint $c_m$ isn't totally satisfied, |goto nope|@>;
 @<Print a solution@>;
-while (o,a[l-1]==0) l--;
-goto b5;
 nope:
 
 @ @<If constraint $c_k$ isn't totally satisfied, |goto nope|@>=
@@ -659,7 +656,7 @@ no solutions were found. Otherwise the shadows will tell us
 whether any of the |csize| entries can be lowered.
 
 I could do this step in a fancier way, by working only
-``incrementally'' after having gotten $l$-digit compliance
+``incrementally'' after having gotten $l$-digit compliance 
 instead of always working to higher and higher precision.
 (In such a case I'd have to save the sum of carries from
 the lower |l| digits, for use in testing the (|l+1|)st digit
@@ -734,8 +731,8 @@ noncomp: goto bb5;
   }
   o,csize[l+1][k]=imax;
   if (imax==1) o,stack[stackptr++]=k;
-}
-
+}    
+  
 @ @<Glob...@>=
 char acc[maxm][maxdigs]; /* partial sums */
 char g[maxm]; /* indices for inner loop */

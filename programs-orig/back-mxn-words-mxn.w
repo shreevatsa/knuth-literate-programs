@@ -14,8 +14,8 @@ the file name.
 
 @d maxm 7 /* largest permissible value of $m$ */
 @d maxn 10 /* largest permissible value of $n$ */
-@d maxmwds 20000 /* largest permissible number of $m$-letter words */
-@d maxtriesize 100000 /* largest permissible number of prefixes */
+@d maxmwds 30000 /* largest permissible number of $m$-letter words */
+@d maxtriesize 1000000 /* largest permissible number of prefixes */
 @d o mems++
 @d oo mems+=2
 @d bufsize maxm+maxn
@@ -182,7 +182,7 @@ if (n==0) {
 a trie that has been compressed into the following simple format: When
 node~$k$ has $c$ children, the |trielt| entries
 |tri[k]|, |tri[k+1]|, \dots, |tri[k+c-1]| will contain the next character
-and a pointer to the relevant child node. The folloiwing entry, |tri[k+c]|,
+and a pointer to the relevant child node. The following entry, |tri[k+c]|,
 will be zero. (More precisely, its |link| part will be zero.)
 
 It's easiest to build a normal trie first, and to compress it afterwards.
@@ -223,7 +223,7 @@ int compress(int p,int l) {
   a=triptr;
   triptr+=c+1;
   if (triptr>=maxtriesize) {
-    fprintf(stderr,"Tri overflows (maxtriesize=%d)!\n",maxtriesize);
+    fprintf(stderr,"Tri overflow (maxtriesize=%d)!\n",maxtriesize);
     exit(-67);
   }
   for (c=0,k=1;k<27;k++) if (o,trie[p][k]) {

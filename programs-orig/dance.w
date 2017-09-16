@@ -8,7 +8,7 @@ Given a matrix whose elements are 0 or 1, the problem is to
 find all subsets of its rows whose sum is at most~1 in all columns and
 {\it exactly\/}~1 in all ``primary'' columns. The matrix is specified
 in the standard input file as follows: Each column has a symbolic name,
-either one or two or three characters long. The first line of input contains
+from one to seven characters long. The first line of input contains
 the names of all primary columns, followed by `\.{\char"7C}', followed by
 the names of all other columns.
 (If all columns are primary, the~`\.{\char"7C}' may be omitted.)
@@ -21,12 +21,14 @@ full search tree to be printed, and a third argument makes the output
 even more verbose.
 
 @d max_level 150 /* at most this many rows in a solution */
-@d max_degree 1000 /* at most this many branches per search tree node */
+@d max_degree 10000 /* at most this many branches per search tree node */
 @d max_cols 10000 /* at most this many columns */
 @d max_nodes 1000000 /* at most this many nonzero elements in the matrix */
+@d verbose Verbose /* kludge because of 64-bit madness in SGB library */
 
 @c
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 @<Type definitions@>@;
@@ -42,14 +44,14 @@ main(argc,argv)
   if (verbose) sscanf(argv[1],"%d",&spacing);
   @<Initialize the data structures@>;
   @<Backtrack through all solutions@>;
-  printf("Altogether %d solutions, after %.15g updates.\n",count,updates);
+  printf("Altogether %lld solutions, after %.15g updates.\n",count,updates);
   if (verbose) @<Print a profile of the search tree@>;
   exit(0);
 }
 
 @ @<Global...@>=
 int verbose; /* $>0$ to show solutions, $>1$ to show partial ones too */
-int count=0; /* number of solutions found so far */
+long long count=0; /* number of solutions found so far */
 double updates; /* number of times we deleted a list element */
 int spacing=1; /* if |verbose|, we output solutions when |count%spacing==0| */
 double profile[max_level][max_degree]; /* tree nodes of given level and degree */
@@ -112,7 +114,7 @@ Here is a routine that prints a row, given a pointer to any of its
 columns. It also prints the position of the row in its column.
 
 @<Sub...@>=
-print_row(p)
+void print_row(p)
   node *p;
 {@+register node *q=p;
   register int k;
@@ -140,7 +142,7 @@ Brute force is the rule in this part of the program.
 @<Read the column names@>;
 @<Read the rows@>;
 
-@ @d buf_size 4*max_cols+3 /* upper bound on input line length */
+@ @d buf_size 8*max_cols+3 /* upper bound on input line length */
 
 @<Glob...@>=
 column col_array[max_cols+2]; /* place for column records */
@@ -343,7 +345,7 @@ register int j,k,x;
   if (verbose) {
     profile[level+1][0]++;
     if (count%spacing==0) {
-      printf("%d:\n",count);
+      printf("%lld:\n",count);
       for (k=0;k<=level;k++) print_row(choice[k]);
     }
   }

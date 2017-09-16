@@ -1,5 +1,7 @@
 \datethis
 \input epsf
+\let\possiblyflakyepsfbox=\epsfbox
+\def\epsfbox#1{\hbox{\possiblyflakyepsfbox{#1}}}
 \def\dts{\mathinner{\ldotp\ldotp}}
 \let\from=\gets
 \def\bit#1{\\{bit}[#1]}
