@@ -1,7 +1,0 @@
-% parameter file for the CELTICA font
-
-u#:=1/150 in#; % basic unit, 1/13th em; best if an integer number of pixels
-d#:=u#;        % pen thickness; ditto
-
-input celtica  % switch to the driver file
-
