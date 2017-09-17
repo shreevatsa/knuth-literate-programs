@@ -1,0 +1,27 @@
+\input cwebmac-real
+
+\catcode126=12 % Making ~ a regular character, because it occurs in the url
+
+% Copied from opmac.tex
+\newif\ifpdftex  \pdftextrue
+\ifx\pdfoutput\undefined \pdftexfalse \else \ifnum\pdfoutput=0 \pdftexfalse \fi \fi
+\ifx\XeTeXversion\undefined \else \pdftextrue \fi
+
+\ifpdftex
+
+% The way to get a URL is copied (and simplified) from opmac.tex
+\def\hyperlink{\pdfstartlink
+   user{/Subtype/Link/A <</Type/Action/S/URI/URI(https://cs.stanford.edu/~knuth/programs.html)>>}\relax
+   {https://cs.stanford.edu/~knuth/programs.html}\pdfendlink}
+
+\else
+
+\def\hyperlink{\special{html:<a href="https://cs.stanford.edu/~knuth/programs.html">}%
+{https://cs.stanford.edu/~knuth/programs.html}\special{html:</a>}}
+
+\fi
+
+\def\datethis{\def\startsection{\leftline{\sc (Downloaded from \hyperlink\ and typeset on \today)}\bigskip
+  \let\startsection=\stsec\stsec}}
+
+\catcode126=13 % Back to its earlier value
