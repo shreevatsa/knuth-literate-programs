@@ -64,7 +64,27 @@ reflect.pdf reflect-ch.pdf \
 	squaregraph.pdf squaregraph-rand.pdf \
 	treeprobs.pdf \
 	graph-sig-v0.pdf \
-	 \
+	random-ternary.pdf \
+	dimacs-to-sat.pdf sat-to-dimacs.pdf sat0.pdf sat0w.pdf sat8.pdf sat9.pdf sat10.pdf sat11.pdf sat12.pdf sat12-erp.pdf sat13.pdf sat-nfa.pdf \
+	back-20q.pdf back-mxn-words-new.pdf back-mxn-words-mxn.pdf \
+	back-pdi.pdf \
+	commafree-eastman.pdf commafree-eastman-new.pdf \
+	sat-commafree.pdf \
+	back-commafree4.pdf \
+	back-skeleton.pdf \
+	back-dissect.pdf \
+	ulam-gibbs.pdf \
+	dlx1.pdf \
+	polyomino-dlx.pdf polyiamond-dlx.pdf polycube-dlx.pdf \
+	dlx2.pdf dlx-pre.pdf \
+	dlx3.pdf
+
+
+
+
+
+
+
 
 # boolchains tictactoe -- is a .tgz of several programs
 # simpath-example.tgz
@@ -80,7 +100,10 @@ round1 = tcb.pdf
 # pdftex "\year=9999 \month=12 \day=99 \time=5999 \input " $<
 	if pdftex $< | grep "Non-PDF special ignored"; then tex $< && dvipdfmx ${basename $@}.dvi; fi
 
-changefiles = decagon-star.pdf decagon-color.pdf decagon-colorstar.pdf antislide-nocorner.pdf dot-diff-eps.pdf dance-random.pdf gdance-cutoff.pdf polynum-restart.pdf polyslave-restart.pdf fchains4x-dontcares.pdf prime-sieve-boot.pdf prime-sieve-sparse-boot.pdf ulam-longlong.pdf simpath-cycles.pdf simpath-ham.pdf
+changefiles = decagon-star.pdf decagon-color.pdf decagon-colorstar.pdf antislide-nocorner.pdf dot-diff-eps.pdf dance-random.pdf gdance-cutoff.pdf polynum-restart.pdf polyslave-restart.pdf fchains4x-dontcares.pdf prime-sieve-boot.pdf prime-sieve-sparse-boot.pdf ulam-longlong.pdf simpath-cycles.pdf simpath-ham.pdf random-ternary-quads.pdf \
+	dlx2-polyom.pdf dlx2-wordsearch.pdf dlx2-sharp.pdf dlx2-cutoff.pdf dlx2-kludge.pdf \
+	dlx3-sharp.pdf dlx3-redrect.pdf dlx3-motley.pdf \
+# dlx2-cutoff-kludge.pdf dlx3-sharp-wordcross.pdf haven't looked at these yet
 
 all: $(prereq) $(round1) $(outputfiles) $(changefiles) krom-count.pdf simpath-ham-any.pdf
 
@@ -112,6 +135,6 @@ $(prereq):
 	mpost $(basename $@).mp
 
 clean:
-	rm -vf *.{idx,log,scn,toc,dvi,mpx}
+	rm -vf *.{idx,log,scn,toc,dvi,mpx,tfm,600pk}
 	rm -vf {francon,viennot,zeilberger}.tex
-	rm -vf {kepler,polyomino,spspan}.{0,1,2}
+	rm -vf {kepler,polyomino,spspan,hyperbolic}.{0,1,2,3,4}
