@@ -452,6 +452,10 @@ http://timelessrepo.com/literate-programming.html
 Someone who has actually looked at literate programming.
 Not later than 2011, going by date of https://news.ycombinator.com/item?id=2089912
 
+2013 Why I'm Trying Literate Programming, Shane Celis
+http://www.shanecelis.com/2013/05/20/why-im-trying-literate-programming/
+^ This is good too
+
 ----------------------------------------------------------------------
 
 Some problems with Knuth-style literate programming:
