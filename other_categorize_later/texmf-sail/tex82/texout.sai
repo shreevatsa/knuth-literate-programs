@@ -1,0 +1,638 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00009 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00002 00002	entry begin comment The output module of TEX.
+C00004 00003	initialization: initout,declareofil
+C00007 00004	Output codes for the XGP.
+C00019 00005	General description of the shipout procedure.
+C00027 00006	The recursive traversal procedures: vlistout,hlistout
+C00038 00007	The sorting routine: shellsort
+C00040 00008	internal procedure shipout(integer p) # the main output procedure,produces one page
+C00043 00009	internal procedure closeout # just before TEX stops, do this
+C00048 ENDMK
+Cⓧ;
+entry; begin comment The output module of TEX.
+
+(It is wise to read the box data structure definitions in TEXSEM
+before going very deeply into the following code.)
+
+Each TEXOUT module is supposed to include the following procedures
+invoked by the main program:
+
+	initout			gets the output module started initially
+	declareofil(string s) called when the output file name is known
+	shipout(integer p)	called for each nonempty page to be output
+	closeout		finishes the output
+
+This routine is designed for output to the Xerox Graphics Printer (XGP)
+at Stanford or at MIT. Routines for other devices will probably have a rather
+similar structure;
+
+require &quot;TEXHDR.SAI&quot; source_file;
+require &quot;
+	Note: This output module prepares XGP files only. &quot; message;
+comment initialization: initout,declareofil;
+
+internal string ofilext # filename extension for output;
+internal string deviceext # extension to use in font information files;
+internal string ofilname # output file name, set by first \input;
+internal string libraryarea # default system area for fonts;
+integer ochan # output channel number;
+boolean no_output_yet # no pages shipped out yet;
+integer paperpixels # accumulated amount of paper output, in pixels;
+integer totalpages # accumulated number of pages output;
+
+internal procedure initout # get TEXOUT started properly;
+begin
+	ofilname←null; paperpixels←totalpages←0;
+IFSUAI
+	ofilext←&quot;.XGP&quot;; deviceext←&quot;.TFX&quot;; libraryarea←&quot;[XGP,SYS]&quot;;
+ENDSUAI
+IFMIT
+	ofilext←&quot;XGP&quot;; deviceext←&quot;TFX&quot;; libraryarea←&quot;TEXFNT;&quot;;
+ENDMIT
+	ochan←-1; no_output_yet←true;
+	arrclr(strings);
+end;
+
+internal procedure declareofil(string s) # initializes the output on file s;
+begin comment This procedure is called when the name of the output file is
+first known. It opens the file and gets things started;
+integer i;
+ofilname←s;
+open(ochan←getchan,&quot;DSK&quot;,0,0,19,0,0,eof);
+loop	begin enter(ochan,ofilname,eof);
+	if eof then
+		begin print(nextline,&quot;I can't write on file &quot;,ofilname,
+		nextline,&quot;Output file = &quot;);
+		ofilname←inchwl;
+		end
+	else done;
+	end;
+IFSUAI
+for i←1 thru '200 do out(ochan,&quot;TRASH&quot;) # preamble block will overwrite this later;
+ENDSUAI
+IFMIT
+for i←1 thru 5*'200 do out(ochan,&quot;TRASH&quot;) # preamble will overwrite this later;
+ENDMIT
+end;
+comment Output codes for the XGP.
+
+Here is a summary of the XGP file output format, for the files produced
+by this module.
+
+IFSUAI
+    First comes an almost-fixed preamble block of 128x5 characters, a block
+    that tells TEX's conventions to the XGP server:
+      /NOWRAPAROUND
+      /LMAR=50/TMAR=50/RMAR=1700/BMAR=1/PMAR=0/XLINE=0/FONT#0=NGR13/USETI=0000
+    followed by nnnnn, followed by 110 appearances of &quot;*TEX*&quot;.
+    The only variable part of this block is the value of nnnnn, which is set
+    to the (decimal) block number of the &quot;postamble&quot;. (The postamble location
+    is computed by using tricky system code after the pages have all been
+    output. Therefore the preamble isn't actually written out until the
+    page output is all complete, a dummy block comes out first -- see the
+    declareofil procedure. Font NGR13, which is declared as &quot;font number 0&quot;
+    in this preamble, will be used for headings and error messages that are
+    not part of the &quot;real&quot; TEX output. This font was chosen mainly because it
+    takes up less space than any other font in the XGP repertoire.)
+ENDSUAI
+IFMIT
+    First come five preamble blocks of 128x5 characters,
+    which tell TEX's conventions to the XGP server:
+	!SKIP 1
+	!TOPMAR 50
+	!BOTMAR 1
+	!LFTMAR 50
+	!LSP 0
+	!KSET 13VG,font1,font2,...,font32
+	!KSUBSET 01 aaaaaaaaaaa bbbbbbbbbbb ccccccccccc ddddddddddd
+	!KSUBSET 02 aaaaaaaaaaa bbbbbbbbbbb ccccccccccc ddddddddddd
+	...
+	!KSUBSET 32 aaaaaaaaaaa bbbbbbbbbbb ccccccccccc ddddddddddd
+	TEX
+	&lt;spaces for padding&gt;
+	&lt;formfeed&gt;
+    (The &quot;!&quot; characters should be semicolons, but you can't put a semicolon
+    in a SAIL comment!)  Here each &quot;fontj&quot; is the name of a font file.  The
+    !KSUBSET commands tell the XGP server which characters of each font are
+    needed.  Each of aaaaaaaaaaa, etc. is an octal number specifying 32 bits.
+    The bits, taken from left to right within each number, and in the order
+    a, b, c, d, supply 128 bits corresponding to the 128 possible characters
+    of each font.  A bit should be on if the corresponding character is needed.
+    The total number of characters needed for this preamble is:
+	    constant commands = about 80
+	    up to 21 characters per font name x 32 = 672
+	    61 characters per !KSUBSET x 32 = 1952
+	    Total = 80+672+1952 = 2704
+    Each 128-word block holds 128x5 = 640 characters, and ceiling(2704/640)
+    = 5, and so five blocks are needed.
+    The necessary information is not known ahead of time, so five
+    blocks of TRASH are written, and later we come back and fill in
+    the missing information.
+ENDMIT
+
+    Then come the specifications of individual pages, which are composed of
+    7-bit code sequences understood by the XGP server as follows:
+
+    c, where c ≠ '000, '010, '011, '012, '014, '015 IFSUAI, '040 ENDSUAI or '177
+		    Output character c in the current font, then advance the
+		    appropriate number of columns
+IFSUAI
+    '010            Output 010 in the current font, then advance the
+		    appropriate number of columns.
+ENDSUAI
+    '177&amp;c, where c = '000, '011, '012, '014, '015 IFSUAI, '040 ENDSUAI or '177
+		    Output character c in the current font, then advance the
+		    appropriate number of columns
+IFMIT
+    '177&amp;'010       Output 010 in the current font, then advance the
+		    appropriate number of columns.
+ENDMIT
+    '177&amp;'001&amp;'040&amp;x1&amp;x2, where x1&amp;x2=x is a 14-bit binary number, x &lt; 4096
+		    Move to column x
+    '177&amp;'002&amp;d, where d is a 7-bit two's complement number
+		    Move to the current column plus d
+    '012&amp;'177&amp;'003&amp;y1&amp;y2, where y1&amp;y2=y is a 14-bit binary number
+		    The top row of the next characters should be row y
+    '015&amp;'014       Cut the paper at the current row and (if spooled with the
+		    /head option) put page heading 1/4 inch from top of new page
+		    (Cutting the paper starts rows counting at 0 again.)
+IFSUAI
+    '177&amp;'006&amp;(f+1), where f is a font number in TEX (0 ≤ f &lt; nfonts)
+		    The next characters should be in font f until further notice.
+ENDSUAI
+IFMIT
+    '177&amp;'016&amp;(f+1), where f is a font number in TEX (0 ≤ f &lt; 128)
+		    The next characters should be in font f until further notice.
+ENDMIT
+    '177&amp;'004&amp;y1&amp;y2&amp;x1&amp;x2&amp;'000&amp;'000&amp;'000&amp;h1&amp;h2&amp;w1&amp;w2
+		    Output a black rectangle with top row y and left column x,
+		    where the width is w and the height is h
+
+    These commands occur in order of increasing values of y (i.e., increasing
+    values of the tops of the characters and rules being output). Actually y
+    is called y0 in the program documentation, since it stands for the
+    minimum y value of the character. (Coordinates are chosen so that
+    increasing x means going to the right, while increasing y means going
+    downward. This convention is slightly non-Cartesian, but it is a natural
+    thing to do given the XGP hardware.)
+
+IFSUAI
+    Finally, the postamble appears. (A bunch of '000 characters is first
+    written out if necessary to ensure that the postamble begins on a
+    block boundary.) The postamble consists simply of specifications like
+	    /FONT#&lt;decimal value of f+1&gt;=&lt;name of font f&gt;=&lt;list of chars used&gt;
+    where the list of characters used is terminated by repeating the final character.
+    For example, if the TEX user wrote /a:←CMR10[1,DEK] and if only characters
+    xyz of this font were ever generated, the postamble would include the string
+	    /FONT#2=CMR10[1,DEK]=xyzz
+    among its font specifications. The postamble concludes with as many '000
+    characters as necessary to fill a block. (Note: A project-programmer
+    specification like &quot;[1,DEK]&quot; in a font file name can be omitted if and only if
+    is &quot;[XGP,SYS]&quot;.)
+ENDSUAI
+;	# end of long comment;
+
+simp string procedure twobytes(integer x) # changes x into x1&amp;x2, a 14-bit code;
+return((x lsh -7)&amp;x);
+
+preload_with true,[7]false, IFSUAI false ENDSUAI IFMIT true ENDMIT,
+	[2]true,false,[2]true, IFSUAI [18]false,true,[94]false ENDSUAI
+	IFMIT [113]false ENDMIT,true;
+	saf integer array quotedchar[0:127] # characters harder to output;
+define outchar(c)=⊂if quotedchar[c land '177] then strings[nstrs]←strings[nstrs]&amp;
+'177; strings[nstrs]←strings[nstrs]&amp;c⊃ # macro for output of a single character;
+define outrule(x0,y0,h,w)=⊂strings[nstrs]←strings[nstrs]&amp;('177&amp;'004)&amp;twobytes(y0)&amp;
+	twobytes(x0)&amp;('000&amp;'000&amp;'000)&amp;twobytes(((h)max 0))&amp;twobytes(((w)max 0))⊃;
+define tocol(x)=⊂('177&amp;'001&amp;'040)&amp;twobytes(x land '7777)⊃;
+define movetocol(x)=⊂if abs(xgpcol-x)&lt;'100 then strings[nstrs]←strings[nstrs]&amp;
+	('177&amp;'002)&amp;(x-xgpcol) else strings[nstrs]←strings[nstrs]&amp;tocol(x)⊃;
+define torow(y)=⊂('012&amp;'177&amp;'003)&amp;twobytes(y)⊃;
+define cutit=⊂('015&amp;'014)⊃;
+IFSUAI
+define newfont(f)=⊂strings[nstrs]←strings[nstrs]&amp;('177&amp;'006)&amp;((f)+1)⊃;
+ENDSUAI
+IFMIT
+define newfont(f)= ⊂strings[nstrs]←strings[nstrs]&amp;('177&amp;'016)&amp;((f)+1)⊃;
+ENDMIT
+comment General description of the shipout procedure.
+
+The simplest imaginable shipout routine would essentially be a recursive
+procedure that goes through the data structure of the given page and,
+whenever coming to a character or rule node, it would cause that character or
+rule to be output to the appropriate place depending on its context.
+This routine would periodically issue commands to the output device,
+saying &quot;Put such-and-such a character (or rule) in such and such a place.&quot;
+
+A simple routine of that sort won't work on the XGP, because the XGP server
+needs to get its commands sorted in order of the top edges of the characters
+and rules. Furthermore one should probably make use of the fact most of
+TEX's output is simple text --  extra care can be taken to make the output
+occur faster in simple cases.
+
+Therefore this shipout procedure has been constructed by taking the
+simple recursive scheme and augmenting it in two ways: On simple text,
+most of the generality is omitted, and there is a sorting process that
+takes place before actual output occurs to the XGP.
+
+As we have seen, the XGP server gets its instructions in character mode,
+so TEXOUT builds a file of 7-bit characters and control codes. Sequences
+of 7-bit characters having the same y0-value (i.e., the same top edge
+of the type) are generated and then sorted by y0.  A different sequence is
+begun for every box and, within a box, every time a rule or sub-box appears,
+or whenever a font change causes the value of y0 to change.
+
+A further complication, of course, is that TEX computes everything as if it
+had &quot;infinite precision&quot; while actual devices like the XGP have only finite
+resolution. Rounding in this TEXOUT module is done by converting each
+real-valued coordinate pair (x,y) into the integer-value discrete raster
+position ([conv*x+.14159],[conv*y+.14159]). Here conv is the conversion factor
+from points to XGP pixels, and .14159 is an arbitrary offset that makes it
+unlikely that rounding discontinuities will occur at points with physical
+significance.
+
+The conversion factor conv used in this program is figured on the basis
+that the Stanford XGP has 259.2 pixels per 72 points.  The XGP really has
+200 pixels per inch, so TEX output is somewhat magnified. The reason for
+doing this is that XGP output is intended to be used either for proofreading
+(when larger type should enhance the readability) or for printing (when a
+reduction factor of about 10/13 will improve the appearance of the
+machine's rather low-resolution output). 
+
+Instead of adding .14159 when rounding, this constant is actually absorbed
+into the offsets that are routinely computed as the data structure is
+being traversed -- all computation is done relative to some arbitrary
+starting point, so the .14159/conv is simply included in this starting point.
+;
+internaldef xgpconv=⊂3.6⊃ # assumed number of pixels per point on the XGP;
+define conv=⊂xgpconv⊃ # assumed number of pixels per point;
+define roundup(x)=⊂conv*(x)+.999999⊃ # integer←roundup(x) gives ceiling(x);
+
+comment The data structure for XGP command strings to be sorted has two parts.
+Each entry in the array strinfo is a packed integer containing three fields,
+	y0	the top row for characters
+	x0	the initial column for characters
+	sref	pointer to the actual string of instructions in the &quot;strings&quot; array.
+These integers will be sorted, in particular bringing together all entries
+having the same value of y0. Note that the sref field makes it unnecessary to
+move the strings around during the sorting process.
+;
+internaldef stringsize=1024;
+internal saf integer array strinfo[0:stringsize-1];
+internal saf string array strings[0:stringsize-1];
+
+define srefs=11 # size of sref field, stringsize ≤ 2^srefs;
+define srefd=0  # displacement of sref field;
+define x0s=11,x0d=srefs # size and displacement of x0 field;
+define y0d=x0s+x0d,y0s=bitsperwd-y0d # size and displacement of y0 field;
+
+internal integer nstrs # pointers to the current string being generated;
+
+define newstring(x0,y0)=⊂begin if (nstrs←nstrs+1)≥stringsize then
+overflow(stringsize); strinfo[nstrs]←(((((y0)land((1 lsh(y0s-1))-1)) lsh x0s)
+lor ((x0)land((1 lsh x0s)-1))) lsh (srefs)) lor nstrs;
+comment strings[nstrs] is now null; end⊃;
+
+define xgpheight(f)=⊂fmem[parbase[f]+device1]⊃ # the device1 parameter associated
+	with font f is the number of pixels above the baseline for the tallest
+	character in that font;
+comment The recursive traversal procedures: vlistout,hlistout;
+
+forward recursive procedure hlistout(integer p; real x,y) # see below;
+
+recursive procedure vlistout(integer p; real x,y);
+begin comment This procedure generates instruction strings to output the
+vlist box pointed to by p, where the upper left corner of the box is to
+have coordinates (x,y);
+integer q # runs through the vlist;
+integer m # mem[q];
+real g # the glueset parameter for this box;
+short integer x0,y0,h,w # units rounded to pixels;
+comment rounding from real to short integers is faster than to general integers;
+
+q←value(p); g←glueset(p); x0←conv*x;
+while q do
+	begin case field(type,m←mem[q]) of begin
+	[charnode] begin integer c,f,w;
+	c←field(info,m); f←c lsh -7; w←fontinfo[c] # get character and font;
+	fontinfo[c]←w lor flag # mark character &quot;used&quot;;
+	y←y+charht(f,w); y0←conv*y;
+	comment Now (x0,y0) is reference point (in pixels) where c should go;
+	newstring(x0,y0-xgpheight(f)); newfont(f); outchar(c);
+	y←y+chardp(f,w); end;
+	[gluenode] begin integer r; r←field(value,m) # pointer to glue spec;
+	if g=0 then y←y+gluespace(r)
+	else if g&gt;0 then y←y+gluespace(r)+gluestretch(r)*g
+	else y←y+gluespace(r)+glueshrink(r)*g; end;
+	[kernnode] y←y+gluespace(q);
+	[rulenode] begin comment horizontal rule;
+	y0←conv*y; h←roundup(height(q)+depth(q));
+	if width(q)≤-100000.0 then w←roundup(width(p)) else w←roundup(width(q));
+	newstring(x0,y0); outrule(x0,y0,h,w); y←y+height(q)+depth(q) end;
+	[whatsitnode] voutext(q,x,y) # for extensions to TEX;
+	[vlistnode] begin vlistout(q,x+shiftamt(q),y);
+	y←y+height(q)+depth(q); end;
+	[hlistnode] begin hlistout(q,x+shiftamt(q),y←y+height(q));
+	y←y+depth(q); end;
+	[leadernode] begin integer b; real hh;
+	b←field(value,m) # pointer to box used for vertical leaders;
+	if type(b)≠rulenode or(height(b)&gt;-100000.0 and depth(b)&gt;-100000.0) then
+		begin hh←height(b)+depth(b); if hh&lt;0 then hh←0;
+		end
+	else hh←-1.0;
+	if hh≠0 and type(link(q))=gluenode then
+		begin integer r; real s;
+		q←link(q); r←value(q) # pointer to glue spec;
+		if g=0 then s←gluespace(r)
+		else if g&gt;0 then s←gluespace(r)+gluestretch(r)*g
+		else s←gluespace(r)+glueshrink(r)*g;
+		if hh&gt;0 then
+			begin integer q # quotient; real yy # y surrogate;
+			q←y/hh-epsilon;
+			yy←hh*(q+1) # the smallest suitable multiple of hh;
+			while yy+hh≤y+s do
+				begin if type(b)=vlistnode then vlistout(b,x,yy)
+				else hlistout(b,x,yy+height(b));
+				yy←yy+hh;
+				end;
+			end
+		else	begin comment variable vertical rule;
+			w←roundup(width(b));y0←conv*y;h←roundup(s);
+			newstring(x0,y0);outrule(x0,y0,h,w);
+			end;
+		y←y+s;
+		end;
+	end;
+	else end # ignore all other types of nodes;
+	q←link(q);
+	end;
+end;
+
+recursive procedure hlistout(integer p; real x,y);
+begin comment This procedure generates instruction strings to output the
+hlist box pointed to by p, where the reference point of the box is to
+have coordinates (x,y);
+integer q # runs through the hlist;
+integer m # mem[q];
+real g # the glueset parameter for this box;
+short integer x0,y0,h,w # coordinates rounded to pixels;
+comment rounding from real to short integers is faster than to general integers;
+
+q←value(p); g←glueset(p); y0←conv*y;
+while q do
+	begin case field(type,m←mem[q]) of begin
+	[charnode] begin comment This is a first character of a possibly long
+	list, a common case that is &quot;optimized&quot; to keep the number of
+	instruction strings reasonably small;
+	integer xgpcol # column where the xgpserver is positioned;
+	integer c,f,w,h;
+	c←field(info,m) # the extended character code;
+	f←c lsh -7 # the font code;
+	h←xgpheight(f) # no. of pixels above baseline for tallest character in f;
+	w←fontinfo[c] # the font information fields;
+	fontinfo[c]←w lor flag # mark this character &quot;used&quot;;
+	x0←conv*x # round to correct starting position;
+	newstring(x0,y0-h); newfont(f); outchar(c) # output c;
+	x←x+charwd(f,w); xgpcol←x0+fmem[dwbase[f]+field(dw,w)];
+	loop	begin comment continue with same instruction stream
+		as long as the nodes can be handled easily;
+		q←link(q);
+		if q=0 then done;
+		case field(type,m←mem[q]) of begin
+		[hlistnode][vlistnode][rulenode][whatsitnode][leadernode] done;
+		[charnode] begin integer f1 # font of new character;
+		c←field(info,m) # the extended character code;
+		f1←c lsh -7 # the font code;
+		if f1≠f then if xgpheight(f1)≠h then done else newfont(f←f1);
+		w←fontinfo[c] # the font information fields;
+		fontinfo[c]←w lor flag # mark this character &quot;used&quot;;
+		x0←conv*x # round to correct starting position;
+		if xgpcol≠x0 then movetocol(x0);
+		outchar(c) # output the character;
+		x←x+charwd(f,w); xgpcol←x0+fmem[dwbase[f]+field(dw,w)]; end;
+		[gluenode] begin integer r; r←field(value,m) # pointer to glue spec;
+		if g=0 then x←x+gluespace(r)
+		else if g&gt;0 then x←x+gluespace(r)+gluestretch(r)*g
+		else x←x+gluespace(r)+glueshrink(r)*g; end;
+		[kernnode] x←x+gluespace(q);
+		else end # ignore other node types;
+		end;
+	continue end # resume &quot;while q&quot; loop;
+	[gluenode] begin integer r; r←field(value,m) # pointer to glue spec;
+	if g=0 then x←x+gluespace(r)
+	else if g&gt;0 then x←x+gluespace(r)+gluestretch(r)*g
+	else x←x+gluespace(r)+glueshrink(r)*g; end;
+	[kernnode] x←x+gluespace(q);
+	[rulenode] begin comment vertical rule; integer y00;
+	if height(q)≤-100000.0 then height(q)←height(p); h←roundup(height(q));
+	y00←y0-h+1; comment this way of calculating y00 means that the rule will
+		stop at the baseline if the depth is zero;
+	if depth(q)≤-100000.0 then depth(q)←depth(p); h←roundup(height(q)+depth(q));
+	x0←conv*x; x←x+width(q); w←roundup(width(q));
+	newstring(x0,y00); outrule(x0,y00,h,w); end;
+	[whatsitnode] houtext(q,x,y) # for extensions to TEX;
+	[vlistnode] begin vlistout(q,x,y-height(q)+shiftamt(q)); x←x+width(q); end;
+	[hlistnode] begin hlistout(q,x,y+shiftamt(q)); x←x+width(q); end;
+	[leadernode] begin integer b; real ww;
+	b←field(value,m) # pointer to box used for horizontal leaders;
+	ww←width(b); if ww&lt;0 and type(b)≠rulenode then ww←0;
+	if ww≠0 and type(link(q))=gluenode then
+		begin integer r; real s;
+		q←link(q); r←value(q) # pointer to glue spec;
+		if g=0 then s←gluespace(r)
+		else if g&gt;0 then s←gluespace(r)+gluestretch(r)*g
+		else s←gluespace(r)+glueshrink(r)*g;
+		if ww&gt;0 then
+			begin integer q # quotient; real xx # x surrogate;
+			q←x/ww-epsilon;
+			xx←ww*(q+1) # the smallest suitable multiple of ww;
+			while xx+ww≤x+s do
+				begin if type(b)=hlistnode then hlistout(b,xx,y)
+				else vlistout(b,xx,y-height(b));
+				xx←xx+ww;
+				end;
+			end
+		else	begin comment variable horizontal rule; short integer y00;
+			h←roundup(height(b));y00←y0-h+1;
+			h←roundup(height(b)+depth(b));
+			w←roundup(s);x0←conv*x;
+			newstring(x0,y00);outrule(x0,y00,h,w);
+			end;
+		x←x+s;
+		end;
+	end;
+	else end # ignore other node types;
+	q←link(q);
+	end;
+end;
+comment The sorting routine: shellsort;
+
+simp procedure shellsort;
+begin comment This procedure sorts strinfo[0]...strinfo[nstrs] into
+increasing order, where nstrs≥0. Since the array already tends to be
+increasing, Shell's method is used (Algorithm 5.2.1S);
+integer delta,i;
+
+delta←1; while 9*delta+3&lt;nstrs do delta←3*delta+1;
+while delta&gt;0 do
+	begin for i←delta thru nstrs do if strinfo[i-delta]&gt;strinfo[i] then
+		begin integer j,k,t;
+		j←i-delta; t←strinfo[i]; k←i;
+		do	begin strinfo[k]←strinfo[j];
+			k←j; j←j-delta;
+			end until j&lt;0 or strinfo[j]≤t;
+		strinfo[k]←t;
+		end;
+	delta←delta div 3;
+	end;
+end;
+internal procedure shipout(integer p) # the main output procedure,produces one page;
+begin comment Parameter p points to a vlist box that is to be output;
+short integer y0prev,i,cutplace;
+if ochan&lt;0 then declareofil(&quot;TEXOUT.XGP&quot;) # make sure output file is open;
+nstrs←-1 # no strings;
+vlistout(p,200.14159/conv,200.14159/conv) # prepare table of command strings;
+comment the &quot;200&quot; here leaves an inch of margin for cases where the user
+	has gone outside the box with negative glue;
+if nstrs≥0 then
+	begin IFSUAI out(ochan,cutit) # cut paper and begin new page; ENDSUAI
+DEBUGONLY print(&quot;[&quot;,nstrs,&quot; strings]&quot;);
+	no_output_yet←false;
+	totalpages←totalpages+1;
+	shellsort # sort the strinfo's;
+	y0prev←-1;
+	for i←0 thru nstrs do
+		begin integer j,w,y0;
+		j←field(sref,w←strinfo[i]);
+		if (y0←field(y0,w))≠y0prev then
+			begin out(ochan,torow(y0)); y0prev←y0 # move to row y0;
+			end;
+		out(ochan,tocol(field(x0,w))) # move to column x0;
+		out(ochan,strings[j]) # output the command string;
+		end;
+	cutplace←200.14159+conv*(height(p)+depth(p))+199 # bottom edge plus 1 inch;
+	paperpixels←paperpixels+cutplace;
+	if cutplace&lt;y0prev then print(nextline,&quot;Warning: page limits exceeded!&quot;);
+	out(ochan,torow(cutplace)) # move to bottom edge with 1-inch margin;
+	arrclr(strings) # set all strings null, in preparation for next page
+		(and to make SAIL's garbage collector happy);
+	IFMIT out(ochan,cutit) # We cut at end of page; ENDMIT
+	end;
+end;
+internal procedure closeout # just before TEX stops, do this;
+begin integer n,f;
+boolean nochars # no characters have been used;
+if no_output_yet then
+	begin print(nextline,&quot;No output file.&quot;); return;
+	end;
+
+IFSUAI
+comment Get ready to write the preamble and postamble;
+    begin
+	label loc;
+	comment This is very machine-dependent code;
+	useto(ochan,1) # write out last block before postamble;
+	dpb(ochan,point(4,memory[location(loc)],12)) #
+		store &quot;ochan&quot; into machine-language instruction;
+	start_code loc: ugetf n end # this is the machine-language instruction;
+	comment now n has the block address of the postamble, and
+		the file is positioned ready to write the postamble;
+	useto(ochan,n) # gets around a bug in SAIL, pointer off by one;
+    end;
+
+comment Now write the postamble;
+nochars←true;
+for f←0 thru nfonts-1 do if fontname[f] then
+	begin integer c,prevc;
+	prevc←-1;
+	for c←(f lsh 7) thru (f lsh 7)+'177 do if fontinfo[c]&lt;0 then
+		begin comment c is a &quot;used&quot; character;
+		if prevc&lt;0 then
+			begin out(ochan,&quot;/FONT#&quot;);
+			out(ochan,cvs(f+1));
+			out(ochan,&quot;=&quot;);
+			out(ochan,fontname[f]);
+			out(ochan,&quot;=&quot;);
+			nochars←false;
+			end;
+		out(ochan,c&amp;null); prevc←c;
+		end;
+	if prevc≥0 then out(ochan,prevc&amp;null) # repeat last character;
+	end;
+if nochars then out(ochan,&quot;/PMAR=0&quot;) # the postamble must be nonempty;
+ENDSUAI
+
+comment Now write the preamble;
+
+useto(ochan,1) # reposition the file at its beginning (block 1);
+
+IFSUAI
+    out(ochan,&quot;/NOWRAPAROUND/LMAR=50/TMAR=50/RMAR=1700/BMAR=1/PMAR=0/XLINE=0/FONT#0=NGR13/USETI=0000&quot;);
+    setformat(-5,5) # cvs will return a string of length 5, including leading zeroes;
+    out(ochan,cvs(n)) # output &quot;nnnnn&quot;;
+    for f←1 thru 110 do out(ochan,&quot;*TEX*&quot;) # that ends the preamble;
+ENDSUAI
+
+IFMIT
+  begin
+    integer charcount;
+    charcount←0;
+    define countout(str) =
+	    ⊂begin string foo;
+		    foo←str;
+		    out(ochan,foo);
+		    charcount←charcount+length(foo)
+	     end⊃;
+    countout(⊂&quot;;SKIP 1&quot; &amp; nextline &amp;
+		&quot;;TOPMAR 50&quot; &amp; nextline &amp;
+		&quot;;BOTMAR 1&quot; &amp; nextline &amp;
+		&quot;;LFTMAR 50&quot; &amp; nextline &amp;
+		&quot;;LSP 0&quot; &amp; nextline &amp;
+		&quot;;KSET 13VG&quot;⊃);
+    for f←0 thru nfonts-1 do countout(⊂&quot;,&quot;&amp;fontname[f]⊃);
+    countout(nextline);
+    for f←0 thru nfonts-1 do
+	if fontname[f] then
+	    begin
+		integer j,k;
+	  	countout(⊂&quot;;KSUBSET &quot;&amp;cvs(f+1)⊃);
+		for k←0 thru 3 do
+		    begin
+			integer bits;
+			bits←0;
+			for j←0 thru 31 do
+			    begin
+				bits←bits lsh 1;
+				if fontinfo[(f lsh 7)+(k lsh 5)+j]&lt;0 then bits←bits+1;
+			    end;
+			countout(&quot; &quot;&amp;cvos(bits))
+		    end;
+		countout(nextline)
+	    end;
+    countout(&quot;TEX&quot;);
+    if charcount &gt; 5*'200*5-5 then begin error(&quot;Preamble block too long&quot;); quit end;
+    for n←charcount thru 5*'200*5-5 do out(ochan,&quot; &quot;);
+    out(ochan,nextline);
+    out(ochan,'14&amp;null)	# formfeed;
+  end;
+ENDMIT
+
+release(ochan);
+IFSUAI
+    setformat(0,7);
+    ptostr(0,&quot;xspool &quot;&amp;ofilname&amp;&quot;/head/q/xgp/ntn=33/plimit=&quot;&amp;
+     cvs(totalpages max(paperpixels div 2200 + 1))) # suggest file spooling to user;
+ENDSUAI
+end;
+end
+
+</PRE>
+</BODY>
+</HTML>

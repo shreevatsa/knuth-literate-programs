@@ -1,0 +1,656 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00007 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00002 00002	The following declarations are used in all of TEX's modules.
+C00009 00003	Declarations internal to TEXSYS
+C00018 00004	Declarations internal to TEXSYN
+C00042 00005	Declarations internal to TEXSEM
+C00057 00006	Declarations internal to TEXOUT
+C00059 00007	Declarations internal to TEXEXT
+C00062 ENDMK
+Cⓧ;
+comment The following declarations are used in all of TEX's modules.
+Only brief explanatory comments appear here -- fuller documentation appears
+in each individual module.
+
+This page lists several standard abbreviation conventions.
+The next five pages include declarations of everything external that is
+internal to TEXSYS, TEXSYN, TEXSEM, TEXOUT, TEXEXT, respectively;
+
+require &quot;⊂⊃⊂⊃&quot; delimiters; &quot;used for macros&quot;
+define # = ⊂;comment⊃; &quot;used henceforth instead of quoted comments like this&quot;
+
+comment be careful to define the following flags consistently;
+define SUAI = ⊂true⊃ # turns on code for Stanford;
+define MIT = ⊂false⊃ # turns on MIT code due (originally) to Guy Steele;
+define TENEX = ⊂false⊃ # turns on code for Tenex sites;
+define PARC = ⊂false⊃ # turns on PARC code due to Doug Wyatt &amp; Leo Guibas;
+define TOPS20 = ⊂false⊃ # turns on TOPS20 code due to Trabb &amp; Co.;
+define TOPS10 = ⊂false⊃ # turns on TOPS10 code due to Phil Sherrod;
+define EMACS = ⊂false⊃ # turns on special TOPS20 code that switches to EMACS editor;
+define DVIOUT = ⊂false⊃ # turns on special TOPS20 code that generates DVI files;
+define IFSUAI = ⊂ifc SUAI thenc⊃;
+define IFMIT = ⊂ifc MIT thenc⊃;
+define IFTENEX = ⊂ifc TENEX thenc⊃;
+define IFPARC = ⊂ifc PARC thenc⊃;
+define IFTOPS20 = ⊂ifc TOPS20 thenc⊃;
+define IFTOPS10 = ⊂ifc TOPS10 thenc⊃;
+define IFDVIOUT = ⊂ifc DVIOUT thenc⊃;
+define ENDSUAI = ⊂endc⊃;
+define ENDMIT = ⊂endc⊃;
+define ENDTENEX = ⊂endc⊃;
+define ENDPARC = ⊂endc⊃;
+define ENDTOPS20 = ⊂endc⊃;
+define ENDTOPS10 = ⊂endc⊃;
+define ENDDVIOUT = ⊂endc⊃;
+
+comment Here are consistency checks on the flag settings;
+define kaput(m) = ⊂ifc m thenc require &quot; Whoops!
+	m =&gt; you better try again!
+	&quot; message; endc⊃; comment kaput(c) means compilation is kaput if c holds;
+kaput(SUAI and MIT);
+kaput(SUAI and TENEX);
+kaput(TENEX and MIT);
+kaput(not(SUAI or  MIT or TENEX or TOPS10));
+kaput(TOPS10 and (SUAI or MIT or TENEX));
+kaput(TOPS20 and (not TENEX));
+kaput(PARC and (not TENEX));
+kaput(TOPS20 and PARC);
+kaput(EMACS and (not TOPS20));
+kaput(DVIOUT and (not TOPS20));
+
+define nextline = ⊂('15&amp;'12)⊃ # carriage-return and line-feed in print commands;
+define epsilon = ⊂10^-20⊃    # a rather small but positive number;
+define thru = ⊂step 1 until⊃ # abbreviation for for clauses;
+define loop = ⊂while true do⊃ # abbreviation for loops exited by &quot;done&quot; or &quot;return&quot;;
+define DEBUGONLY = ⊂comment⊃ # changed to ⊂⊃ when debugging TEX;
+DEBUGONLY external procedure bail # the SAIL debugger in case of need;
+IFTOPS20 define inchwl = ⊂intty⊃ # makes backspaces work on displays; ENDTOPS20
+IFTOPS10 define texdevice = ⊂&quot;DSKB&quot;⊃ # device on which TEX library is stored;
+	define texppn = ⊂&quot;[30,34]&quot;⊃ # ppn where TEX library is stored;
+ENDTOPS10
+
+define bitsperwd = 36	     # word size in this implementation;
+comment The TEX programs can be adapted for machines with somewhat smaller
+word size (e.g. 32 bits), so all word-size dependent quantities are
+defined symbolically to aid in this conversion;
+
+define internaldef = ⊂comment⊃ #
+	When a quantity is defined below, e.g. &quot;define parsize=25&quot;, the
+	TEX module where it is appropriate to introduce the quantity will
+	include an internal definition for documentation purposes,
+	e.g. &quot;internaldef parsize = 25&quot;. The internal definitions are
+	not necessarily up-to-date, however... for example, the TEXSYN
+	module might say &quot;internaldef parsize = 100&quot; but parsize might
+	really be only 25, as defined here;
+
+define FIXTHIS = ⊂comment⊃ # marks things that still need to be done;
+
+FIXTHIS: Make all of the TEX documentation crystal clear;
+
+define saf = ⊂safe⊃ # used when an array is believed to require no bounds checks;
+define simp = ⊂simple⊃ # used when SAIL can save time implementing this procedure;
+DEBUGONLY redefine saf = ⊂⊃ # when debugging, belief turns to disbelief;
+DEBUGONLY redefine simp = ⊂⊃ # and simplicity dies too;
+
+define JSTAT = ⊂comment⊃ # changed to ⊂⊃ when keeping justification statistics;
+define MSTAT = ⊂comment⊃ # changed to ⊂⊃ when watching TEX's memory usage;
+DEBUGONLY redefine JSTAT = ⊂⊃;
+DEBUGONLY redefine MSTAT = ⊂⊃;
+comment Declarations internal to TEXSYS;
+
+comment The first three definitions are really internal to TEXSEM, but had to
+be moved here so that they are defined before their use;
+define alignsize=4 # max number of simultaneous alignments;
+define gluespecsize=4 # number of words allocated in glue specifications;
+define insspecsize=5 # number of words allocated in insert specifications;
+define nfonts=64 # number of fonts allowed, must be a power of 2;
+
+external procedure quit # closes output files and terminates TEX;
+external boolean pausing_on_errors # should TEX wait after error messages?;
+external boolean not_nonstop # should TEX wait for other reasons?;
+external boolean deletions_allowed # is it safe for error routine to call getnext?;
+external procedure error(string s) # prints an error message;
+external procedure backerror(string s) # error followed by backinput;
+external procedure errorstop(string s) # prints message and dies;
+external procedure reportoverflow(string s; integer n)
+	# for fatal errors when a TEX table is undersized;
+define overflow(s)=⊂reportoverflow(&quot;s&quot;,s)⊃ # specifies inadequate table size;
+external procedure memoverflow # overflow(memsize);
+external procedure confusion # TEX consistency check failure;
+external procedure mustquit # user input is really wild;
+
+define links = 15 # number of bits per pointer;
+define memsize=32768 # size of dynamic list memory, must be ≤ 2^links;
+define varsize=17000 # size of variable node memory, must be &lt;&lt; memsize;
+ifc not SUAI thenc
+DEBUGONLY redefine memsize=3000 # size of dynamic list memory, must be ≤ 2^links;
+DEBUGONLY redefine varsize=1000 # size of variable node memory, must be &lt;&lt; memsize;
+endc
+external saf integer array mem[0:memsize] # dynamic list memory;
+define memreal(p)=⊂memory[location(mem[p]),real]⊃ # mem[p] as type real;
+define avail=⊂mem[memsize]⊃ # head of available space list for one-word nodes;
+MSTAT external integer dynused,varused # how much memory is in use;
+MSTAT external integer maxdynused,maxvarused # how much memory was in use;
+define fs(f) = ⊂f⊃&amp;&quot;s&quot; # field size of f, in bits;
+define fd(f) = ⊂f⊃&amp;&quot;d&quot; # field displacement of f, in bits;
+define field(f,x) = ⊂ifc fd(f)=0 thenc ((x) land (2^fs(f)-1))
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc ((x) lsh -fd(f))
+	elsec (((x) lsh -fd(f)) land (2^fs(f)-1)) endc endc⊃ # field f of x;
+define setfield(f,x,y) = ⊂ifc fd(f)=0 thenc x←(x land(-2^fs(f)))+(y)
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc 
+		x←((x lsh(bitsperwd-fd(f)))+(y))rot fd(f)
+	elsec x←(((x rot -fd(f))land(-2^fs(f)))+(y))rot fd(f) endc endc⊃
+		# sets field f of x equal to y, 0 ≤ y &lt; 2^fs(f);
+define ufield(f,x) = ⊂((x) land((1 lsh(fs(f)+fd(f)))-2^fd(f)))⊃
+		# unshifted field f of x;
+define setufield(f,x,y) = ⊂x←(x land lnot((1 lsh(fs(f)+fd(f)))-2^fd(f)))+(y)⊃
+		# field f of x set to unshifted value y;
+define linkd = 0 # displacement of link field;
+define link(p) = ⊂field(link,mem[p])⊃ # link field of mem[p];
+define setlink(p,y) = ⊂setfield(link,mem[p],y)⊃ # sets link(p)←y;
+define infod = links, infos = bitsperwd-infod # definition of info field;
+define info(p) = ⊂field(info,mem[p])⊃ # info field of mem[p];
+define setinfo(p,y) = ⊂setfield(info,mem[p],y)⊃ # sets info(p)←y;
+
+define getavail(p) = ⊂begin if(p←avail)then avail←mem[avail]
+	else memoverflow; MSTAT dynused←dynused+1;
+	MSTAT if dynused&gt;maxdynused then maxdynused←dynused;
+	end⊃ # p ← new node;
+define freeavail(p) = ⊂begin mem[p]←avail; avail←p;
+	MSTAT dynused←dynused-1; end⊃ # node p now available;
+external integer procedure getnode(integer size) # variable-size node allocation;
+external procedure freenode(integer p,size) # variable-size node liberation;
+
+external procedure dslist(integer p) # makes list of 1-word nodes available;
+define refct1 = 1 lsh infod # 1 in the information (reference count) field;
+external simp procedure delrclink(integer p) # remove ptr to list with ref ct;
+external simp procedure delgluelink(integer p) # remove pointer to glue node;
+DEBUGONLY external procedure checkmem(boolean printlocs) # checks links in mem;
+define fillglue=0 # location of glue specification 0pt plus 10^10 pt;
+define filglue=gluespecsize # loc of glue spec 0pt plus 10^5 pt;
+define filglueneg=filglue+gluespecsize # loc of glue spec 0pt plus -10^5;
+define lowerfillglue=filglueneg+gluespecsize # loc of glue specification
+		0pt plus 10^5pt minus 10^5 pt;
+define zeroglue=lowerfillglue+gluespecsize # loc of glue specification 0pt;
+define separatorspec=zeroglue+gluespecsize # loc of botsep, topsep specs;
+define fontglue=separatorspec+2*insspecsize # location of glue for variable spaces;
+define firstmem=fontglue+nfonts*gluespecsize # location of 
+		first usable mem word, must be &gt;0;
+define waitinghead=varsize # head of list of inserts too big for current page;
+define contribhead=waitinghead+1 # head of contribution vlist for current page;
+define pagehead=contribhead+1 # head of vlist for current page;
+define temphead=pagehead+1 # temporary head of a miscellaneous list;
+define holdhead=temphead+1 # temporary head of another miscellaneous list;
+define alignhead=holdhead+1 # alignhead+j is head of jth alignrecordlist;
+define inserts=alignhead+alignsize # head of insert list returned by packager;
+define active=inserts+1 # head of active list in justifier;
+define inactive=active+1 # head of inactive list in justifier;
+define secondmem=inactive+1 # first usable mem word in 1-word area;
+external procedure initmem # initializes the memory system;
+comment Declarations internal to TEXSYN;
+
+external integer curcmd # the current command code appearing in the input;
+external integer curchar # the current character code appearing in the input;
+define escape=0	# escape delimiter (\ in TEX manual);
+define lbrace=1	# begin block symbol ( { );
+define rbrace=2	# end block symbol ( } );
+define mathbr=3    # math break ( $ );
+define tabmrk=4	# tab mark ( ⓧ );
+define carret=5	# carriage return and comment mark ( % );
+define macprm=6	# macro parameter ( # );
+define supmrk=7	# superscript ( ^ );
+define submrk=8	# subscript ( ↓ );
+define ignore=9	# chars to ignore;
+define spacer=10	# chars treated as blank space;
+define letter=11	# chars treated as letters;
+define otherchar=12 # none of the above character types;
+define metaescape=13 # chars that get preceded by the escape character;
+define parend=13	# end of paragraph;
+define match=14	# macro parameter matching;
+define outpar=ignore # output a macro parameter;
+define endv=15	# end of vlist in halign or valign template;
+define kall=16	# call a user-defined macro;
+define xt=17 	# extensions to basic TEX (\x);
+define glueref=18 # user-defined glue;
+define font=19	# user-defined current font;
+define assignreal=20 # user-defined length;
+define def=21	# macro definition (\def,\gdef);
+define output=22	# output routine definition (\output);
+define innput=23	# required input file (\input);
+comment code 24 is currently unused;
+define stop=25	# end of input (\end);
+define ddt=26	# emergency debugging (\ddt);
+define ascii=27	# code for possibly untypeable character (\char);
+define chcode=28	# change chartype table (\chcode);
+define fntfam=29	# declare font family (\mathrm,etc.);
+define setcount=30 # set current page number (\setcount);
+define advcount=31 # increase current page number (\advcount);
+define count=32	# insert current page number (\count);
+define ifeven=33	# conditional on count (\ifeven,\ifpos);
+define ifT=34	# conditional on character T (\ifT);
+define elsecode=35	# delimiter for conditionals (\else);
+define box=36	# saved box (\box,\copy,\page) or justification (\hbox,\vbox);
+define hmove=37	# horizontal motion of box (\moveleft,\moveright);
+define vmove=38	# vertical motion of box (\raise,\lower);
+define save=39	# save a box (\save);
+define leaders=40	# define leaders (\leaders);
+define halign=41	# horizontal table alignment (\halign);
+define valign=42	# vertical table alignment (\valign);
+define noalign=43	# insertion into halign or valign (\noalign);
+define vskip=44	# vertical glue (\vskip,\vfill);
+define hskip=45	# horizontal glue (\hskip,\hfill);
+define vrule=46	# vertical rule (\vrule);
+define hrule=47	# horizontal rule (\hrule);
+define topbotins=48 # inserted vlist (\topinsert or \botinsert);
+define topbotmark=49 # insert mark (\topmark,\botmark);
+define mark=50	# define a mark (\mark);
+define penlty=51	# specify badness of break (\penalty);
+define noindent=52	# begin nonindented paragraph (\noindent);
+define eject=53	# eject page or line here (\eject, \linebreak);
+define discr=54	# discretionary hyphen (\-,\*);
+define accent=55	# attach accent to character (\+);
+define newaccent=56 # define nonstandard accent (\accent);
+define eqno=57	# insert equation number (\eqno);
+define mathonly=58	# character or token allowed in mathmode only;
+define exspace=59	# explicit space (\ );
+define nonmathletter=60 # letter except in mmode;
+define leftright=61 # variable delimiter (\left, \right);
+define caseshift=62 # force specified case (\uppercase,\lowercase);
+define mathinput=63 # component of math formula (\mathop,\mathbin, etc.);
+define limsw=64	# modify limit conventions (\limitswitch);
+define above=65	# numerator-denominator separator(\above,\atop,\over,\comb);
+define mathstyle=66 # style or space specification (\dispstyle,\,,etc.);
+define italcorr=67 # italic correction (\/);
+define vcenter=68  # vbox centered on axis (\vcenter);
+define hangindent=69 # specifies hanging indentation (\hangindent);
+define unskip=70 # nullifies glue (\unskip);
+define ifmode=71 # tests current mode (\ifvmode,\ifhmode,\ifmmode);
+define deffont=72 # defines a font file (\font);
+define unbox=73 # unglues the contents of a box (\unbox);
+define send=74 # for opening files and sending stuff to them (\open, \send);
+define ifdimen=75 # tests the relation between two dimensions (\ifdimen);
+define codeval=76 # reads out the value of a code (\codeval, \parval);
+define altname=77 # alternate name for a control sequence (\let);
+define shape=78 # fancy paragraph shapes (\parshape);
+define assignglue=79 # redefine special glue (\baselineskip, etc.);
+define skp=80 # often-used glue (\skip);
+define spcfctr=81 # set a particular space factor (\spacefactor);
+define ifx=82 # compare control sequences (\ifx);
+define maxopcode=ifx # the largest code number;
+define charcodes=metaescape+1 # number of distinct codes allowed in chartype;
+define texpars=21 # number of distinct parameters settable by \chpar command;
+
+define hashsize = 1009 # hashtable size, should be less than 2^chars-127;
+define locs = 23 # values of local quantities (\:, \baselineskip, etc.);
+external saf integer array hash[locs:hashsize-1] # hash table referring to names;
+define havail = ⊂hash[hashsize]⊃ # pointer to avail location in hash table;
+define hprime = 89 # range of hash values;
+external saf integer array hhead[0:hprime-1] # heads of lists in hash table;
+define eqtbsize=hashsize+128+256+15+texpars # size of equivalents table;
+external saf integer array eqtb[0:eqtbsize-1] # equivalents of symbols &amp; parameters;
+define chartype(c) = ⊂eqtb[c+(hashsize+128)]⊃ # cmds associated with chars;
+define mmodecode(c) = ⊂eqtb[c+(hashsize+256)]⊃ # codes for math mode interpretation;
+comment eqtb[hashsize+384:hashsize+395] is for the &quot;mathfonttable&quot;, see TEXSEM p.7;
+define innerhangbegin = ⊂eqtb[hashsize+396]⊃ # hanging indent for \hbox par ...;
+define innerhangfirst = ⊂eqtb[hashsize+397]⊃ # see TEXSEM p.18,19;
+define innerhangwidth = ⊂memory[location(eqtb[hashsize+398]),real]⊃;
+define tracing = ⊂eqtb[hashsize+399]⊃ # controls diagnostics, see TEXSEM p.4;
+define jpar = ⊂eqtb[hashsize+400]⊃ # controls justification, see TEXSEM p.13;
+define hpen = ⊂eqtb[hashsize+401]⊃ # hyphenation penalty, see TEXSEM p.13;
+define penpen = ⊂eqtb[hashsize+402]⊃ # penultimate penalty, see TEXSEM p.13;
+define wpen = ⊂eqtb[hashsize+403]⊃ # widow-line penalty, see TEXSEM p.13;
+define bpen = ⊂eqtb[hashsize+404]⊃ # broken-line penalty, see TEXSEM p.13;
+define mbpen = ⊂eqtb[hashsize+405]⊃ # binary-op-break penalty, see TEXSEM p.15;
+define mrpen = ⊂eqtb[hashsize+406]⊃ # relation-break penalty, see TEXSEM p.15;
+define ragged = ⊂eqtb[hashsize+407]⊃ # raggedness, see TEXSEM p.13;
+define disppen = ⊂eqtb[hashsize+408]⊃ # penalty before a display, see TEXSEM p.18;
+define dumplength = ⊂eqtb[hashsize+409]⊃ # token list length, see TEXSYN p. 8;
+define radsign = ⊂eqtb[hashsize+410]⊃ # code for radical signs, see TEXSEM p.15;
+define rfudge = ⊂eqtb[hashsize+411]⊃ # 1000*magnification, see TEXSYN p.15;
+define adjpen = ⊂eqtb[hashsize+412]⊃ # adjacent-line penalty, see TEXSEM p.13;
+define loose = ⊂eqtb[hashsize+413]⊃ # paragraph looseness, see TEXSEM p.13;
+define jjpar = ⊂eqtb[hashsize+414]⊃ # first-pass feasibility, see TEXSEM p.13;
+define uchyph = ⊂eqtb[hashsize+415]⊃ # hyphenates upper case, see TEXSEM p.13;
+define exhyph = ⊂eqtb[hashsize+416]⊃ # penalty after hyphen or dash, TEXSEM p.13;
+define xpar1 = ⊂eqtb[hashsize+417]⊃ # first parameter for extensions;
+define xpar2 = ⊂eqtb[hashsize+418]⊃ # second parameter for extensions;
+define xpar3 = ⊂eqtb[hashsize+419]⊃ # third parameter for extensions;
+
+define idlevs=5,idlevd=links		# idlev field in eqtb;
+define idcmdd=idlevs+idlevd,idcmds=bitsperwd-idcmdd # idcmd field in eqtb;
+external integer hashpar # address of \par in the hash table;
+external integer hashsend # address of \send in the hash table;
+
+external integer curlev # the current level of nesting, times 2^idlevd;
+define savesize = 300 # size of savestack;
+external integer saveptr # first unused entry on savestack;
+external saf integer array savestack[0:savesize+2] # place for dormant eqtb entries;
+define level1 = 1 lsh idlevd;
+external procedure initsave # initialize the save-restore mechanism;
+external simp procedure eqdefine(integer index,cmd,lnk) # change eqtb entry;
+external procedure chcodedef(integer index,value) # eqdefine for char codes;
+external integer procedure unsave # clears off top nesting level of savestack
+	and returns the ending-routine code;
+external simp procedure newsavelevel(integer endcode) # starts new nesting level;
+define bottomlevel=1,simpleblock=2,trueend=3,aligncode=4,mathcode=5,
+outputend=6,noalignend=7,botinsend=8,topinsend=botinsend+1,
+botsepend=botinsend+2,topsepend=botinsend+3,justend=12,
+mathblock=13,mathleft=14,endvcenter=15,endscanmath=16,falseend=17;
+
+external integer hashentry # the most recent hash table location;
+external procedure idlookup(boolean single; integer p,h) # searches the hashtable;
+external string procedure idname(integer h) # the name associated with eqtb[h];
+external simp procedure controlseq # gets a packed name from the input;
+external procedure hashout(integer m) # removes the hashtable entry in hash[m];
+define fontloc=0, lineskiploc=1, baselineskiploc=2, parskiploc=3,
+dispskiploc=4, topskiploc=5, botskiploc=6, tabskiploc=7, dispaskiploc=8,
+dispbskiploc=9, spaceskiploc=10, parfillskiploc=11,
+xspaceskiploc=12, specskiploc=13 # allocation of the &quot;loc&quot; variables;
+define xloc(x) = ⊂x⊃&amp;&quot;loc&quot; # eqtb location for x;
+define eqlink(x) = ⊂field(link,eqtb[xloc(x)])⊃ # stored link field for x;
+external integer escapechar # set to the first character of user input;
+
+define stacksize=80 # maximum number of simultaneous input sources;
+external saf string array inbufstack[0:stacksize]; external string inbuf
+	# current lines being input from a character file;
+external saf string array curbfstack[0:stacksize]; external string curbuf
+	# the parts of inbuf that haven't yet been input;
+external saf string array filenmstack[0:stacksize]; external string filename
+	# the names of the current character files;
+external saf integer array statestack[0:stacksize]; external integer state
+	# current scanner state codes;
+external saf integer array locstack[0:stacksize]; external integer loc
+	# current scanner locations;
+external saf integer array recvrystack[0:stacksize]; external integer recovery
+	# information about what to do when done on each level;
+external saf integer array lvlstack[0:stacksize]; external integer lvl
+	# nesting level at which current page started;
+external integer inptr # first unused location in input stacks;
+define tokenlist=0 # scanning a token list;
+define midline=1 # scanning a line of characters;
+define skipblanks=1+charcodes # like midline but ignoring blanks;
+define newline=1+2*charcodes # beginning a new line of characters;
+define parsize=26 # max number of simultaneous parameters;
+external saf integer array parstack[0:parsize-1] # token-list ptrs for parameters;
+external integer parptr # first unused location in parstack;
+external string pagewarning # when this string is non-null, the user's source file
+	probably shouldn't contain any form-feeds (end-of-page marks);
+external integer warnindex # reference to hash table for control sequence used
+	in error message when giving a pagewarning;
+
+define chars=11,chard=0 # definition of char field in packed tokens;
+define cmds=4,cmdd=chars # definition of cmd field in packed tokens;
+external saf string array tokstring[0:1] # output of displaylist;
+external procedure dumplist(integer p,q) # makes strings out of a token list;
+external string procedure dumptokens(integer p) # simple special case of dumplist;
+
+external simp procedure pushinput # save current input status on the stacks;
+define inslist(p)=⊂begin pushinput;state←tokenlist;loc←recovery←p end⊃;
+external simp procedure insrclist(integer l) # like inslist for lists with
+	reference counts;
+external simp procedure popinput # finish input level, restore the previous;
+external integer brchar # break character stored by system input;
+external integer eof # end-of-file code stored by system input;
+external procedure poptokenlist # do this when a tokenlist has been scanned;
+external procedure initin # get TEX input system ready to start;
+external string curfile # current input file name, set by dumpcontext;
+external integer curfpage,curfline # set by dumpcontext;
+external procedure dumpcontext # prints where the scanner is;
+
+external simp procedure getnext # sends next input token to curcmd,curchar;
+external integer curtok # current token set by gettok and getnctok;
+external simp procedure getncnext # gets next non-call input token;
+external simp procedure gettok # set curcmd, curchar, and curtok;
+external simp procedure getnctok # get next non-call token and sets curtok;
+
+external procedure macrodef(integer gdef);
+external integer procedure scantoks # build tokenlist for output and mark, etc.;
+
+external procedure macrocall # invoke a user-defined control sequence;
+external procedure inputfile;
+external saf string array fontname[0:nfonts-1] # user name for each font code;
+IFDVIOUT
+external saf string array dvifontname[0:nfonts-1] # font name for dvi file;
+ENDDVIOUT
+external integer procedure opendigit(integer d) # Do this after &quot;\open d =&quot;;
+external procedure definefont(integer f) # Do this after seeing &quot;=&quot; of font def;
+
+external simp procedure backinput # puts curtok back into the input;
+external simp integer procedure scandigit # scans &quot;0&quot;...&quot;9&quot;;
+external simp procedure scanlb # scans {;
+external boolean procedure scanstring(string s) # scans a given letter string;
+external integer nbrlength # length of scanned number;
+external integer nbrsign # sign, if any, preceding scanned number;
+external recursive integer procedure scannumber # scans a decimal or octal number;
+
+external integer dimmode # Specifies allowable dimensions;
+external real procedure scanlength # scans a length specification;
+external integer procedure scanglue # scans a glue specification;
+external procedure scanspec # scans a justification specification and a {;
+
+external simp integer procedure scanfont(boolean usingit) # scan a font code;
+external saf integer array delimtable[0:127] # contains 18-bit delimiter codes
+	for all known delimiters, or -1 for nondelimiters;
+external integer procedure scandelim # scans a math delimiter;
+external integer procedure scanrulespec # scans rule dimensions;
+
+external procedure passblock # scans past an entire {} block and optional space;
+external procedure insnum(integer n) # puts string version of n into input;
+external procedure scancond(boolean b) # scanning for if-then-else constructs;
+comment Declarations internal to TEXSEM;
+
+define types=5, typed=bitsperwd-types # definition of type field;
+comment types must be at least 5;
+define values=typed-links, valued=links # definition of value field;
+comment values must be ≥ links;
+
+define type(p)=⊂field(type,mem[p])⊃  # shorthand for type field;
+define value(p)=⊂field(value,mem[p])⊃  # shorthand for value field;
+define charnode=0 # type code for a character box;
+	comment fields of the value field of a charnode;
+	define chrs=7, chrd=0 # character code;
+	define fonts=5, fontd=chrs # font;
+	define fchrs=chrs+fonts, fchrd=chrd # font and char (index into fontinfo);
+define hlistnode=1 # type code for a box made from an hlist;
+define vlistnode=2 # type code for a box made from a vlist;
+define boxnodesize=6 # number of words to allocate for a box node;
+define width(p)=⊂memreal(p+1)⊃ # width field in nodes;
+define depth(p)=⊂memreal(p+2)⊃ # depth field in nodes;
+define height(p)=⊂memreal(p+3)⊃ # height field in nodes;
+define shiftamt(p)=⊂memreal(p+4)⊃ # amount to shift this box;
+define glueset(p)=⊂memreal(p+5)⊃ # glueset field in box nodes;
+define rulenode=3 # type code for a &quot;black box&quot;;
+define rulenodesize=4 # number of words to allocate for it;
+define whatsitnode=4 # type code for special nodes used by extensions;
+define gluenode=5 # type code for a node that points to glue specification;
+internaldef gluespecsize=4 # number of words allocated in glue specifications*;
+internaldef insspecsize=5 # number of words allocated in insert specifications*;
+define gluespace(p)=⊂memreal(p+1)⊃ # normal spacing of glue;
+define gluestretch(p)=⊂memreal(p+2)⊃ # stretching factor of glue;
+define glueshrink(p)=⊂memreal(p+3)⊃ # shrinking factor of glue;
+define leadernode=6 # type code for leaders node;
+define kernnode=7 # type code for kerning node;
+define kernnodesize=2 # number of words in kern node;
+
+external saf integer array savedbox[&quot;0&quot;:&quot;:&quot;] # pointers to saved boxes;
+
+external recursive procedure dsnodelist(integer p) # frees a list of boxes;
+
+external integer nestptr # points to first unused in semantic stacks;
+define nestsize = 40 # max number of things going on simultaneously;
+external saf integer array modestack[0:nestsize-1]; external integer mode
+	# current activity modes;
+external saf integer array headstack[0:nestsize-1]; external integer head
+	# pointers to list heads for lists being constructed;
+external saf integer array curndstack[0:nestsize-1]; external integer curnode
+	# pointers to nodes most recently added to the current lists;
+external saf real array auxstack[0:nestsize-1]; external real aux;
+	# auxiliary parameter (either spacefactor or prevdepth or incompleatnoad);
+define prevdepth=⊂aux⊃, spacefactor=⊂aux⊃,
+	incompleatnoad=⊂memory[location(aux),integer]⊃;
+define vmode=1 # vertical mode;
+define hmode=2+maxopcode # horizontal mode;
+define mmode=3+2*maxopcode # math mode;
+define flag=⊂(1 rot -1)⊃ # most significant bit of word;
+define fflag=⊂(3 rot -2)⊃ # two most significant bits of word;
+
+external saf integer array kount[&quot;0&quot;:&quot;9&quot;];
+external saf integer array savedkount[&quot;0&quot;:&quot;9&quot;] # values of kount[&quot;0&quot;:&quot;9&quot;]
+						before output routine invoked;
+external boolean outputdormant # true if the user output routine is not active;
+external integer topmark,botmark,firstmark # pointers to the mark tokenlists;
+comment \counts (kount[&quot;0&quot;] is page number used in messages to user);
+define pagememsize=8 # number of page parameters (really dimen parameters);
+external saf real array pagemem[0:pagememsize-1] # page parameters;
+define hsizemem=0 # location where hsize is stored in pagemem;
+define vsizemem=1 # location where vsize is stored in pagemem;
+define maxdepthmem=2 # location where maxdepth is stored in pagemem;
+define parindentmem=3 # location where parindent is stored in pagemem;
+define topbaselinemem=4 # loc where topbaseline is stored in pagemem;
+define mathsurrmem=5 # loc where mathsurround is stored in pagemem;
+define varunitmem=6 # loc where varunit is stored in pagemem;
+define lineskiplimitmem=7 # loc where lineskiplimit is stored in pagemem;
+
+define dispstyle=0,textstyle=1,scriptstyle=2,scriptscriptstyle=3;
+define mathfonttable(f)=⊂eqtb[f+hashsize+384]⊃ # font numbers for math setting;
+define boxnoad=0, opnoad=1, binnoad=2, relnoad=3, opennoad=4, closenoad=5,
+	punctnoad=6;
+define sqrtnoad=7,overnoad=8,undernoad=9,accentnoad=10,abovenoad=11;
+define leftnoad=12,rightnoad=13;
+define nodenoad=14, stylenoad=15;
+define thinspace=8,thickspace=9,quadspace=10,negthinspace=11,negthickspace=12,
+negopspace=13,userspace=14,nospace=7,opspace=17,thspace=15,negthspace=16,mspace=18;
+
+define fmemsize=8000 # size of font memory for secondary tables;
+external saf integer array fmem[0:fmemsize-1] # font memory for secondary font info;
+external integer fmemptr # first unused location in fmem;
+define fmemreal(k)=⊂memory[location(fmem[k]),real]⊃;
+
+comment the 7-bit char assumption is too deeply built in!;
+external saf integer array fontinfo[0:128*nfonts-1] # primary font info table;
+external saf integer array wdbase,htbase,dpbase,icbase,lgbase,krbase,
+	extbase, parbase[0:nfonts-1] # base addresses in fmem for
+	secondary font tables;
+
+external saf integer array fcksum[0:nfonts-1];
+external saf real array fsize[0:nfonts-1] # at-size of fonts;
+external saf real array dsize[0:nfonts-1] # design size of fonts;
+external saf integer array fpfi[0:nfonts-1,1:5];
+external saf integer array fpfb[0:nfonts-1];
+IFPARC external boolean nextfonteightbit # set by an extension command.
+	If true, causes next \font to refer to '200 through '377 portion
+	of a font, instead of the normal '000 through '177;
+ENDPARC
+
+define rmd=4,rms=8,tgd=12,tgs=2,icd=14,ics=6,dpd=20,dps=4,
+	htd=24,hts=4,wdd=28,wds=8;
+define tagnone=0, taglig=1,taglist=2,tagvar=3;
+define charwd(f,t)=⊂fmemreal(wdbase[f]+field(wd,t))⊃
+	# width in font f, fontinfo t;
+define charht(f,t)=⊂fmemreal(htbase[f]+field(ht,t))⊃
+	# height in font f, fontinfo t;
+define chardp(f,t)=⊂fmemreal(dpbase[f]+field(dp,t))⊃
+	# depth in font f, fontinfo t;
+
+define fontpar(f,t)=⊂fmemreal(parbase[f]+t)⊃ # parameter no. t in font f;
+define slant=0,spacewd=1,spacestr=2,spaceshr=3,xheight=4,quad=5;
+define extraspace=6;
+external procedure readfontinfo(integer chan,f; real psize;
+	boolean atclause) # reads font information file;
+
+external real str,shr # total stretch,shrink found by packaging routine;
+external integer procedure hpackage(integer head; real desiredwidth; boolean xpand);
+external integer procedure vpackage(integer head; real desiredheight; boolean page;
+	integer xpand);
+
+external saf real array sftable[0:127] # spacefactor table;
+external procedure initsftable(real period,query,excl,colon,semi,comma);
+
+define excepsize=337,sufsize=116,prefsize=109,btabsize=30 
+	# hyphenation table sizes;
+external saf integer array exceptable[0:excepsize-1] 
+	# ordered hash table for exceptional words;
+external saf integer array excephyph[1:excepsize-1] 
+	# corresponding hyphenation patterns;
+external saf integer array suffix[0:sufsize-1] # interpretive commands for suffixes;
+external saf integer array prefix[0:prefsize-1] # interpretive cmnds for prefixes;
+external saf integer array btable[2:btabsize+1] # consonant-pair exception table;
+
+external real hangwidth # amount to indent lines (negative if at right margin);
+external integer hangbegin # number of lines to wait before indentation changes;
+external boolean hangfirst # does hanging indent occur before hangbegin or not;
+define prevbrk(p)=⊂mem[p+4]⊃ # break node for best previous break leading here;
+define lineno(p)=⊂mem[p+5]⊃ # state information for this break;
+define curbrk(p)=⊂mem[p+6]⊃ # hlist position of this break;
+define totbad(p)=⊂memreal(p+7)⊃ # best sum of badness^2 up to here;
+define breaknodesize=8 # number of words in a break node;
+external boolean autobreaking # automatic line breaking not shut off by hyphnode;
+external real curwd,curst,cursh # current total width, stretch, and shrink;
+external procedure justification(real initwidth; integer linechange;
+	boolean hangfirst;
+	real hangwidth; boolean penlt) # routine to break hlists almost optimally;
+
+internaldef alignsize=4 # max number of simultaneous alignments*;
+external saf integer array algnlststack[0:alignsize-1];
+external integer alignlist # points to beginning of alignment record list;
+external saf integer array algnrcrdstack[0:alignsize-1];
+external integer alignrecord # points to alignment record in the list;
+external saf integer array algnststack[0:alignsize-1];
+external integer alignstate # if zero, getnext should interrupt ⓧ and \cr tokens;
+external integer alignptr # stack pointer for alignments;
+external procedure aligndelim # do this when ⓧ or \cr is scanned;
+
+external procedure maincontrol # governs all the activities;
+
+comment * means this definition was moved to previous page (topological sort);
+comment Declarations internal to TEXOUT;
+
+external string ofilext # filename extension for output;
+external string deviceext # extension to use in font information files;
+external string ofilname # output file name, set by first \input;
+external string libraryarea # default system area for fonts;
+external procedure initout # get TEXOUT started properly;
+external procedure declareofil(string s) # initializes the output on file s;
+
+ifc PARC thenc comment stubs for Color output extension;
+external simp procedure SetBrightness(integer b);
+external simp procedure SetHue(integer h);
+external simp procedure SetSaturation(integer s);
+external simp procedure PutColor(integer clrcmd,clrval);
+endc
+
+external procedure shipout(integer p) # the main output procedure,produces one page;
+
+external procedure closeout # just before TEX stops, do this;
+comment Declarations internal to TEXEXT;
+
+define sendnodesize=2 # number of words to allocate for a send node;
+define sendstream(p)=⊂value(p+1)⊃ # stream number for tokens to be sent;
+define sendtoks(p)=⊂link(p+1)⊃ # token list to be sent;
+external procedure whatsitappend(integer p) # appends node p to the current list;
+external boolean firstonpage # no sends to terminal yet on this output page;
+external saf integer array sendout[&quot;0&quot;:&quot;9&quot;] # channel numbers for output streams;
+external procedure initext # do this when initializing TEX;
+external procedure extop # do this when &quot;\x&quot; sensed in user input;
+external procedure dumpext(integer p) # do this in procedure dumpnodelist;
+external procedure destroyext(integer p) # do this in procedure dsnodelist;
+external integer procedure copyext(integer p) # do this in procedure boxcopy;
+external procedure hpackext(integer p) # do this in procedure hpackage;
+external procedure vpackext(integer p) # do this in procedure vpackage;
+external procedure pageext(integer p) # do this in the addtopage routine;
+external procedure justext(integer p) # do this in the justification routine;
+external procedure houtext(integer p; reference real x,y) # do this in shipout;
+external procedure voutext(integer p; reference real x,y) # do this in shipout;
+external procedure finishext # do this just before terminating TEX;
+
+
+</PRE>
+</BODY>
+</HTML>

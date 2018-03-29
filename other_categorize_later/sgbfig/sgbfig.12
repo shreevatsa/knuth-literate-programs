@@ -1,0 +1,74 @@
+%!PS
+%%BoundingBox: 0 0 237 72 
+%%HiResBoundingBox: 0 0 236.71477 72 
+%%Creator: MetaPost 2.000
+%%CreationDate: 2017.09.17:1026
+%%Pages: 1
+%%BeginProlog
+%%EndProlog
+%%Page: 1 1
+%%%ExactBoundingBox: 0 0 236.71477 72
+ 0 0 0 setrgbcolor 0 3 dtransform truncate idtransform setlinewidth pop [] 0 setdash 1 setlinecap 1 setlinejoin 10 setmiterlimit
+newpath 118.35739 0 moveto 0 0 rlineto stroke
+newpath 102.76889 9 moveto 0 0 rlineto stroke
+newpath 87.18039 18 moveto 0 0 rlineto stroke
+newpath 71.59189 27 moveto 0 0 rlineto stroke
+newpath 56.00339 36 moveto 0 0 rlineto stroke
+newpath 133.94589 9 moveto 0 0 rlineto stroke
+newpath 118.35739 18 moveto 0 0 rlineto stroke
+newpath 102.76889 27 moveto 0 0 rlineto stroke
+newpath 87.18039 36 moveto 0 0 rlineto stroke
+newpath 71.59189 45 moveto 0 0 rlineto stroke
+newpath 149.5344 18 moveto 0 0 rlineto stroke
+newpath 133.94589 27 moveto 0 0 rlineto stroke
+newpath 118.35739 36 moveto 0 0 rlineto stroke
+newpath 102.76889 45 moveto 0 0 rlineto stroke
+newpath 87.18039 54 moveto 0 0 rlineto stroke
+newpath 165.1229 27 moveto 0 0 rlineto stroke
+newpath 149.5344 36 moveto 0 0 rlineto stroke
+newpath 133.94589 45 moveto 0 0 rlineto stroke
+newpath 118.35739 54 moveto 0 0 rlineto stroke
+newpath 102.76889 63 moveto 0 0 rlineto stroke
+newpath 180.7114 36 moveto 0 0 rlineto stroke
+newpath 165.1229 45 moveto 0 0 rlineto stroke
+newpath 149.5344 54 moveto 0 0 rlineto stroke
+newpath 133.94589 63 moveto 0 0 rlineto stroke
+newpath 118.35739 72 moveto 0 0 rlineto stroke
+ 0.5 0 dtransform exch truncate exch idtransform pop setlinewidth
+newpath 118.35739 0 moveto
+118.35739 72 lineto stroke
+newpath 133.94589 9 moveto
+133.94589 63 lineto stroke
+newpath 102.76889 9 moveto
+102.76889 63 lineto stroke
+newpath 149.5344 18 moveto
+149.5344 54 lineto stroke
+newpath 87.18039 18 moveto
+87.18039 54 lineto stroke
+newpath 165.1229 27 moveto
+165.1229 45 lineto stroke
+newpath 71.59189 27 moveto
+71.59189 45 lineto stroke
+ 0 0.5 dtransform truncate idtransform setlinewidth pop
+newpath 118.35739 0 moveto
+180.7114 36 lineto stroke
+newpath 118.35739 0 moveto
+56.00339 36 lineto stroke
+newpath 102.76889 9 moveto
+165.1229 45 lineto stroke
+newpath 133.94589 9 moveto
+71.59189 45 lineto stroke
+newpath 87.18039 18 moveto
+149.5344 54 lineto stroke
+newpath 149.5344 18 moveto
+87.18039 54 lineto stroke
+newpath 71.59189 27 moveto
+133.94589 63 lineto stroke
+newpath 165.1229 27 moveto
+102.76889 63 lineto stroke
+newpath 56.00339 36 moveto
+118.35739 72 lineto stroke
+newpath 180.7114 36 moveto
+118.35739 72 lineto stroke
+showpage
+%%EOF

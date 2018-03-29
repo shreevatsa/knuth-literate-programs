@@ -1,0 +1,155 @@
+%!PS
+%%BoundingBox: 0 0 395 45 
+%%HiResBoundingBox: 0 0 394.5206 44.83177 
+%%Creator: MetaPost 2.000
+%%CreationDate: 2017.09.17:1026
+%%Pages: 1
+%*Font: cmtt10 9.96265 9.96265 2e:b9f01756eec01fffefe
+%*Font: cmr10 9.96265 9.96265 25:985ff8008001100ffbf7f
+%%BeginProlog
+%%EndProlog
+%%Page: 1 1
+%%%ExactBoundingBox: 0 0 394.5206 44.83177
+ 0 0 0 setrgbcolor 0 0.5 dtransform truncate idtransform setlinewidth pop [0.5 2 ] 0 setdash 1 setlinecap 1 setlinejoin 10 setmiterlimit
+newpath 57.46579 28.41621 moveto
+57.46579 39.8293 112.02309 39.83209 151.37932 39.83209 curveto stroke
+ [] 0 setdash
+newpath 147.68462 38.3012 moveto
+148.93019 38.8176 150.16261 39.32811 151.37932 39.83209 curveto
+150.16261 40.33607 148.93019 40.84659 147.68428 41.3622 curveto
+ closepath
+gsave fill grestore stroke
+ [0.5 2 ] 0 setdash
+newpath 207.99174 39.83209 moveto
+276.21439 39.83209 lineto stroke
+ [] 0 setdash
+newpath 272.51935 38.30153 moveto
+276.21439 39.83209 lineto
+272.51935 41.36266 lineto
+ closepath
+gsave fill grestore stroke
+ [0.5 2 ] 0 setdash
+newpath 57.46579 16.41588 moveto
+57.46579 5.00279 112.02309 5 151.37932 5 curveto stroke
+ [] 0 setdash
+newpath 147.68428 3.4699 moveto
+148.93019 3.9855 150.16261 4.49602 151.37932 5 curveto
+150.16261 5.50398 148.93019 6.0145 147.68462 6.5309 curveto
+ closepath
+gsave fill grestore stroke
+ [0.5 2 ] 0 setdash
+newpath 207.99174 5 moveto
+276.21439 5 lineto stroke
+ [] 0 setdash
+newpath 272.51935 3.46944 moveto
+276.21439 5 lineto
+272.51935 6.53056 lineto
+ closepath
+gsave fill grestore stroke
+ 1 1 1 setrgbcolor
+newpath 39.7746 17.37173 moveto
+69.92633 17.37173 lineto
+69.92633 27.46002 lineto
+39.7746 27.46002 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+41.7746 19.37173 moveto
+(foo.w) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 64.54425 31.3045 moveto
+105.15668 31.3045 lineto
+105.15668 41.39279 lineto
+64.54425 41.39279 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+66.54425 33.3045 moveto
+(CTANGLE) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 164.60966 34.78763 moveto
+194.7614 34.78763 lineto
+194.7614 44.87592 lineto
+164.60966 44.87592 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+166.60966 36.78763 moveto
+(foo.c) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 234.87273 35.68703 moveto
+249.33342 35.68703 lineto
+249.33342 43.9765 lineto
+234.87273 43.9765 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+236.87273 37.68703 moveto
+(cc) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 294.67508 34.78763 moveto
+314.36612 34.78763 lineto
+314.36612 44.87592 lineto
+294.67508 44.87592 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+296.67508 36.78763 moveto
+(foo) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 321.1097 34.78761 moveto
+378.5206 34.78761 lineto
+378.5206 44.87592 lineto
+321.1097 44.87592 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+323.1097 36.78761 moveto
+(\(executable\)) cmr10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 67.15942 3.43898 moveto
+102.5415 3.43898 lineto
+102.5415 13.52727 lineto
+67.15942 13.52727 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+69.15942 5.43898 moveto
+(CWEAVE) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 159.37932 -0.04414 moveto
+199.99174 -0.04414 lineto
+199.99174 10.04414 lineto
+159.37932 10.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+161.37932 1.95586 moveto
+(foo.tex) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 230.83241 -1.47624 moveto
+253.37372 -1.47624 lineto
+253.37372 11.47626 lineto
+230.83241 11.47626 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+232.83241 2.66846 moveto
+(T) cmr10 9.96265 fshow
+238.36691 0.52376 moveto
+(E) cmr10 9.96265 fshow
+243.90172 2.66846 moveto
+(X) cmr10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 284.21439 -0.04414 moveto
+324.82681 -0.04414 lineto
+324.82681 10.04414 lineto
+284.21439 10.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+286.21439 1.95586 moveto
+(foo.dvi) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 327.7238 -0.04416 moveto
+378.5206 -0.04416 lineto
+378.5206 10.04414 lineto
+327.7238 10.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+329.7238 1.95584 moveto
+(\(prin) cmr10 9.96265 fshow
+351.0605 1.95584 moveto
+(table\)) cmr10 9.96265 fshow
+showpage
+%%EOF

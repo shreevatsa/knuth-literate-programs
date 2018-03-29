@@ -1,0 +1,3572 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00157 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00015 00002	begin &quot;roman&quot; comment font generation procedure
+C00018 00003	definition of pen types (changed in different applications)
+C00023 00004	procedure romfont(short integer yy1,yy2,yy3,yy5,yy6,yy7,yy8,
+C00028 00005	procedure dot(real x integer xm real y integer ym real w3)
+C00040 00006	short integer characterwidth,xleftlog,xrightlog,slantoffset
+C00047 00007	beginchar(ucgamma,&quot;upper case Greek Gamma&quot;,11,sc2,1)
+C00048 00008	beginchar(ucdelta,&quot;upper case Greek Delta&quot;,15,0,0)
+C00050 00009	beginchar(uctheta,&quot;upper case Greek Theta&quot;,14,0,0)
+C00052 00010	beginchar(uclambda,&quot;upper case Greek Lambda&quot;,11,sc2,sc2)
+C00054 00011	beginchar(ucxi,&quot;upper case Greek Xi&quot;,11,0,0)
+C00057 00012	beginchar(ucpi,&quot;upper case Greek Pi&quot;,12,sc2,sc2)
+C00058 00013	beginchar(ucsigma,&quot;upper case Greek Sigma&quot;,13,0,1)
+C00061 00014	beginchar(ucupsilon,&quot;upper case Greek Upsilon&quot;,14,0,0)
+C00063 00015	beginchar(ucphi,&quot;upper case Greek Phi&quot;,13,0,0)
+C00065 00016	beginchar(ucpsi,&quot;upper case Greek Psi&quot;,14,0,0)
+C00066 00017	beginchar(ucomega,&quot;upper case Greek Omega&quot;,13,0,0)
+C00069 00018	beginchar(lcivar,&quot;dotless letter i&quot;,5,1,1)
+C00070 00019	beginchar(lcjvar,&quot;dotless letter j&quot;,6,0,0)
+C00071 00020	beginchar(grave,&quot;grave accent&quot;,9,0,0)
+C00072 00021	beginchar(acute,&quot;acute accent&quot;,9,0,0)
+C00073 00022	beginchar(hat,&quot;circumflex (hat)&quot;,9,0,0)
+C00074 00023	beginchar(vhat,&quot;inverted circumflex (Slavic accent)&quot;,9,0,0)
+C00075 00024	beginchar(breve,&quot;breve accent&quot;,9,0,0)
+C00076 00025	beginchar(bar,&quot;macron (bar) accent&quot;,9,0,0)
+C00077 00026	beginchar(umlaut,&quot;umlaut (double dot) accent&quot;,9,0,0)
+C00078 00027	beginchar(longum,&quot;long Hungarian umlaut&quot;, 9,0,0)
+C00079 00028	beginchar(vec,&quot;arrow accent (indicates vector)&quot;,9,0,0)
+C00080 00029	beginchar(tilde,&quot;tilde accent&quot;,9,0,0)
+C00082 00030	beginchar(circle,&quot;Scandinavian circle accent&quot;,9,0,0)
+C00083 00031	beginchar(lcae,&quot;the Latin and Scandinavian ligature ae&quot;,12,0,0)
+C00086 00032	beginchar(lclc,&quot;the Polish crossed l&quot;,5,1,1)
+C00087 00033	beginchar(lcia,&quot;the Russian ligature ia&quot;,14,1,2)
+C00091 00034	beginchar(lcoe,&quot;the French ligature oe&quot;, 13,0,0)
+C00094 00035	beginchar(ucae,&quot;upper case Latin and Scandinavian ligature AE&quot;,17,sc2,1)
+C00096 00036	beginchar(uclc,&quot;upper case Polish crossed L&quot;,12,sc2,1)
+C00097 00037	beginchar(ucia,&quot;upper case Russian ligature IA&quot;,17,sc2,sc2)
+C00099 00038	beginchar(ucoe,&quot;upper case French ligature OE&quot;,19,0,1)
+C00102 00039	beginchar(lcos,&quot;the letter o with Scandinavian slash&quot;, 9,0,0)
+C00104 00040	procedure blank
+C00105 00041	beginchar(exc,&quot;exclamation point&quot;,5,0,0)
+C00106 00042	beginchar(clsq,&quot;close quotes&quot;,9,0,0)
+C00107 00043	beginchar(sharp,&quot;the symbol #&quot;,9,0,0)
+C00108 00044	beginchar(lccc,&quot;the letter c with French cedilla&quot;,8,0,0)
+C00110 00045	beginchar(uccc,&quot;upper case French c with cedilla&quot;,if s2 then 14 else 11,0,0)
+C00113 00046	beginchar(dollar,&quot;dollar sign&quot;,10,0,0)
+C00115 00047	beginchar(pct,&quot;per cent sign&quot;,17,0,0)
+C00118 00048	beginchar(amp,&quot;ampersand&quot;,14,0,0)
+C00120 00049	beginchar(aps,&quot;apostrophe&quot;,5,0,0)
+C00121 00050	beginchar(lpren,&quot;left parenthesis&quot;,6,0,0)
+C00122 00051	beginchar(rpren,&quot;right parenthesis&quot;,6,0,0)
+C00123 00052	beginchar(ast,&quot;asterisk&quot;,9,0,0)
+C00125 00053	beginchar(plus,&quot;plus sign&quot;,18,0,0)
+C00126 00054	beginchar(minus,&quot;minus sign&quot;,18,0,0)
+C00127 00055	beginchar(com,&quot;comma&quot;,5,0,0)
+C00128 00056	beginchar(hyp,&quot;hyphen&quot;,if fixwidth then 9 else 6,0,0)
+C00129 00057	beginchar(per,&quot;period&quot;,5,0,0)
+C00130 00058	beginchar(slash,&quot;virgule or division sign&quot;,9,0,0)
+C00131 00059	beginchar(n0,&quot;the numeral 0&quot;,9,0,0)
+C00133 00060	beginchar(n1,&quot;the numeral 1&quot;,9,0,0)
+C00134 00061	beginchar(n2,&quot;the numeral 2&quot;,9,0,0)
+C00137 00062	beginchar(n3,&quot;the numeral 3&quot;,9,0,0)
+C00139 00063	beginchar(n4,&quot;the numeral 4&quot;,9,0,0)
+C00140 00064	beginchar(n5,&quot;the numeral 5&quot;,9,0,0)
+C00142 00065	beginchar(n6,&quot;the numeral 6&quot;,9,0,0)
+C00144 00066	beginchar(n7,&quot;the numeral 7&quot;,9,0,0)
+C00146 00067	beginchar(n8,&quot;the numeral 8&quot;,9,0,0)
+C00148 00068	beginchar(n9,&quot;the numeral 9&quot;,9,0,0)
+C00150 00069	beginchar(col,&quot;colon&quot;,5,0,0)
+C00151 00070	beginchar(scol,&quot;semicolon&quot;,5,0,0)
+C00152 00071	beginchar(less,&quot;less than sign&quot;,18,0,0)
+C00153 00072	beginchar(leq,&quot;less than or equal to sign&quot;,18,0,0)
+C00154 00073	beginchar(geq,&quot;greater than or equal to sign&quot;,18,0,0)
+C00155 00074	beginchar(equals,&quot;equal sign&quot;,18,0,0)
+C00156 00075	beginchar(greater,&quot;greater than sign&quot;,18,0,0)
+C00157 00076	beginchar(query,&quot;question mark&quot;,7,0,0)
+C00159 00077	beginchar(ucos,&quot;upper case Scandinavian O with slash&quot;,14,0,0)
+C00160 00078	beginchar(at,&quot;at sign&quot;,14,0,0)
+C00161 00079	beginchar(uca,&quot;the letter A&quot;,13,sc2,sc2)
+C00163 00080	beginchar(ucb,&quot;the letter B&quot;,12,sc2,0)
+C00165 00081	beginchar(ucc,&quot;the letter C&quot;,if s2 then 14 else 11,0,0)
+C00167 00082	beginchar(ucd,&quot;the letter D&quot;,14,sc2,0)
+C00168 00083	beginchar(uce,&quot;the letter E&quot;,12,sc2,1)
+C00170 00084	beginchar(ucf,&quot;the letter F&quot;,12,sc2,1)
+C00172 00085	beginchar(ucg,&quot;the letter G&quot;,14,0,0)
+C00175 00086	beginchar(uch,&quot;the letter H&quot;,13,sc2,sc2)
+C00176 00087	beginchar(uci,&quot;the letter I&quot;,6,0,0)
+C00177 00088	beginchar(ucj,&quot;the letter J&quot;,9,0,sc2)
+C00178 00089	beginchar(uck,&quot;the letter K&quot;,14,sc2,sc2)
+C00180 00090	beginchar(ucl,&quot;the letter L&quot;,12,sc2,1)
+C00181 00091	beginchar(ucm,&quot;the letter M&quot;,16,sc2,sc2)
+C00183 00092	beginchar(ucn,&quot;the letter N&quot;,14,sc2,sc2)
+C00184 00093	beginchar(uco,&quot;the letter O&quot;,14,0,0)
+C00186 00094	beginchar(ucp,&quot;the letter P&quot;,11,sc2,0)
+C00187 00095	beginchar(ucq,&quot;the letter Q&quot;,14,0,0)
+C00190 00096	beginchar(ucr,&quot;the letter R&quot;,14,sc2,2*sc2)
+C00193 00097	beginchar(ucs,&quot;the letter S&quot;,10,0,0)
+C00197 00098	beginchar(uct,&quot;the letter T&quot;,13,1,1)
+C00198 00099	beginchar(ucu,&quot;the letter U&quot;,13,sc2,sc2)
+C00199 00100	beginchar(ucv,&quot;the letter V&quot;,13,sc2,sc2)
+C00201 00101	beginchar(ucw,&quot;the letter W&quot;,18,sc2,sc2)
+C00203 00102	beginchar(ucx,&quot;the letter X&quot;,13,sc2,sc2)
+C00204 00103	beginchar(ucy,&quot;the letter Y&quot;,13,sc2,sc2)
+C00205 00104	beginchar(ucz,&quot;the letter Z&quot;,11,0,0)
+C00206 00105	beginchar(lbrk,&quot;left bracket&quot;,5,0,0)
+C00207 00106	beginchar(opnq,&quot;open quotes&quot;,9,0,0)
+C00208 00107	beginchar(rbrk,&quot;right bracket&quot;,5,0,0)
+C00209 00108	beginchar(en,&quot;en dash&quot;,9,0,0)
+C00210 00109	beginchar(em,&quot;em dash&quot;,18,0,0)
+C00211 00110	beginchar(raps,&quot;reverse apostrophe&quot;,5,0,0)
+C00212 00111	beginchar(lca,&quot;the letter a&quot;,9,0,1)
+C00215 00112	beginchar(lcb,&quot;the letter b&quot;,10,1,0)
+C00217 00113	beginchar(lcc,&quot;the letter c&quot;,8,0,0)
+C00219 00114	beginchar(lcd,&quot;the letter d&quot;,10,0,1)
+C00221 00115	beginchar(lce,&quot;the letter e&quot;,8,0,0)
+C00224 00116	beginchar(lcf,&quot;the letter f&quot;, 6,0,0)
+C00225 00117	beginchar(lcg,&quot;the letter g&quot;,9,0,0)
+C00227 00118	beginchar(lcgvar,&quot;the letter g in simple style&quot;,9,0,0)
+C00229 00119	beginchar(lch,&quot;the letter h&quot;,10,1,1)
+C00230 00120	beginchar(lci,&quot;the letter i&quot;,5,1,1)
+C00231 00121	beginchar(lcj,&quot;the letter j&quot;,6,1,0)
+C00232 00122	beginchar(lck,&quot;the letter k&quot;,10,1,1)
+C00234 00123	beginchar(lcl,&quot;the letter l&quot;,5,1,1)
+C00235 00124	beginchar(lcm,&quot;the letter m&quot;, 15,1,1)
+C00236 00125	beginchar(lcn,&quot;the letter n&quot;,10,1,1)
+C00237 00126	beginchar(lco,&quot;the letter o&quot;,9,0,0)
+C00239 00127	beginchar(lcp,&quot;the letter p&quot;,10,1,0)
+C00241 00128	beginchar(lcq,&quot;the letter q&quot;,if fixwidth then 10 else 9,0,0)
+C00243 00129	beginchar(lcr,&quot;the letter r&quot;,7,1,0)
+C00244 00130	beginchar(lcs,&quot;the letter s&quot;, 7,0,0)
+C00248 00131	beginchar(lct,&quot;the letter t&quot;,7,0,0)
+C00250 00132	beginchar(lcu,&quot;the letter u&quot;, 10,1,1)
+C00251 00133	beginchar(lcv,&quot;the letter v&quot;,10,1,1)
+C00252 00134	beginchar(lcw,&quot;the letter w&quot;,13,1,1)
+C00254 00135	beginchar(lcx,&quot;the letter x&quot;,10,1,1)
+C00255 00136	beginchar(lcy,&quot;the letter y&quot;,10,1,1)
+C00257 00137	beginchar(lcz,&quot;the letter z&quot;,8,0,0)
+C00258 00138	beginchar(lcff,&quot;the ligature ff&quot;,11,0,0)
+C00260 00139	beginchar(lcfi,&quot;the ligature fi&quot;,10,0,2)
+C00261 00140	beginchar(lcfl,&quot;the ligature fl&quot;,10,0,2)
+C00262 00141	beginchar(lcffi,&quot;the ligature ffi&quot;,15,0,2)
+C00264 00142	beginchar(lcffl,&quot;the ligature ffl&quot;,15,0,2)
+C00266 00143	beginchar(quotes,&quot;straight quotation marks&quot;,9,0,0)
+C00267 00144	beginchar(apost,&quot;straight apostrophe&quot;,5,0,0)
+C00268 00145	beginchar(rslash,&quot;reverse slash&quot;,9,0,0)
+C00269 00146	beginchar(uparr,&quot;upward arrow&quot;,9,0,0)
+C00271 00147	beginchar(lftarr,&quot;leftward arrow&quot;,18,0,0)
+C00273 00148	beginchar(lbrc,&quot;left brace&quot;,9,0,0)
+C00275 00149	beginchar(rbrc,&quot;right brace&quot;,9,0,0)
+C00277 00150	beginchar(dnarr,&quot;downward arrow&quot;,9,0,0)
+C00279 00151	beginchar(ctimes,&quot;circle times operator&quot;,18,0,0)
+C00280 00152	procedure makeligtable # defines the ligature settings in .TFD files
+C00283 00153	procedure tfout(integer xgpheight) # outputs the TEX font information file
+C00285 00154	the body of the font procedure
+C00295 00155	procedure font(real y1,y2,y3,y5,y6,y7,y8,
+C00299 00156	procedure mainloop
+C00305 00157	the main program starts here
+C00312 ENDMK
+Cⓧ;
+begin &quot;roman&quot; comment font generation procedure;
+
+require 300 system_pdl;
+require &quot;spline.rel&quot; load_module;
+require &quot;splhdr.sai&quot; source_file;
+
+label exit;
+
+internal procedure quit;
+go to exit;
+
+internal string symfont # description of font procedure call;
+
+integer test0,test1,test2,test3 # selection of characters to generate;
+integer testtype # selection of canned fonts to generate;
+real xshiftinit # base value of xshift;
+
+real array htarry,dparry[0:32] # secondary font info tables;
+integer array dwarry[0:64] # another secondary font info table;
+real array wdarry,msarry[0:64] # still others;
+integer array lgarry[1:50] # ligature and kern table;
+integer array ligfield[0:127] # lg field for font information;
+integer array finfo[0:127] # TEX font information;
+integer htn,wdn,dpn,msn,dwn,lgn # pointers in the corresponding arrays;
+
+internal integer outmode # specifies type of output desired:
+	outmode land 1 means binary file gets output
+	outmode land 2 means font file gets output
+	outmode land 4 means binary output file to be in 32-bit mode
+	outmode land 8 means to accumulate characters before output
+	outmode land '20 draws background grid on letters during design process
+	outmode land '40 means tfd file gets output
+	outmode land '100 means pause after each character
+	outmode land '200 means put blanks into each font
+	outmode div '1000 pixels are added above characters when making a font;
+define makefont = ⊂(outmode land 2)⊃;
+define grid = ⊂(outmode land '20)⊃;
+
+string deviceext # extension used in TEX font information file generated;
+comment definition of pen types (changed in different applications);
+
+internal integer currpen # the size of the current pen/eraser;
+internal integer pn # the type of the current pen/eraser;
+internal integer wmax # monotonicity correction will be applied for w &lt; wmax;
+
+internal real param1,param2 # parameters to generate pen/erasers;
+
+define cpen = 0 # code for circular pen;
+define hpen = 1 # code for horizontal flat pen;
+define vpen = 2 # code for vertical flat pen;
+define lers = 3 # code for left eraser;
+define rers = 4 # code for right eraser;
+define spec = 5 # code for special preset fixed pens;
+
+internal integer procedure genpen(integer type,width);
+begin comment this routine will be changed according to users' desired pen specs;
+comment for each pen type and width, the duty of this routine is to
+create the pen, setting up xmax...ycorr, and storing it into the penstore;
+integer x,y,w,w1; real fudge;
+procedure makepen(integer width,w);
+	begin comment makes pen of dimensions width by w;
+	if w=0 then w←1;
+	if width=0 then width←1;
+	x←(width+1) land 1; y←(w+1) land 1;
+	comment now compute fudge factor which ensures that the pen
+	has the right height and width in terms of pixels;
+	fudge←x/width; if y/w&gt;fudge then fudge←y/w;
+	fudge←1.0/(1.0+fudge^2);
+	makeovalpen(fudge*(2.0/width)^2, 0, fudge*(2.0/w)^2, .5*x, .5*y);
+	xcorr ← -8 * x; ycorr ← -8 * y;
+	end;
+w1←width;
+if type = cpen then
+	begin comment assume baspect is the ratio of vertical to horizontal;
+	makepen(width,baspect*(width+.5));
+	rightcorr←8;topcorr←baspect*8+.5;leftcorr←-rightcorr;botcorr←-topcorr;
+	end else
+if type = hpen then
+	begin comment assume param1 is the desired thickness;
+	makepen(width,param1);
+	leftcorr←-8; rightcorr←8; botcorr←topcorr←0;
+	end else
+if type = vpen then
+	begin comment assume param2 is the desired thickness;
+	makepen(param2,width);
+	leftcorr←rightcorr←0; botcorr←-8; topcorr←8;
+	end else
+if type = lers then
+	begin makeovalpen((2.0/width)^2, 0, 2.0, -1.0-width/2.0, 0);
+	negatepen;
+	xcorr←ycorr←leftcorr←rightcorr←topcorr←botcorr←0;
+	end else
+if type = rers then
+	begin makeovalpen((2.0/width)^2, 0, 2.0, 1.0+width/2.0, 0);
+	negatepen;
+	xcorr←ycorr←leftcorr←rightcorr←topcorr←botcorr←0;
+	end;
+if magnify &gt; 1 then
+	begin savepen;
+	stretchpen(magnify);
+	end;
+penintostore(type,w1);
+currpen←w1;
+return(penref[type,w1]);
+end;
+
+comment The special pens are defined as follows:
+	w=0  to make a single point (cf. &quot;box&quot; procedure)
+	w=1  to make a tilde
+	w=2  to make upper case upsilon
+;
+procedure romfont(short integer yy1,yy2,yy3,yy5,yy6,yy7,yy8,
+	ww0,ww1,ww2,ww3,ww4,ww5,ww6,ww7,ww8,ww9,ww10,ww11;
+	real s1,s2,u,serifcorr,slnt,basp; integer fontmod;
+	real ry1,ry2,ry3,ry5,ry6,ry7,rw0,rw1,rw2,rw3,rw4,rw5,rw6,rw7,rw8,rw9,
+	rw10,rw11,ru);
+begin comment generates a bunch of characters, where
+	 1  is the bottom line of the type
+	yy1 is the descender line (bottom of descenders)
+	yy2 is the base line
+	yy3 is middle line for lower case letters
+	yy4 is no longer used so forget it
+	yy5 is the mean line (top line for lower case letters)
+	yy6 is the cap line (top line for ascenders)
+	yy7 is the top line for highest strokes
+	yy8 is the top edge of the type
+	ww0 is width of hairlines and vertical pens
+	ww1 is width of vertical stem lines (lower case)
+	ww2 is maximum width of stem lines that curve (lower case)
+	ww3 is width of dots
+	ww4,ww5,ww6,ww7 are vertical analogs of ww0,ww1,ww2,ww3
+	ww8,ww9,ww10,ww11 are upper case analogs of ww1,ww2,ww5,ww6
+	s1 is width of serifs for lower case letters
+	s2 is width of longer serifs for upper case letters
+	u is horizontal unit
+	1/slnt is the slope applied to all characters as they are drawn
+	basp is the default aspect ratio for spline definitions
+	serifcorr is the amount to decrease character width in sans-serif fonts
+	fontmod controls changes to the normal font conventions.
+fontmod land 1 ≠ 0 means the characters should all be scaled to 9u wide
+fontmod land 2 ≠ 0 means the simple g replaces the classical g style
+fontmod land 4 ≠ 0 means the ligatures are replaced by certain special characters
+fontmod land '10 ≠ 0 means the French c and C with cedilla are omitted
+fontmod land '20 ≠ 0 means the asterisk is lowered to the baseline
+fontmod land '40 ≠ 0 means the font gets a blank space
+fontmod land '100 ≠ 0 means a minus sign is substituted for a hyphen
+fontmod land '200 ≠ 0 means the Scandinavian O with slash is omitted
+fontmod land '400 ≠ 0 means the numeral 0 is a superellipse
+fontmod land '1000 ≠ 0 means the lower case descenders are made twice as low
+	ry1 thru ru give the &quot;actual&quot; character parameters in points, this
+	information is not used to generate the raster pattern but it is
+	used in the font information passed to TEX so that TEX deals with a &quot;machine
+	independent&quot; form (approximated in different actual raster sizes);
+
+real y1,y2,y3,y5,y6,y7,y8,w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11;
+real t,v,w,x,y,z,tt,vv,ww,xx,yy,zz,usave,s1save,s2save;
+real delta1,delta3,delta5,delta6,delta7,brc,lcser,ucser,ucser2,stm,lccorr
+	# used to compute TEX info;
+integer mm # temporary storage used for rounding to integers;
+real sqrt2 # used to calculate near-ellipses, default value sqrt(2.0);
+
+define fixwidth = ⊂(fontmod land 1)⊃ # specifies fixed width type;
+define noligs = ⊂(fontmod land 4)⊃ # specifies the absence of standard ligatures;
+define sc2 = ⊂2⊃ # multiplies serifcorr on upper case letters;
+procedure dot(real x; integer xm; real y; integer ym; real w3);
+begin comment specifies a single dot;
+be(cpen); ps(w3); l(x,xm,y,ym); nd;
+end;
+
+procedure leftserif(real x,y; integer ym);
+begin comment specifies a hairline serif to the left;
+if s1&gt;0 then
+	begin be(hpen); ps(w0);
+	l(x-s1-eps,-1,y,ym); l(rightof(x,w1),1,y,ym); nd;
+	comment eps is subtracted so that rounding anomalies are unlikely;
+	end;
+end;
+
+procedure rightserif(real x,y; integer ym);
+begin comment specifies a hairline serif to the right;
+if s1&gt;0 then
+	begin be(hpen); ps(w0);
+	l(leftof(x,w1),-1,y,ym); l(x+s1+eps,1,y,ym); nd;
+	end;
+end;
+
+procedure doubleserif(real x,y; integer ym);
+begin comment specifies a hairline serif to left and right;
+if s1&gt;0 then
+	begin be(hpen); ps(w0);
+	l(x-s1-eps,-1,y,ym); l(x+s1+eps,1,y,ym); nd;
+	end;
+end;
+
+procedure ucleftserif(real x,y; integer ym);
+begin comment specifies a hairline serif to the left, upper case size;
+if s2&gt;0 then
+	begin be(hpen); ps(w0);
+	l(x-s2-eps,-1,y,ym); l(rightof(x,w8),1,y,ym); nd;
+	comment eps is subtracted so that rounding anomalies are unlikely;
+	end;
+end;
+
+procedure ucrightserif(real x,y; integer ym);
+begin comment specifies a hairline serif to the right, upper case size;
+if s2&gt;0 then
+	begin be(hpen); ps(w0);
+	l(leftof(x,w8),-1,y,ym); l(x+s2+eps,1,y,ym); nd;
+	end;
+end;
+
+procedure ucdoubleserif(real x,y; integer ym);
+begin comment specifies a hairline serif to left and right, upper case size;
+if s2&gt;0 then
+	begin be(hpen); ps(w0);
+	l(x-s2-eps,-1,y,ym); l(x+s2+eps,1,y,ym); nd;
+	end;
+end;
+
+procedure vertstroke(real x; integer xm; real y; integer ym);
+begin comment specifies a vertical stem stroke from this point to base line;
+be(hpen); ps(w1);
+l(x,xm,y,ym); l(x,xm,y2,-1);
+nd;
+end;
+
+procedure hstroke(real x1,x2);
+begin comment specifies the arc of h, m, n;
+be(hpen); ps(w0);
+l(x1,0,y3,0); setvert; setlin;
+l(.5*x1+.5*x2,0,y5,1); sethoriz; setstable;
+ps(.25*w0+.75*w1); l(x2-.5*u,0,.25*y3+.75*botof(y5,w0),0);
+psmax(w1); l(x2,0,.7*y3+.3*y5,0); setvert; setlin; setstable;
+l(x2,0,y2,-1);
+nd;
+end;
+
+procedure arc(real x; integer xm; real y; integer ym;
+	real xx; integer xxm; real yy; integer yym; real w);
+begin comment draws quarter ellipse from (x,xm,y,ym) horizontal to
+(xx,xxm,yy,yym) vertical, with pen size varying from w0 to w;
+be(hpen); ps(w0); l(x,xm,y,ym); sethoriz;
+ps(w0/3+(2/3)*w); l(0,0,0,0) # lx,ly filled in later;
+psmax(w); l(xx,xxm,yy,yym); setvert;
+lx[2]←lx[1]+(lx[3]-lx[1])/sqrt2;
+ly[2]←ly[3]+(ly[1]-ly[3])/sqrt2;
+aspect←abs((lx[1]-lx[3])/(ly[1]-ly[3])); nd;
+end;
+
+procedure darc(real x; integer xm; real y; integer ym;
+	real xx; integer xxm; real yy; integer yym; real w);
+begin comment draws half ellipse from (x,xm,y,ym) horizontal to
+(xx,xxm,*,0) vertical to (x,xm,yy,yym) horizontal, where * is the
+appropriate midpoint, with pen size varying from w0 to w and back to w0;
+be(hpen); ps(w0); l(x,xm,y,ym); sethoriz;
+ps(w0/3+(2/3)*w); l(0,0,0,0) # lx,ly filled in later;
+psmax(w); l(xx,xxm,0,0); setvert # ly filled in later;
+ps(w0/3+(2/3)*w); l(0,0,0,0) # lx,ly filled in later;
+ps(w0); l(x,xm,yy,yym); sethoriz;
+ly[3]←.5*ly[1]+.5*ly[5];
+lx[2]←lx[4]←lx[1]+(lx[3]-lx[1])/sqrt2;
+ly[2]←ly[3]+(ly[1]-ly[3])/sqrt2;
+ly[4]←ly[3]-(ly[1]-ly[3])/sqrt2;
+aspect←abs((lx[1]-lx[3])/(ly[1]-ly[3])); nd;
+end;
+
+real procedure f(real x0,y0,x,z,xl,c);
+begin comment determines breakpoint xmin such that
+	sdraw(x0,y0,xmin,x,z,xmax,x1,y1,c,w)
+extends left to xl, also determines breakpoint xmax such that
+sdraw(x1,y1,xmin,x,z,xmax,x0,y0,c,w) extends right to xl;
+real alpha,beta;
+alpha←c*(x0-xl)^2/(c*(x-x0)+z-y0)^2;
+beta←2*(z+c*x-y0)-c*x0;
+return((alpha*beta+x0)/(c*alpha+1.0));
+end;
+
+real sy1,sy2,ssy1,ssy2 # y coordinates set by sdraw and ssdraw routines;
+
+procedure sdraw(real x0,y0,xmin,x,z,xmax,x1,y1,c,w);
+begin comment draws s-curve with hpen of width w, starting at (x0,y0) and
+proceeding in an ellipse until coming around to xmin, then proceeding in a
+straight line having slope -c through (x,z) until xmax, then another ellipse
+and finishing at (x1,y1). The ellipses are determined so that the specified
+slope is obtained when changing to the straight line. If c is negative we
+get a mirror image s curve. Variables sy1 and sy2 are set to the row
+numbers where the boundary is touched;
+real a,yp,ymin,ymax,num,denom;
+ymin←z+c*(x-xmin);
+num←y0-ymin+c*(x0-xmin);
+denom←num+y0-ymin;
+a←num*sqrt((x0-xmin)/(c*denom)) # ((x-x0)/a)^2+((y-yp)/b)^2 = 1, yp=y0-b;
+if c&lt;0 then a←-a;
+sy1←yp←y0-(y0-ymin)*num/denom;
+be(hpen);ps(w);l(x0,0,y0,0); sethoriz;
+l(x0-a,0,yp,0); setvert;
+l(xmin,0,ymin,0); hl(x0,0,2*yp-y0,0);
+aspect←(lx[1]-lx[2])/(ly[1]-ly[2]);
+nd;
+ymax←z+c*(x-xmax);
+num←ymax-y1+c*(xmax-x1);
+denom←num+ymax-y1;
+be(hpen);l(xmin,0,ymin,0);l(xmax,0,ymax,0); nd;
+a←num*sqrt((xmax-x1)/(c*denom));
+if c&lt;0 then a←-a;
+sy2←yp←y1+(ymax-y1)*num/denom;
+be(hpen); hl(x1,0,2*yp-y1,0);
+l(xmax,0,ymax,0); l(x1+a,0,yp,0); setvert;
+l(x1,0,y1,0); sethoriz;
+aspect←(lx[2]-lx[3])/(ly[2]-ly[3]);
+nd;
+end;
+
+procedure ssdraw(real xtop,ytop,xupper,xmid,ymid,xlower,xbot,ybot,c,wh,ww);
+begin comment Draws s curve of variable thickness, corresponding to the picture
+		(xtop,ytop)
+	xupper				(pen width ww)
+		(xmid,ymid)		(pen thickness wh, slope c)
+				xlower
+		(xbot,ybot)
+Variables ssy1 and ssy2 are set to the row numbers where the boundary is touched;
+real zmax,zmin,xmax,xmin,z;
+pn←vpen;zmax←botof(topof(ymid,wh),w4);zmin←topof(botof(ymid,wh),w4);
+comment z will range from zmax to zmin in separate strokes of thickness w4;
+pn←hpen;
+xmin←f(xtop,ytop,xmid,zmin,xupper,c);
+xmax←f(xbot,ybot,xmid,zmax,xlower,c);
+z←zmax;ssy2←0;
+while z&gt;zmin do
+	begin sdraw(xtop,ytop,xmin,xmid,z,xmax,xbot,ybot,c,ww);
+	if ssy2=0 then ssy2←sy2;
+	if w4&lt;1 then z←z-0.3 else z←z-w4/3;
+	end;
+sdraw(xtop,ytop,xmin,xmid,zmin,xmax,xbot,ybot,c,ww);
+if ssy2=0 then ssy2←sy2;
+ssy1←sy1;
+end;
+
+procedure bracket(real x0,x1,y; integer ym; real uu,vv,ww);
+begin comment This procedure draws the fancy bracketing at the top of
+upper case T, etc. The top or bottom line runs from (x0,y) to (x1,y)
+with the hairline pen, the other boundary is a curved line starting
+horizontally at (x0,y), passing thru (x1-uu,y-.3*vv) to (x1+uu,y-vv),
+with hidden continuation to (x1+uu,y-2.0*vv), and there is also a
+straight line from (x1,y) to (x1+uu,y-vv). However, in sans-serif type
+or type with w0=w8, the bracket is replaced by simply a straight line
+from (x0,y) to (x1+uu,y), drawn with vpen of width ww;
+real z,zz,t;
+pn←hpen;
+if s2=0 or w0=w8 then
+	begin pn←vpen; if ym&lt;0 then y←topof(y,ww) else if ym&gt;0 then y←botof(y,ww);
+	be(vpen); ps(ww); l(x0,0,y,0); l(x1+uu,0,y,0); nd;
+	if s2&gt;0 then 
+		begin be(hpen); l(lx[2],0,y,0);
+		l(lx[2],0,if vv&gt;0 then y-s2 else y+s2,0); nd;
+		end;
+	end
+else	begin cutoff←0.0; pn←hpen;
+	if ym&lt;0 then y←topof(y,w0) else if ym&gt;0 then y←botof(y,w0);
+	be(hpen); ps(w0); l(x0,0,y,0); l(x1,0,y,0);
+	l(x1+uu,0,y-vv,0); nd;
+	if cw&lt;1 then zz←1.0 else zz←cw;
+	if vv&lt;0 then zz←-zz;
+	comment zz is supposed to be a safe
+		distance between strokes to assure fill-in;
+	z←y-zz;
+	while (t←(y-z)/vv) &lt; 1.0 do
+		begin be(hpen); l(x0,0,y,0); sethoriz;
+		l(x1-t*uu,0,y-.3*t*vv,0); l(x1+t*uu,0,z,0);
+		hl(x1+t*uu,0,y-2.0*t*vv,0); nd;
+		z←z-zz;
+		end;
+	l(x0,0,y,0); sethoriz; l(x1-uu,0,y-.3*vv,0); l(x1+uu,0,y-vv,0);
+	hl(x1+uu,0,y-2.0*vv,0); nd;
+	cutoff←0.5;
+	end;
+end;
+short integer characterwidth,xleftlog,xrightlog,slantoffset;
+real xshiftnext,realwidth;
+
+procedure box(integer xl,xr,yb,yt);
+begin comment Draws box around a piece of type that runs from xl to xr-1
+horizontally and from 1 to yt vertically, with baseline at yb. Also draws
+design guidelines if grid is true and magnify=1;
+boolean psv,dsv; integer msv,x0,y0,x9,y9; real xsv,ssv,z;
+psv←printout; printout←false;
+dsv←ddout; ddout←false;
+xsv←xshift; xshift←0.0;
+msv←magnify; magnify←1;
+ssv←slant; slant←0.0;
+y0←msv-1;x0←msv*xl-1; y9←msv*(yt+1); x9←msv*xr; yb←msv*yb;
+pn←currpen←-1;
+be(spec); ps(0); l(x0,0,y0,0); l(x9,0,y0,0); nd;
+be(spec); l(x9,0,y0,0); l(x9,0,y9,0); nd;
+be(spec); l(x9,0,y9,0); l(x0,0,y9,0); nd;
+be(spec); l(x0,0,y9,0); l(x0,0,y0,0); nd;
+be(spec); l(x0-5,0,yb,0); l(x0,0,yb,0); nd;
+be(spec); l(x9+5,0,yb,0); l(x9,0,yb,0); nd;
+
+slant←ssv;
+if msv=1 and grid then
+	begin integer k; k←1;
+	while true do
+		begin z←k*u+.5+xsv; 
+		if z&gt;xr then done;
+		if z≥xl then
+			begin be(spec);l(z-slantoffset,0,y0,0);
+			l(z-slantoffset,0,y9,0);nd;
+			end;
+		k←k+1;
+		end;
+	for z←y1,y2,y3,y5,y6,y7 do
+		begin be(spec); l(x0-slantoffset,0,z,0);
+		l(x9-slantoffset,0,z,0); nd;	
+		end;
+	end;
+printout←psv; ddout←dsv; magnify←msv; xshift←xsv;
+end;
+
+define beginchar(name,ident,unitwidth,leftedge,rightedge) =
+	⊂procedure name; begin bechar(ident,unitwidth,leftedge,rightedge);⊃;
+procedure bechar(string s; real w,l,r);
+begin ident←s; 
+dround←false;
+if outmode land 8 = 0 or xshift=xshiftinit then clearrast;
+
+ww←w-serifcorr*(l+r)/usave # width of character in units;
+realwidth←ww*ru;
+if fixwidth then
+	begin u←(usave*9.0-1.0)/ww; s1←s1save*u/usave; s2←s2save*u/usave;
+	realwidth←9.0*ru;
+	end
+else u←usave-1.0/ww # one pixel is allowed for intercharacter spacing;
+xx←norm(serifcorr*l+0.5)-0.5;
+xshift←xshift-xx;
+slantoffset←y2*slant;
+xleftlog←xshift+xx+slantoffset;
+xrightlog←xshift+xx+(if fixwidth then 9.0*usave else ww*usave)+slantoffset+.5;
+characterwidth←xrightlog-xleftlog;
+xshiftnext←xshift+xx+characterwidth;
+
+if magnify&gt;1 or(yy8≥50 and not makefont) then box(xleftlog,xrightlog,yy2,yy8);
+
+strkno←0;
+pn←currpen←-1;
+end;
+
+define endchar(a,h,d,c)=⊂ndchar(a,h,d,c); end⊃;
+procedure ndchar(integer ascii; real height,depth,italcorr);
+begin comment Disposition of the character with the stated ascii (or TEX) code,
+having the stated height,depth,and italic correction in units of points.
+This character now appears in the raster and ident explains it. The true
+width in points is realwidth, and the width in pixels is characterwidth;
+
+procedure makefontinfo;
+begin comment enters info for .TFD file;
+integer ht,wd,dp,ms,dw # individual fields for fontinfo;
+define lookup(f,x,a,n)=⊂begin a[n+1]←x; for f←0 step 1 until n do
+if a[f]=x then done; if f&gt;n then n←f; end⊃;
+lookup(ht,height,htarry,htn);
+lookup(wd,realwidth,wdarry,wdn);
+lookup(dp,depth,dparry,dpn);
+if italcorr&gt;0 then lookup(ms,italcorr,msarry,msn) else ms←0;
+lookup(dw,characterwidth,dwarry,dwn);
+if ht&gt;'17 or wd&gt;'77 or dp&gt;'17 or ms&gt;'77 or dw&gt;'77 then bail;
+finfo[ascii]←(((((((((dw lsh 6)+ms)lsh 5)+ligfield[ascii])lsh 4)+dp)lsh 4)
+	+ht)lsh 6)+wd;
+end;
+
+if outmode land '12 = '10 and xshiftnext+20.0*u&lt;xsize/magnify then
+	begin ddoutrast; xshift←xshiftnext;
+	end
+else 	begin
+	if makefont and magnify=1 then
+		begin if fntarray[ascii] then bail # already there;
+		makeglyph(ascii,characterwidth,xleftlog,
+		yy8+outmode div '1000);
+		if outmode land '40 then makefontinfo;
+		end
+	else if grid and italcorr&gt;0 and magnify=1 and yy8≥50 then
+		begin comment show italic correction on grid;
+		integer xc; real ssv; xc←xrightlog+italcorr*usave/ru-xshift+.5;
+		be(spec);ps(0);ssv←slant;slant←0.0;l(xc,0,yy8,0);l(xc,0,0,0);nd;
+		slant←ssv;
+		end;
+	outputrast;
+	xshift←xshiftinit;
+	end;
+end;
+beginchar(ucgamma,&quot;upper case Greek Gamma&quot;,11,sc2,1);
+pn←hpen; w←rightof(norm(2.0*u),w8);
+bracket(w,leftof(norm(9.5*u),w0),y6,1,.5*u,1.4*baspect*s2,w4);
+ucleftserif(w,y6,1);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+ucdoubleserif(w,y2,-1);
+endchar('000,delta6,0,brc);
+beginchar(ucdelta,&quot;upper case Greek Delta&quot;,15,0,0);
+pn←hpen; w←leftof(norm(14.0*u),w8); x←rightof(norm(u),w0);
+zz←norm(.5*rightof(x,w0)+.5*leftof(w,w8)); z←leftof(rightof(zz,w8),w0);
+yy←botof(y6,w0); ww←topof(y2,w0);
+be(vpen); ps(w10); l(norm(u),-1,y2,-1); l(norm(14.0*u),1,y2,-1); nd;
+be(rers); ps(w10+1); l(zz,0,yy,0); l(w,0,ww,0); l(w,0,ww,0); l(w,0,y2,0); nd;
+be(hpen); ps(w8); l(zz,0,yy,0); l(w,0,ww,0); nd;
+be(lers); ps(w8+1); l(z,0,y6,0); l(z,0,yy,0); l(z,0,yy,0); l(x,0,ww,0);
+l(x,0,ww,0); l(x,0,y2,0); nd;
+be(hpen); ps(w0); l(z,0,yy,0); l(x,0,ww,0); nd;
+be(hpen); ps(w0); l(z,0,yy,0); l(norm(14.0*u),1,ww,0); nd;
+be(hpen); ps(w0); l(x,0,ww,0); l(lx[2],0,ly[2],0); nd;
+endchar('001,delta6,0,0);
+beginchar(uctheta,&quot;upper case Greek Theta&quot;,14,0,0);
+if fixwidth then sqrt2←1.319507911 # 2^(2/5), for Piet Hein's superellipse;
+mm←14.0*u+.5; t←mm/2 # point of left-right symmetry;
+pn←hpen; w←rightof(norm(t-6.0*u),w9);
+darc(t,0,y6,1,w,0,y2,-1,w9);
+dround←true; x←t+(t-w);
+darc(t,0,y6,1,x,0,y2,-1,w9);
+w←xnorm(rightof(w,w9)+u,w0); x←t+(t-w);
+be(vpen); ps(w10); l(w,-1,.5*y2+.5*y6,0); l(x,1,ly[1],0); nd;
+if s2≠0 then
+	begin be(hpen); ps(w0); l(w,-1,.4*y2+.6*y6,0); l(w,-1,.6*y2+.4*y6,0); nd;
+	be(hpen); l(x,1,.4*y2+.6*y6,0); l(x,1,.6*y2+.4*y6,0); nd;
+	end;
+sqrt2←sqrt(2.0);
+endchar('002,delta6,0,-ru+.5*slant*delta6);
+beginchar(uclambda,&quot;upper case Greek Lambda&quot;,11,sc2,sc2);
+pn←hpen; w←leftof(norm(9.5*u),w8); x←rightof(norm(1.5*u),w0);
+y←norm(.5*rightof(x,w0)+.5*leftof(w,w8)); z←leftof(rightof(y,w8),w0);
+be(hpen); ps(w8); l(y,0,y6,1); l(w,0,y2,-1); nd;
+t←ly[1]; v←ly[2];
+be(lers); ps(w8+1); l(z,0,y6,0);l(z,0,t,0);l(z,0,t,0);l(x,0,v,0);nd;
+be(hpen); ps(w0); l(z,0,t,0); l(x,0,v,0); nd;
+if s2&gt;0 then
+	begin be(hpen); ps(w0);
+	xx←s2-.5*w8+eps # comment serif usually sticks out this much;
+	l(leftof(x,w0)-.5*xx,-1,y2,-1); l(rightof(x,w0)+xx,1,y2,-1); nd;
+	be(hpen); l(leftof(w,w8)-xx,-1,y2,-1);
+	l(rightof(w,w8)+.5*xx,1,y2,-1); nd;
+	end;
+endchar('003,delta6,0,0);
+beginchar(ucxi,&quot;upper case Greek Xi&quot;,11,0,0);
+pn←hpen; w←rightof(norm(u),w0); x←leftof(norm(10.0*u),w0);
+if s2≠0 then
+	begin ww←((baspect*s2)min(.2*(y6-y2)))+eps;
+	be(hpen); ps(w0); l(w,0,y6-ww,1); l(w,0,y6,1); nd;
+	be(hpen); ps(w0); l(w,0,y2+ww,-1); l(w,0,y2,-1); nd;
+	be(hpen); ps(w0); l(x,0,y6-ww,1); l(x,0,y6,1); nd;
+	be(hpen); ps(w0); l(x,0,y2+ww,-1); l(x,0,y2,-1); nd;
+	end;
+comment instead of using a vpen of size w10, the following program uses a
+sequence of hairline strokes, in order to make italics come out right
+(the vpen isn't slanted on italics);
+y←botof(y6,w0); pn←vpen; yy←botof(botof(y6,w10),w10); pn←hpen; yy←topof(yy,w0);
+while y&gt;yy do
+	begin be(hpen); ps(w0); l(w,0,y,0); l(x,0,y,0); nd;
+	if cw&lt;1 then y←y-1.0 else y←y-cw;
+	end;
+be(hpen); ps(w0); l(w,0,yy,0); l(x,0,yy,0); nd;
+y←topof(y2,w0); pn←vpen; yy←topof(topof(y2,w10),w10); pn←hpen; yy←botof(yy,w0);
+while y&lt;yy do
+	begin be(hpen); ps(w0); l(w,0,y,0); l(x,0,y,0); nd;
+	if cw&lt;1 then y←y+1.0 else y←y+cw;
+	end;
+be(hpen); ps(w0); l(w,0,yy,0); l(x,0,yy,0); nd;
+
+w←rightof(norm(2.0*u),w0); x←leftof(norm(9.0*u),w0);
+if s2≠0 then
+	begin ww←baspect*(s2-.5*w10)+eps;
+	be(hpen); ps(w0); l(w,0,.5*y2+.5*y6+ww,0); l(w,0,.5*y2+.5*y6-ww,0); nd;
+	be(hpen); ps(w0); l(x,0,.5*y2+.5*y6+ww,0); l(x,0,.5*y2+.5*y6-ww,0); nd;
+	end;
+pn←vpen;y←botof(.5*y2+.5*y6,w10); yy←topof(.5*y2+.5*y6,w10);
+pn←hpen; y←topof(y,w0); yy←botof(yy,w0);
+while y&lt;yy do
+	begin be(hpen); ps(w0); l(w,0,y,0); l(x,0,y,0); nd;
+	if cw&lt;1 then y←y+1.0 else y←y+cw;
+	end;
+be(hpen); ps(w0); l(w,0,yy,0); l(x,0,yy,0); nd;
+endchar('004,delta6,0,-ru+slant*delta6);
+beginchar(ucpi,&quot;upper case Greek Pi&quot;,12,sc2,sc2);
+pn←hpen; w←rightof(norm(2.0*u),w8); x←leftof(norm(10.0*u),w8);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+be(hpen); ps(w8); l(x,0,y6,1); l(x,0,y2,-1); nd;
+if s2&gt;0 then
+	begin ucleftserif(w,y6,1); ucdoubleserif(w,y2,-1);
+	ucrightserif(x,y6,1); ucdoubleserif(x,y2,-1);
+	be(hpen); ps(w0); l(w,0,y6,1); l(x,0,y6,1); nd;
+	end
+else	begin be(vpen); ps(w4); l(norm(2.0*u),-1,y6,1);
+	l(norm(10.0*u),1,y6,1); nd;
+	end;
+endchar('005,delta6,0,ucser);
+beginchar(ucsigma,&quot;upper case Greek Sigma&quot;,13,0,1);
+ww←norm(.75*w4+.25*w10);
+pn←hpen; w←rightof(norm(u),w0); x←leftof(norm(11.5*u),w0);
+bracket(w,x,y6,1,.5*u,1.4*baspect*s2,w4);
+pn←vpen; y←topof(topof(y2,ww),ww); pn←hpen; y←botof(y,w0);
+bracket(w,x,y,0,.5*u,-1.4*baspect*s2,w4);
+be(vpen); ps(ww); l(norm(u),-1,y2,-1); l(x,0,y2,-1); nd;
+if s2≠0 then
+	begin be(vpen); ps(ww); l(x,0,y2,-1); ps(w0);
+	l(x+.5*u,0,y+1.4*baspect*s2,0); nd;
+	end;
+pn←hpen;zz←topof(y2,w0);xx←leftof(rightof(rightof(5.0*u,w8),w8),w0);yy←.5*y2+.5*y6;
+v←norm(u);z←botof(y6,w0);x←5.0*u;y←yy;
+comment calculation of intersection of (v,z)...(x,y) and (w,zz)...(xx,yy);
+t←((w-v)*(yy-zz)-(zz-z)*(xx-w))/((x-v)*(yy-zz)-(y-z)*(xx-w));
+comment namely (v+t*(x-v),z+t*(y-z));
+be(hpen);ps(w8);l(v,-1,z,0);l(v+t*(x-v),-1,z+t*(y-z),0); nd;
+comment the next line fixes up the upper left corner;
+be(hpen);ps(w0);l(v,-1,z,0);l(v+t*(x-v),-1,z+t*(y-z),0); nd;
+be(rers);ps(w8);l(.5*w+.5*xx,0,.5*zz+.5*yy,0);l(xx,0,yy,0);nd;
+be(lers);ps(2*ww);l(.5*w+.5*xx,0,.5*zz+.5*yy,0);l(w,0,zz,0);nd;
+be(hpen);ps(w0);l(w,0,zz,0);l(xx,0,yy,0);nd;
+be(hpen);ps(w0);l(rightof(rightof(v,w8),w8),1,z,0);l(xx,0,yy,0);nd;
+endchar('006,delta6,0,brc);
+beginchar(ucupsilon,&quot;upper case Greek Upsilon&quot;,14,0,0);
+pn←hpen; t←xnorm(7.0*u,w8); xx←rightof(t,w8); ww←leftof(t,w8);
+be(hpen); ps(w8); l(t,0,.5*y2+.5*y6,0); l(t,0,y2,-1); nd;
+ucdoubleserif(t,y2,-1);
+begin comment make special oval pen;
+integer x,y,w,width; real fudge;
+w←w10; if w=0 then w←1;
+width←(w8+1)/2; if width=0 then width←1;
+x←(width+1) land 1; y←(w+1) land 1;
+comment now compute fudge factor which ensures that the pen
+has the right height and width in terms of pixels;
+fudge←x/width; if y/w&gt;fudge then fudge←y/w;
+fudge←1.0/(1.0+fudge^2);
+makeovalpen(fudge*(2.0/width)^2, 0, fudge*(2.0/w)^2, .5*x, .5*y);
+xcorr ← -8 * x; ycorr ← -8 * y;
+leftcorr←-8; rightcorr←8; botcorr←topcorr←0;
+be(spec); ps(2);
+l(xx,1,.5*y2+.5*y6,1); setvert;
+l(t+4.0*u,0,y6,1); sethoriz; nd;
+be(vpen); ps(w10); l(t+4.0*u,0,y6,1); sethoriz;
+l(t+6.0*u,1,.8*y6+.2*y2,0); setvert; nd;
+dround←true;
+be(spec); ps(2);
+l(ww,-1,.5*y2+.5*y6,1); setvert;
+l(t-4.0*u,0,y6,1); sethoriz; nd;
+be(vpen); ps(w10); l(t-4.0*u,0,y6,1); sethoriz;
+l(t-6.0*u,-1,.8*y6+.2*y2,0); setvert; nd;
+end;
+endchar('007,delta6,0,-ru+slant*delta6);
+beginchar(ucphi,&quot;upper case Greek Phi&quot;,13,0,0);
+pn←hpen; t←xnorm(6.5*u,w8);
+be(hpen); ps(w8); l(t,0,y6,1); l(t,0,y2,-1); nd;
+ucdoubleserif(t,y6,1); ucdoubleserif(t,y2,-1);
+w←rightof(norm(t-5.5*u),w9);
+darc(t,0,.2*y2+.8*y6,0,w,0,.8*y2+.2*y6,0,w9);
+dround←true;
+x←leftof(norm(t+5.5*u),w9);
+darc(t,0,.2*y2+.8*y6,0,x,0,.8*y2+.2*y6,0,w9);
+endchar('010,delta6,0,-ru+.5*slant*delta6);
+beginchar(ucpsi,&quot;upper case Greek Psi&quot;,14,0,0);
+pn←hpen; t←xnorm(7.0*u,w8);
+be(hpen); ps(w8); l(t,0,y6,1); l(t,0,y2,-1); nd;
+ucdoubleserif(t,y6,1); ucdoubleserif(t,y2,-1);
+be(hpen); ps(w8); l(t-6.0*u,-1,.2*y2+.8*y6,0); sethoriz;
+l(t-4.0*u,0,.4*y2+.6*y6,0); setvert;
+l(t,0,.8*y2+.2*y6,0); sethoriz; nd;
+dround←true;
+be(hpen); ps(w8); l(t+6.0*u,+1,.2*y2+.8*y6,0); sethoriz;
+l(t+4.0*u,0,.4*y2+.6*y6,0); setvert;
+l(t,0,.8*y2+.2*y6,0); sethoriz; nd;
+endchar('011,delta6,0,-2.0*ru+slant*delta6);
+beginchar(ucomega,&quot;upper case Greek Omega&quot;,13,0,0);
+pn←hpen; yy←topof(y2,w0); mm←13.0*u+.5; t←mm/2;
+w←xnorm(t+2.0*u,w0);
+xx←norm(t+5.5*u);
+if s2=0 then 
+	begin pn←vpen;z←leftof(xx,w10);
+	end
+else	begin
+	be(hpen);ps(w0);l(xx-.5*u,1,y2,-1);
+	l(xx,1,y2/3+(2/3)*y3,1); nd;
+	x←lx[1]; v←lx[2]; y←ly[1]; vv←ly[2];
+	comment this line will be redrawn below;
+	z←x+(v-x)*(y2+w5-y)/(vv-y);
+	end;
+be(vpen); ps(w5); l(w,0,y2,-1); l(z,0,y2,-1); nd;
+if s2≠0 then
+	begin be(rers);ps(w0+z-x+1);l(x,0,y2,0);l(x,0,y,0);
+	l(x,0,y,0); l(v,0,vv,0); nd;
+	be(hpen);ps(w0);l(x,0,y,0);l(v,0,vv,0);nd; comment redrawing it;
+	end;
+pn←hpen; zz←leftof(xx,w9); y←.3*y2+.7*y6; ww←.001*(5/7);
+be(lers); ps(2.0*u); l(zz,0,y,0); setvert;
+l(w,0,yy,0); hl(1.001*w-.001*zz,0,yy-ww*(y-yy),0); nd;
+be(hpen); ps(w0); l(t,0,y6,1); sethoriz;
+psmax(w9); l(zz,0,y,0); setvert;
+ps(w0); l(w,0,yy,0); hl(1.001*w-.001*zz,0,yy-ww*(y-yy),0); nd;
+dround←true;
+w←xnorm(t-2.0*u,w0);
+xx←norm(t-5.5*u);
+if s2=0 then 
+	begin pn←vpen;z←rightof(xx,w10);
+	end
+else	begin
+	be(hpen);ps(w0);l(xx+.5*u,-1,y2,-1);
+	l(xx,-1,y2/3+(2/3)*y3,1); nd;
+	x←lx[1]; v←lx[2]; y←ly[1]; vv←ly[2];
+	comment this line will be redrawn below;
+ 	z←x+(v-x)*(y2+w5-y)/(vv-y);
+	end;
+be(vpen); ps(w5); l(w,0,y2,-1); l(z,0,y2,-1); nd;
+if s2≠0 then
+	begin be(lers);ps(w0+x-z+1);l(x,0,y2,0);l(x,0,y,0);
+	l(x,0,y,0); l(v,0,vv,0); nd;
+	be(hpen);ps(w0);l(x,0,y,0);l(v,0,vv,0);nd; comment redrawing it;
+	end;
+pn←hpen; zz←rightof(xx,w9); y←.3*y2+.7*y6; ww←.001*(5/7);
+be(rers); ps(2.0*u); l(zz,0,y,0); setvert;
+l(w,0,yy,0); hl(1.001*w-.001*zz,0,yy-ww*(y-yy),0); nd;
+be(hpen); ps(w0); l(t,0,y6,1); sethoriz;
+psmax(w9); l(zz,0,y,0); setvert;
+ps(w0); l(w,0,yy,0); hl(1.001*w-.001*zz,0,yy-ww*(y-yy),0); nd;
+endchar('012,delta6,0,-2.0*ru+slant*delta6);
+beginchar(lcivar,&quot;dotless letter i&quot;,5,1,1);
+pn←hpen; w←xnorm(2.5*u,w1);
+leftserif(w,y5,1);
+vertstroke(w,0,y5,1);
+doubleserif(w,y2,-1);
+endchar('013,delta5,0,lccorr+slant*delta5);
+beginchar(lcjvar,&quot;dotless letter j&quot;,6,0,0);
+pn←hpen; x←xnorm(3.0*u,w1);
+if fixwidth then w←norm(.5*u) else w←norm(-u);
+leftserif(x,y5,1);
+dot(w,-1,.1*y2+.9*y1,-1,w3); v←ly[1];
+be(hpen); psmax(w1); l(x,0,y5,1); setlin;
+l(x,0,y1/3+(2/3)*y2,-1); setvert; setstable;
+ps(w0); l(.5*x+.5*w,0,y1,-1); sethoriz; setlin; setstable;
+l(w,-1,v,0); setvert;
+nd;
+endchar('014,delta5,delta1,lccorr+slant*delta5);
+beginchar(grave,&quot;grave accent&quot;,9,0,0);
+pn←cpen; w←xnorm(2.0*u,w1);
+if w2&gt;1.5*u then w←xnorm(rightof(xnorm(1.25*u,w2),w2),w2) # boldface correction;
+mm←9.0*u+.5; t←mm/2; x←t+(t-w) # make symmetrical;
+dround←true;
+be(cpen); ps(w1);
+l(w,-1,y6,1);
+ps(w0); l(w/3+(2/3)*x,0,y6/3+(2/3)*y5,0);
+nd;
+endchar('015,delta6,0,0);
+beginchar(acute,&quot;acute accent&quot;,9,0,0);
+pn←cpen; w←xnorm(2.0*u,w1);
+if w2&gt;1.5*u then w←xnorm(rightof(xnorm(1.25*u,w2),w2),w2) # boldface correction;
+mm←9.0*u+.5; t←mm/2; x←t+(t-w) # make symmetrical;
+be(cpen); ps(w1);
+l(x,1,y6,1);
+ps(w0); l(x/3+(2/3)*w,0,y6/3+(2/3)*y5,0);
+nd;
+endchar('016,delta6,0,0);
+beginchar(hat,&quot;circumflex (hat)&quot;,9,0,0);
+pn←vpen; w←xnorm(2.5*u,w4);
+pn←hpen; t←xnorm(4.5*u,w1); x←t+(t-w); comment make symmetric;
+be(vpen); ps(w6); l(t,0,y6,1);
+ps(w4); l(w,0,.5*y5 + .5*botof(y6,w6)+1,0);
+nd;
+dround←true;
+be(vpen); ps(w6); l(t,0,y6,1);
+ps(w4); l(x,0,.5*y5 + .5*botof(y6,w6)+1,0);
+nd;
+endchar('017,delta6,0,0);
+beginchar(vhat,&quot;inverted circumflex (Slavic accent)&quot;,9,0,0);
+pn←vpen; w←xnorm(2.5*u,w4);
+pn←hpen; t←xnorm(4.5*u,w1); x←t+(t-w); comment make symmetric;
+be(vpen); ps(w6); l(t,0,.75*y5+.25*botof(y6,w6)+1,-1);
+ps(w4); l(w,0,y6-.25*(botof(y6,w6)-y5),0);
+nd;
+dround←true;
+be(vpen); ps(w6); l(t,0,.75*y5+.25*botof(y6,w6)+1,-1);
+ps(w4); l(x,0,y6-.25*(botof(y6,w6)-y5),0);
+nd;
+endchar('020,delta6,0,0);
+beginchar(breve,&quot;breve accent&quot;,9,0,0);
+ww←norm(.75*w4+.25*w6);
+pn←vpen; w←xnorm(2.0*u,ww);
+pn←hpen; t←xnorm(4.5*u,w1); x←t+(t-w) # make symmetric;
+be(vpen); ps(ww); hl(w,-1,1.25*y6-.25*y5,0);
+l(w,-1,y6,1);
+l(t,0,y6/3+(2/3)*y5+1,0); sethoriz; nd;
+dround←true;
+be(vpen); ps(ww); hl(x,1,1.25*y6-.25*y5,0);
+l(x,1,y6,1);
+l(t,0,y6/3+(2/3)*y5+1,0); sethoriz; nd;
+endchar('021,delta6,0,0);
+beginchar(bar,&quot;macron (bar) accent&quot;,9,0,0);
+ww←norm(.75*w4+.25*w6);
+pn←vpen; w←xnorm(2.0*u,ww);
+pn←hpen; t←xnorm(4.5*u,w1); x←t+(t-w) # make symmetric;
+be(vpen); ps(ww); l(w,-1,y6/3+(2/3)*y5+1,-1); 
+l(x,1,y6/3+(2/3)*y5+1,-1); nd;
+endchar('022,delta6,0,0);
+beginchar(umlaut,&quot;umlaut (double dot) accent&quot;,9,0,0);
+pn←cpen; w←xnorm(2.5*u,ww);
+pn←hpen; t←xnorm(4.5*u,w1); x←t+(t-w) # make symmetric;
+dot(w,0,y6,1,w3);
+dot(x,0,y6,1,w3);
+endchar('023,delta6,0,0);
+beginchar(longum,&quot;long Hungarian umlaut&quot;, 9,0,0);
+pn←hpen; w←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then comment boldface correction;
+	begin w←xnorm(rightof(xnorm(.75*u,w2),w2),w2);
+	end;
+mm←9.0*u+.5; z←mm/2; x←z+(z-w); comment make left/right symmetric;
+comment this is designed to be especially good with the letter o;
+be(cpen); ps(w1); wmax←w1;
+l(norm(4.5*u),1,y6+1,1); ps(w0); l(xnorm(2.5*u,w0),0,y6/3+(2/3)*y5+1,0);
+nd;
+zz←lx[1]-lx[2];
+be(cpen); ps(w1); wmax←w1;
+l(norm(7.5*u),1,y6+1,1); ps(w0); l(lx[1]-zz,0,y6/3+(2/3)*y5+1,0);
+nd;
+endchar('024,delta6,0,0);
+beginchar(vec,&quot;arrow accent (indicates vector)&quot;,9,0,0);
+ww←norm(.75*w4+.25*w6);
+pn←cpen; w←xnorm(2.0*u,ww);
+pn←hpen; t←xnorm(4.5*u,w1); x←t+(t-w) # make symmetric;
+be(cpen); ps(ww); l(w,-1,.5*y5+.5*y6+1,-1); y←ly[1];
+l(x,1,y,0); nd;
+yy←(y6-y5)/4.0;
+be(cpen); l(x-u,1,y+yy,0); l(x,1,y,0); nd;
+be(cpen); l(x-u,1,y-yy,0); l(x,1,y,0); nd;
+endchar('025,delta6,0,0);
+beginchar(tilde,&quot;tilde accent&quot;,9,0,0);
+pn←hpen; w←xnorm(2.0*u,w1); x←xnorm(7.0*u,w1);
+z←.8*y6+.2*y5;
+begin comment make special oblique pen;
+real costheta,sintheta,r;
+costheta←(x-w)/3; sintheta←y6-z;
+r←sqrt(costheta^2+sintheta^2);
+costheta←costheta/r; sintheta←sintheta/r;
+makeovalpen((2.0*costheta/w1)^2+(2.0*sintheta/w0)^2,
+2.0*costheta*sintheta*((2.0/w1)^2-(2.0/w0)^2),
+(2.0*sintheta/w1)^2+(2.0*costheta/w0)^2,0,0);
+xcorr←ycorr←leftcorr←rightcorr←botcorr←topcorr←0;
+end;
+be(spec); ps(1);
+l(w,0,z,1);
+l(.75*w+.25*x,0,y6,1); sethoriz;
+l(.25*w+.75*x,0,z,1); sethoriz;
+l(x,0,y6,1);
+nd;
+endchar('026,delta6,0,0);
+beginchar(circle,&quot;Scandinavian circle accent&quot;,9,0,0);
+pn←hpen; w←xnorm(3.0*u,w0);
+mm←9.0*u+.5; t←mm/2; x←t+(t-w);
+be(hpen); ps(w0);
+l(t,0,y6,1); sethoriz;
+l(w,0,0,0); setvert; comment ly[2] set later;
+l(t,0,ynorm(y6/3+(2/3)*y5,w0),1); sethoriz;
+ly[2]←.5*ly[1]+.5*ly[3]; nd;
+dround←true;
+be(hpen); ps(w0);
+l(t,0,y6,1); sethoriz;
+l(x,0,0,0); setvert; comment ly[2] set later;
+l(t,0,ly[3],0); sethoriz;
+ly[2]←.5*ly[1]+.5*ly[3]; nd;
+endchar('027,delta6,0,-1.5*ru+.5*rw2+slant*delta6);
+beginchar(lcae,&quot;the Latin and Scandinavian ligature ae&quot;,12,0,0);
+w←norm(1.5*u);
+pn←cpen;y←topof(y3+2+.5*w4,w3);
+if topof(y,w3)&gt;y5 then y←botof(y5,w3);
+dot(w,-1,y,0,w3);
+be(hpen); ps(w0);
+l(w,-1,y,0); setvert; setlin;
+l(3.75*u,0,y5,+1); sethoriz;
+x←xnorm(5.5*u,w1);
+ps(.25*w0+.75*w1); l(x-.5*u,0,.25*y3+.75*botof(y5,w0),0);
+psmax(w1); l(x,0,(2/3)*y3+y5/3,0); setvert; setlin;
+l(x,0,y3,0);
+nd;
+be(hpen); ps(w0); y←y2+w4;
+l(x,0,y3,0); setlin; sethoriz;
+l(3.75*u,0,.1*y+.9*y3,0);
+w←xnorm(1.5*u,w2);
+ps(.2*w0+.8*w2); l(w+.25*u,0,.5*y+.5*y3,0);
+psmax(w2); l(w,0,.8*y+.2*y3,0); setvert;
+ps(.3*w0+.7*w2); l(2.75*u,0,y2,-1); sethoriz;
+ps(w0); l(3.75*u,0,.985*topof(y2,w2)+.015*y3,0); setlin; setstable;
+l(x,0,.7*topof(y2,w2)+.3*y3,0);
+hl(7.0*u,0,y3,0);
+nd;
+pn←hpen; v←xnorm(10.5*u,w2);
+if w2&gt;1.5*u then v←xnorm(leftof(xnorm(11.25*u,w2),w2),w2) # boldface correction;
+arc(8.0*u,0,y5,1,v,0,y3,0,w2);
+arc(8.0*u,0,y5,1,x,0,.5*y2+.5*y5,0,w1);
+vv←aspect;
+be(hpen); psmax(w1); l(x,0,.5*y2+.5*y5,0); setvert;
+ps(w0/3+(2/3)*w1); l(8.0*u-(8.0*u-x)/sqrt(2.0),0,0,0) # ly set below;
+ps(w0); l(8.5*u,0,y2,-1); sethoriz; setlin;
+y←(ly[1]-ly[3])/sqrt2;
+ly[2]←ly[1]-y; aspect←vv;
+if w0=w1 then
+	begin l(v,0,.5*y2+.5*y5-y*sqrt(2.0-2.0*((v-8.5*u)/(x-8.5*u))^2),0);
+	hl(17.0*u-x,0,.5*y2+.5*y5,0);
+	end
+else	begin
+	l(rightof(v,w2),1,.5*y2+.5*y3-1,0);
+	hl(rightof(v,w2),1,y3,0);
+	end;
+nd;
+be(hpen); ps(w0); l(x,0,y3,0); l(rightof(v,w2),1,y3,0); nd;
+endchar('030,delta5,0,stm+slant*delta3);
+beginchar(lclc,&quot;the Polish crossed l&quot;,5,1,1);
+pn←hpen; w←xnorm(2.5*u,w1);
+leftserif(w,y6,1);
+vertstroke(w,0,y6,1);
+doubleserif(w,y2,-1);
+be(hpen); ps(w0);
+l(4.0*u,0,y5,1); l(1.0*u,0,y3,-1);
+nd;
+endchar('031,delta6,0,lccorr+slant*delta6);
+beginchar(lcia,&quot;the Russian ligature ia&quot;,14,1,2);
+pn←hpen; v←xnorm(2.5*u,w1);
+leftserif(v,y5,1);
+vertstroke(v,0,y5,1);
+doubleserif(v,y2,-1);
+vv←serifcorr;
+w←norm(6.5*u-vv);
+pn←cpen;y←topof(y3+2+.5*w4,w3);
+if topof(y,w3)&gt;y5 then y←botof(y5,w3);
+dot(w,-1,y,0,w3);
+be(hpen); ps(w0);
+l(w,-1,y,0); setvert; setlin;
+l(9*u-vv,0,y5,+1); sethoriz;
+x←xnorm(11.5*u-vv,w1);
+ps(.25*w0+.75*w1); l(x-.5*u,0,.25*y3+.75*botof(y5,w0),0);
+psmax(w1); l(x,0,(2/3)*y3+y5/3,0); setvert; setlin;
+if s1=0 then
+	begin l(x,0,y2,-1); nd;
+	end
+else	begin comment draw small &quot;finial&quot;;
+	l(x,0,.8*topof(y2,w1)+.2*y3,0); setvert; setstable;
+	ps(w0); l(0,0,y2,-1); sethoriz; setstable; setlin # lx set below;
+	l(norm(13.5*u-vv),1,y3/3+(2/3)*y2,0); setvert;
+	lx[n-1]←.5*leftof(rightof(x,w1),w0)+.5*lx[n]; nd;
+	end;
+be(hpen); ps(w0); y←y2+w4;
+l(x,0,y3,0); setlin; sethoriz;
+l(9*u-vv,0,.1*y+.9*y3,0);
+w←xnorm(6.5*u-vv,w2);
+ps(.2*w0+.8*w2); l(w+.25*u,0,.5*y+.5*y3,0);
+psmax(w2); l(w,0,.8*y+.2*y3,0); setvert;
+ps(.3*w0+.7*w2); l(8.0*u-vv,0,y2,-1); sethoriz;
+ps(w0); l(9.0*u-vv,0,.985*topof(y2,w2)+.015*y3,0); setlin; setstable;
+l(x,0,.7*topof(y2,w2)+.3*y3,0);
+hl(13.0*u-vv,0,y3,0);
+nd;
+mm←10.0*u-vv+.5; t←mm/2; x←t+(t-v) # make symmetric;
+be(vpen); ps(.75*w4+.25*w6);
+l(v,0,(5/9)*y5+(4/9)*y6,0); setvert;
+l(t,0,y6,1); sethoriz; nd;
+dround←true;
+be(vpen); l(x,0,ly[1],0); setvert;
+l(t,0,y6,1); sethoriz; nd;
+endchar('032,delta6,0,lccorr+slant*delta5);
+beginchar(lcoe,&quot;the French ligature oe&quot;, 13,0,0);
+pn←hpen; w←xnorm(1.5*u,w2); x←xnorm(6.5*u,w2);
+if w2&gt;1.5*u then comment boldface correction;
+	begin w←xnorm(rightof(xnorm(.75*u,w2),w2),w2);
+	end;
+z←.5*w+.5*x;
+darc(z,0,y5,1,x,0,y2,-1,w2);
+darc(z,0,y5,1,w,0,y2,-1,w2);
+w←x;
+pn←hpen; x←xnorm(11.5*u,w2);
+if w2&gt;1.5*u then x←xnorm(leftof(xnorm(12.25*u,w2),w2),w2) # boldface correction;
+arc(9.0*u,0,y5,1,x,0,y3,0,w2);
+be(hpen); ps(w0);
+l(9.0*u,0,y5,1); sethoriz;
+comment calculation of points on ellipse; t←.5*y2+.5*y5;
+y←(ly[n]-t)/sqrt2;
+v←9.0*u-(9.0*u-w)*sqrt(1.0-((y3-t)/(ly[n]-t))^2);
+ps(w0/3+(2/3)*w2); l(9.0*u-(9.0*u-w)/sqrt2,0,t+y,0);
+psmax(w2); l(w,0,t,0); setvert;
+ps(w0/3+(2/3)*w2); l(9.0*u-(9.0*u-w)/sqrt2,0,t-y,0);
+ps(w0); l(9.5*u,0,y2,-1); sethoriz; setlin;
+if w0=w1 then
+	begin l(x,0,.5*y2+.5*y5-y*sqrt(2.0-2.0*((x-9.5*u)/(w-9.5*u))^2),0);
+	hl(19.0*u-w,0,.5*y2+.5*y5,0);
+	end
+else	begin
+	l(rightof(x,w2),1,.5*y2+.5*y3-1,0);
+	hl(rightof(x,w2),1,y3,0);
+	end;
+aspect←(lx[1]-lx[3])/(ly[1]-ly[3]);
+nd;
+be(hpen); ps(w0); l(v+1,0,y3,0); l(rightof(x,w2),1,y3,0);
+nd;
+endchar('033,delta5,0,stm+slant*delta3);
+beginchar(ucae,&quot;upper case Latin and Scandinavian ligature AE&quot;,17,sc2,1);
+pn←hpen; w←rightof(norm(7.0*u),w8);
+bracket(w,leftof(norm(15.5*u),w0),y6,1,.5*u,1.4*baspect*s2,w4);
+ucleftserif(w,y6,1);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+ucleftserif(w,y2,-1);
+bracket(w,leftof(norm(15.75*u),w0),y2,-1,.5*u,-1.4*baspect*s2,w4);
+y←.5*y6+.5*y2;
+x←xnorm(13.0*u,w0);
+be(hpen); ps(w0); l(w,0,y,0); l(x,0,y,0); nd;
+ww←((baspect*s2)min(.2*(y6-y2)))+eps;
+if s2≠0 and w0≠w8 then
+	begin t←x-u; cutoff←0.0;
+	while t&lt;x do
+		begin be(hpen);
+		ps(w0); l(t,0,y,0); sethoriz; l(x,0,y+ww,0); setvert; nd;
+		be(hpen); l(t,0,y,0); sethoriz; l(x,0,y-ww,0); setvert; nd;
+		if cw&lt;1 then t←t+1.0 else t←t+cw;
+		end;
+	cutoff←0.5;
+	end;
+if s2≠0 then
+	begin be(hpen); ps(w0); l(x,0,y+ww,0); l(x,0,y-ww,0); nd;
+	end;
+pn←hpen;x←rightof(norm(1.5*u),w0);
+be(hpen); ps(w0); l(norm(7.0*u),-1,y6,1); l(x,0,y2,-1); nd;
+t←ly[1]; v←ly[2]; z←lx[1];
+be(hpen); l(x+(z-x)*(y3-v)/(t-v)+1,0,y3,0); l(z,0,y3,0); nd;
+if s2&gt;0 then
+	begin be(hpen); ps(w0);
+	xx←s2-.5*w8+eps # comment serif usually sticks out this much;
+	l(leftof(x,w0)-.5*xx,-1,y2,-1); l(rightof(x,w0)+xx,1,y2,-1); nd;
+	end;
+endchar('034,delta6,0,brc);
+beginchar(uclc,&quot;upper case Polish crossed L&quot;,12,sc2,1);
+pn←hpen; w←rightof(norm(2.0*u),w8); x←rightof(w,w8)+u;
+bracket(w,leftof(norm(10.5*u),w0),y2,-1,.5*u,-1.4*baspect*s2,w4);
+ucleftserif(w,y2,-1);
+be(hpen); ps(w8); l(w,0,y2,-1); l(w,0,y6,1); nd;
+ucdoubleserif(w,y6,1);
+be(hpen); ps(w0);
+l(x,0,y5,1); l(1.0*u,0,y3,-1);
+nd;
+endchar('035,delta6,0,0);
+beginchar(ucia,&quot;upper case Russian ligature IA&quot;,17,sc2,sc2);
+yy←.5*y5+.5*y6;
+pn←hpen; w←leftof(norm(15.5*u),w9); x←rightof(norm(5.5*u),w0);
+y←norm(.5*rightof(x,w0)+.5*leftof(w,w9)); z←leftof(rightof(y,w9),w0);
+be(hpen); ps(w9); l(y,0,yy,1); l(w,0,y2,-1); nd;
+t←ly[1]; v←ly[2];
+be(hpen); ps(w0); l(x+(z-x)*(y3-v)/(t-v),0,y3,0);
+		  l(w+(y-w)*(y3-v)/(t-v),0,y3,0); nd;
+be(lers); ps(w9+1); l(z,0,yy,0);l(z,0,t,0);l(z,0,t,0);l(x,0,v,0);nd;
+be(hpen); ps(w0); l(z,0,t,0); l(x,0,v,0); nd;
+if s2&gt;0 then
+	begin be(hpen); ps(w0);
+	xx←s2-.5*w8+eps # comment serif usually sticks out this much;
+	l(leftof(x,w0)-.5*xx,-1,y2,-1); l(rightof(x,w0)+xx,1,y2,-1); nd;
+	be(hpen); l(leftof(w,w9)-xx,-1,y2,-1);
+	l(rightof(w,w9)+.5*xx,1,y2,-1); nd;
+	end;
+pn←hpen; ww←xnorm(3.0*u,w8);
+be(hpen); ps(w8); l(ww,0,yy,1); l(ww,0,y2,-1); nd;
+if s2=0 then s2←ww-u;
+ucdoubleserif(ww,yy,1); ucdoubleserif(ww,y2,-1);
+s2←s2save;
+mm←11.5*u+.5; t←mm/2; x←t+(t-ww) # make symmetric;
+be(vpen); ps(.75*w4+.25*w6);
+l(ww,0,(2/3)*y6+y5/3,-1); setvert;
+l(t,0,y7,1); sethoriz; nd;
+dround←true;
+be(vpen); l(x,0,ly[1],0); setvert;
+l(t,0,y7,1); sethoriz; nd;
+endchar('036,delta6,0,0);
+beginchar(ucoe,&quot;upper case French ligature OE&quot;,19,0,1);
+if fixwidth then sqrt2←1.319507911 # 2^(2/5), for Piet Hein's superellipse;
+mm←14.0*u+.5; t←mm/2;
+pn←hpen; w←rightof(norm(t-6.0*u),w9);
+darc(t,0,y6,1,w,0,y2,-1,w9);
+be(hpen); ps(w0); l(t,0,y6,1); sethoriz; 
+l(norm(9.0*u),-1,(2/3)*y6+y2/3,0); setvert;
+l(norm(9.0*u),-1,(2/3)*y2+y6/3,0); setvert;
+l(t,0,y2,-1); sethoriz; cutoff←0.0; nd;
+if s2&gt;0 and w0≠w8 then
+	begin comment fill in at top and bottom;
+	if cw&lt;1 then zz←1.0 else zz←cw;
+	xx←t+zz;
+	ww←lx[2];
+	while xx&lt;ww do
+		begin be(hpen); l(xx,0,y6,1); sethoriz;
+		l(ww,0,(2/3)*y6+y2/3,0); setvert;
+		l(ww,0,(2/3)*y2+y6/3,0); setvert;
+		l(xx,0,y2,-1); sethoriz; nd;
+		xx←xx+zz;
+		end;
+	be(hpen); l(ww,0,y6,1); l(ww,0,y2,-1); nd;
+	end;
+sqrt2←sqrt(2.0); cutoff←0.5;
+pn←hpen; w←rightof(norm(9.0*u),w8);
+bracket(w,leftof(norm(17.5*u),w0),y6,1,.5*u,1.4*baspect*s2,w4);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+bracket(w,leftof(norm(17.75*u),w0),y2,-1,.5*u,-1.4*baspect*s2,w4);
+y←.5*y6+.5*y2;
+x←xnorm(15.0*u,w0);
+be(hpen); ps(w0); l(w,0,y,0); l(x,0,y,0); nd;
+ww←((baspect*s2)min(.2*(y6-y2)))+eps;
+if s2≠0 and w0≠w8 then
+	begin t←x-u; cutoff←0.0;
+	while t&lt;x do
+		begin be(hpen);
+		ps(w0); l(t,0,y,0); sethoriz; l(x,0,y+ww,0); setvert; nd;
+		be(hpen); l(t,0,y,0); sethoriz; l(x,0,y-ww,0); setvert; nd;
+		if cw&lt;1 then t←t+1.0 else t←t+cw;
+		end;
+	cutoff←0.5;
+	end;
+if s2≠0 then
+	begin be(hpen); ps(w0); l(x,0,y+ww,0); l(x,0,y-ww,0); nd;
+	end;
+endchar('037,delta6,0,brc);
+beginchar(lcos,&quot;the letter o with Scandinavian slash&quot;, 9,0,0);
+pn←hpen; w←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then comment boldface correction;
+	begin w←xnorm(rightof(xnorm(.75*u,w2),w2),w2);
+	end;
+mm←9.0*u+.5; z←mm/2; x←z+(z-w);
+darc(z,0,y5,1,x,0,y2,-1,w2);
+dround←true;
+darc(z,0,y5,1,w,0,y2,-1,w2);
+
+be(hpen); ps(w0);
+y←.5*(y2-y1);
+l(w,0,y2-y,0); l(x,0,y5+y,0);
+nd;
+endchar('040,delta5+.5*delta1,.5*delta1,stm+slant*(delta5+.5*delta1));
+procedure blank;
+begin if fixwidth then characterwidth←9.0*usave+.5
+	else characterwidth←7.0*usave+.5;
+fntarray['40]←characterwidth lsh 18 + ifnt;
+fntarray[ifnt]←'40 lsh 18 + 2;
+fntarray[ifnt+1]←0;
+ifnt←ifnt+2;
+end;
+beginchar(exc,&quot;exclamation point&quot;,5,0,0);
+dot(2.5*u,0,y2,-1,w3); yy←topof(ly[1],w3);
+if w3-w0&lt;4.0 then w←w3 else w←w0;
+be(cpen); ps(w3); l(2.5*u,0,y7,1); ps(w); l(2.5*u,0,.25*y5+.75*yy+1,-1); nd;
+endchar('041,delta7,0,-2.5*ru+.5*rw3+slant*delta7);
+beginchar(clsq,&quot;close quotes&quot;,9,0,0);
+dround←true # symmetric with respect to open quotes;
+w←norm(1.5*u);
+dot(w,0,y6,1,w3);
+be(hpen); ps(w0);
+l(w,0,y6,1); sethoriz;
+l(xnorm(w+u,w0),0,(2/3)*botof(y6,w0)+topof(y5,w0)/3,0); setvert;
+l(w-.5*u,0,y5,-1);
+hl(w-8.0*u,0,y5,-1);
+nd;
+w←norm(5.0*u);
+dot(w,0,y6,1,w3);
+be(hpen); ps(w0);
+l(w,0,y6,1); sethoriz;
+l(xnorm(w+u,w0),0,(2/3)*botof(y6,w0)+topof(y5,w0)/3,0); setvert;
+l(w-.5*u,0,y5,-1);
+hl(w-8.0*u,0,y5,-1);
+nd;
+endchar('042,delta6,0,-3.0*ru+slant*delta6);
+beginchar(sharp,&quot;the symbol #&quot;,9,0,0);
+ww←norm(.75*w0+.25*w2);
+y←.5*y6+.5*y1+.5*(y5-y3); z←.5*y6+.5*y1-.5*(y5-y3);
+be(hpen); ps(ww); l(norm(u),-1,y,0); l(norm(8.0*u),1,y,0); nd;
+be(hpen); ps(ww); l(norm(u),-1,z,0); l(norm(8.0*u),1,z,0); nd;
+be(hpen); ps(ww); l(norm(4.5*u),-1,y1,-1); l(norm(6.5*u),1,y6,1); nd;
+w←lx[2]-lx[1];
+be(hpen); ps(ww); l(norm(2.5*u),-1,y1,-1); l(lx[1]+w,0,y6,1); nd;
+endchar('043,delta6,delta1,-ru+slant*delta5);
+beginchar(lccc,&quot;the letter c with French cedilla&quot;,8,0,0);
+x←norm(7.0*u);
+pn←cpen;y←topof(y3+2+.5*w4,w3);
+if topof(y,w3)&gt;y5 then y←botof(y5,w3);
+dot(x,1,y,0,w3);
+be(hpen); ps(w0);
+l(x,1,y,0); setvert;
+l(4.5*u,0,y5,1); sethoriz; nd;
+w←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then w←xnorm(rightof(xnorm(.75*u,w2),w2),w2) # boldface correction;
+y←.5*y2+.5*y5;
+darc(4.5*u,0,y5,1,w,0,y2,-1,w2);
+be(hpen); ps(w0); l(4.5*u,0,y2,-1); sethoriz;
+if w0=w1 then
+	begin l(x,1,y-(botof(y5,w0)-y)*
+		sqrt(1.0-((leftof(x,w0)-4.5*u)/(w-4.5*u))^2),0);
+	hl(9.0*u-w,0,y,0);
+	end
+else	begin
+	l(x,-1,.5*y2+.5*y3-1,0); hl(x,-1,y3,0);
+	end;
+nd;
+be(hpen); ps(w1);
+l(4.5*u,0,y2,-1); l(4.5*u,0,.25*y1+.75*y2,-1);
+nd;
+be(hpen); ps(.5*w0+.5*w1);
+l(4.5*u,0,.25*y1+.75*y2,-1); sethoriz;
+l(6.0*u,0,.5*y1+.5*y2,-1); setvert;
+l(3.0*u,0,.75*y1+.25*y2,-1); sethoriz;
+nd;
+endchar('043,delta5,.75*delta1,-ru+slant*delta5);
+beginchar(uccc,&quot;upper case French c with cedilla&quot;,if s2 then 14 else 11,0,0);
+pn←hpen; x←leftof(norm(13.0*u),w0); w←rightof(norm(u),w9);
+if s2 then
+	begin y←y5; if y6-y5 &gt; .4*(y6-y2) then y←norm((2/3)*y6+y2/3);
+	yy←y2+(y6-y);
+	be(hpen); ps(w0); l(x,0,y6,1); alignedwidth(true,lx[n]+lw[n]/2.0,1);
+	psmax(w8); l(rightof(x,w0),1,y,0); nd;
+	t←ly[1];
+	be(lers); ps(w8+1); l(x,0,.5*y2+.5*y6,0); l(x,0,y,0); nd;
+	be(lers); hl(x,0,.5*y2+.5*y6,0); l(x,0,y,0); l(7.5*u,0,t,0); sethoriz; nd;
+	be(hpen); ps(w0);hl(x,0,.5*y2+.5*y6,0); l(x,0,y,0);
+	l(7.5*u,0,y6,1); sethoriz; nd;
+	be(hpen); ps(w0); l(7.5*u,0,y2,-1); sethoriz; l(x,0,yy,0);
+	hl(x,0,.5*y2+.5*y6,0); nd;
+	end
+else	begin
+	be(hpen); ps(w0); l(7.5*u,0,y2,-1); sethoriz;
+	l(norm(10.0*u),1,0,0) # ly set below;
+	hl(x,0,.5*y6+.5*y2,0);
+	ly[2]←ly[3]+(ly[1]-ly[3])*sqrt(1.0-((lx[2]-lx[1])/(lx[3]-lx[1]))^2);
+	aspect←(lx[3]-lx[1])/(ly[3]-ly[1]); nd;
+	be(hpen); ps(w0); l(7.5*u,0,y6,1); sethoriz;
+	l(norm(10.0*u),1,0,0) # ly set below;
+	hl(x,0,.5*y6+.5*y2,0);
+	ly[2]←ly[3]+(ly[1]-ly[3])*sqrt(1.0-((lx[2]-lx[1])/(lx[3]-lx[1]))^2);
+	aspect←(lx[3]-lx[1])/(ly[1]-ly[3]); nd;
+	end;
+darc(7.5*u,0,y6,1,w,0,y2,-1,w9);
+be(hpen); ps(w8);
+l(7.5*u,0,y2,-1); l(7.5*u,0,.25*y1+.75*y2,-1);
+nd;
+be(hpen); ps(.5*w0+.5*w8);
+l(7.5*u,0,.25*y1+.75*y2,-1); sethoriz;
+l(9.0*u,0,.5*y1+.5*y2,-1); setvert;
+l(6.0*u,0,.75*y1+.25*y2,-1); sethoriz;
+nd;
+endchar('044,delta6,.75*delta1,-ru+slant*delta6);
+beginchar(dollar,&quot;dollar sign&quot;,10,0,0);
+pn←hpen;
+if (s2=0) or (w0=w10) then
+	begin xx←yy←5.0*u;
+	z←.5*topof(y2,w0)+.25*y2+.25*y6;
+	y←.5*botof(y6,w0)+.25*y2+.25*y6;
+	end
+else	begin xx←4.5*u; yy←5.5*u;
+	y←(2/3)*y6+y2/3+1; z←(2/3)*y2+y6/3-1;
+	end;
+w←rightof(norm(u),w0); x←leftof(norm(9.0*u),w0);
+dot(norm(9.0*u),1,y,-1,w3); be(hpen); ps(w0); l(x,0,ly[1],0); setvert;
+l(xx,0,y6,1); sethoriz; nd;
+dot(norm(u),-1,z,1,w3); be(hpen); ps(w0); l(w,0,ly[1],0); setvert;
+l(yy,0,y2,-1); sethoriz; nd;
+be(hpen); ps(w0); l(5.0*u,0,y7,1); l(5.0*u,0,y2-(y7-y6),-1); nd;
+vv←.48*y2+.52*y6;
+pn←hpen;
+w←rightof(norm(u),w0); x←leftof(norm(9.0*u),w0) # left and right s-shape limits;
+ssdraw(xx,botof(y6,w0),w,5.0*u,vv,x,yy,topof(y2,w0),(y6-y2)/(50.0*u),w10,w0);
+endchar('044,delta7,delta7-delta6,-ru+slant*delta6);
+beginchar(pct,&quot;per cent sign&quot;,17,0,0);
+begin procedure specellipse;
+	begin comment draws ellipse from w to x in x-direction and
+	from ww+t to ww-t in y-direction, slanted by zz;
+	xx←.5*w+.5*x; z←zz*t;
+	be(hpen); ps(w0); l(xx+z,0,ww+t,0); sethoriz; setstable;
+	ps((5/6)*w1+w0/6); l(xx-(xx-w-z)/sqrt2,0,ww+t/sqrt2,0);
+	psmax(w1); l(w,0,ww,0);
+	ps((5/6)*w1+w0/6); l(xx-(xx-w+z)/sqrt2,0,ww-t/sqrt2,0);
+	ps(w0); l(xx-z,0,ww-t,0); sethoriz; setstable; setlin;
+	l(xx+(xx-w-z)/sqrt2,0,ww-t/sqrt2,0);
+	l(x,0,ww,0);
+	l(xx+(xx-w+z)/sqrt2,0,ww+t/sqrt2,0);
+	l(xx+z,0,ww+t,0); sethoriz; nd;
+	end;
+yy←y2-(y7-y6); y←.5*y2+.5*y6;
+be(hpen); ps(w0); l(2.5*u,0,yy,-1); l(15.5*u,0,y7,1); nd;
+zz←.25*(lx[2]-lx[1])/(ly[2]-ly[1]) # slope to be applied to ellipses;
+w←rightof(norm(u),w1); x←leftof(norm(7.0*u),w0);
+ww←.5*y+.5*y7; t←botof(y7,w0)-ww; specellipse;
+
+comment calculation of points on slanted ellipse;
+v←0.9; vv←v+.001;
+be(hpen); ps(w0); 
+hl(.5*w+.5*x+zz*vv*t+(.5*x-.5*w)*sqrt(1.0-vv^2),0,.5*y+.5*y7+vv*t,0);
+l(.5*w+.5*x+zz*v*t+(.5*x-.5*w)*sqrt(1.0-v^2),0,.5*y+.5*y7+v*t,0);
+l(15.5*u,0,y7,1); hl(15.5*u+.004*zz,0,y7+.001,1); nd;
+
+comment draw bottom ellipse like the top one;
+xx←leftof(norm(16.0*u),w0); w←w+(xx-x); x←xx;
+ww←.5*y+.5*yy; t←ww-topof(yy,w0); specellipse;
+end;
+endchar('045,delta7,delta7-delta6,-2.5*ru+slant*delta7);
+beginchar(amp,&quot;ampersand&quot;,14,0,0);
+pn←hpen; w←xnorm(1.5*u,w2); yy←topof(y2,w0); zz←botof(y6,w0);
+be(hpen);ps(w0); hl(11.5*u,0,y7,0); l(11.5*u,0,y5,1); setlin;
+l(4.0*u,0,.985*yy+.015*y3,0); setstable;
+ps(.3*w0+.7*w2); l(3.0*u,0,y2,-1); sethoriz;
+psmax(w2); l(w,0,zz/7+(6/7)*yy,0); setvert;
+ps(w0); l(5.25*u,0,.5*zz+.5*yy,0); setlin; setstable;
+l(1.001*lx[n]-.001*w,0,1.001*ly[n]-.001*(zz/3+(2/3)*yy),0);
+l(xnorm(8.5*u,w0),0,.8*zz+.2*yy,0); setvert;
+l(6.5*u,0,y6,1); sethoriz; nd;
+arc(6.5*u,0,y6,1,xnorm(5.0*u,w1),0,.8*zz+.2*yy,0,w1);
+be(hpen); psmax(w1); l(xnorm(5.0*u,w1),0,.8*zz+.2*yy,0); setvert; setlin;
+l(6.0*u,0,.5*zz+.5*yy,0); setlin;
+l(10.0*u,0,.015*zz+.985*yy,0); setstable;
+ps(w0); l(11.5*u,0,y2,-1); setlin; setstable; sethoriz;
+l(xnorm(13.0*u,w0),0,.5*yy+.5*y3,0); setvert; nd;
+doubleserif(11.5*u,y5,1);
+endchar('046,delta6,0,lcser);
+beginchar(aps,&quot;apostrophe&quot;,5,0,0);
+w←norm(2.5*u);
+if fixwidth then v←(5/9)*u else v←u;
+dot(w,0,y6,1,w3);
+be(hpen); ps(w0);
+l(w,0,y6,1); sethoriz;
+l(xnorm(w+v,w0),0,(2/3)*botof(y6,w0)+topof(y5,w0)/3,0); setvert;
+l(w-.5*v,0,y5,-1);
+hl(w-8.0*v,0,y5,-1);
+nd;
+endchar('047,delta6,0,-1.5*ru+slant*delta6);
+beginchar(lpren,&quot;left parenthesis&quot;,6,0,0);
+y←y1-(y7-y6);
+w←norm(5.0*u);
+if fixwidth then v←(6/9)*u else v←u;
+be(hpen); ps(w0); hl(w+7.5*v,0,y7,1);
+l(w,0,y7,1);
+psmax(norm(.25*w0+.75*w1));l(norm(w-4.0*v),-1,.5*y7+.5*y,0); setvert;
+ps(w0); l(w,0,y,-1);
+hl(w+7.5*v,0,y,-1);
+nd;
+endchar('050,delta7,delta1+delta7-delta6,-ru+slant*delta7);
+beginchar(rpren,&quot;right parenthesis&quot;,6,0,0);
+y←y1-(y7-y6);
+w←norm(u); dround←true # symmetric to left parenthesis;
+if fixwidth then v←(6/9)*u else v←u;
+be(hpen); ps(w0); hl(w-7.5*v,0,y7,1);
+l(w,0,y7,1);
+psmax(norm(.25*w0+.75*w1));l(norm(w+4.0*v),1,.5*y7+.5*y,0); setvert;
+ps(w0); l(w,0,y,-1);
+hl(w-7.5*v,0,y,-1);
+nd;
+endchar('051,delta7,delta1+delta7-delta6,-ru+slant*delta7);
+beginchar(ast,&quot;asterisk&quot;,9,0,0);
+if fontmod land '20 then yy←.5*y6+.5*y1-(.5*y2+.5*y5)
+else yy←y7-y5 # amount to raise above baseline;
+pn←cpen; y←botof(y5,w1); v←topof(y2,w1); w←xnorm(4.5*u,w1);
+z←leftof(3.75*u,w3)*(sqrt(3.0)/2.0);
+begin procedure astleg(real x,y);
+	begin be(cpen); ps(w1); l(x,0,y+yy,0);
+	ps(w0); l(w,0,.5*y2+.5*y5+yy,0); nd;
+	end;
+astleg(w,y); astleg(w,v);
+astleg(w+z,.75*y+.25*v); astleg(w+z,.25*y+.75*v);
+comment the asterisk will have 60-degree angles if 7.5*u = y5-y2;
+dround←true;
+astleg(w-z,.75*y+.25*v); astleg(w-z,.25*y+.75*v);
+end;
+endchar('052,if fontmod land '20 then delta5 else delta7,0,
+	(w+z-9.0*u)*ru/usave+slant*(if fontmod land '20 then delta5 else delta7));
+beginchar(plus,&quot;plus sign&quot;,18,0,0);
+ww←norm(.75*w0+.25*w2);
+yy←.5*y6+.5*y1 # axis line;
+be(cpen); ps(ww); l(u,-1,yy,0); l(17.0*u,1,ly[1],0); nd;
+be(cpen); l(9.0*u,0,if fixwidth then y5 else y6,1);
+l(lx[1],0,ly[2]-(ly[1]-ly[2]),0); nd;
+endchar('053,if fixwidth then delta5 else delta6,
+	if fixwidth then (0 min (delta1-delta6+delta5)) else delta1,
+	-ru+.5*slant*(delta6-delta1));
+beginchar(minus,&quot;minus sign&quot;,18,0,0);
+ww←norm(.75*w0+.25*w2);
+yy←.5*y6+.5*y1 # axis line;
+be(cpen); ps(ww); l(u,-1,yy,0); l(17.0*u,1,ly[1],0); nd;
+endchar('055,delta5,0,-ru+.5*slant*(delta6-delta1));
+beginchar(com,&quot;comma&quot;,5,0,0);
+if w0=w3 then ww←sqrt2*w3 else ww←w3;
+pn←cpen; w←xnorm(2.5*u,ww);
+dot(w,0,y2,-1,ww);
+y←ly[1]; x←rightof(w,ww);
+be(hpen); ps(w0); l(x,1,y,0); setvert;
+if fixwidth then
+	begin l((35/18)*u,0,y1,-1); hl(-2.5*u,0,y1,-1);
+	end
+else	begin l(1.5*u,0,y1,-1); hl(-6.0*u,0,y1,-1);
+	end;
+nd;
+endchar('054,if w0=w3 then sqrt2*rw3 else rw3,delta1,0);
+beginchar(hyp,&quot;hyphen&quot;,if fixwidth then 9 else 6,0,0);
+yy←.5*y2+.5*y5;
+be(vpen); ps(w5);
+if fixwidth then
+	begin l(1.5*u,-1,yy,0); l(7.5*u,1,yy,0);
+	end
+else	begin l(0,-1,yy,0); l(5.0*u,1,yy,0);
+	end;
+nd;
+endchar('055,delta5,0,0);
+beginchar(per,&quot;period&quot;,5,0,0);
+if w0=w3 then ww←sqrt2*w3 else ww←w3;
+dot(2.5*u,0,y2,-1,ww);
+endchar('056,if w0=w3 then sqrt2*rw3 else rw3,0,0);
+beginchar(slash,&quot;virgule or division sign&quot;,9,0,0);
+ww←norm(.75*w0+.25*w2);
+be(cpen); ps(ww); l(8.0*u,1,y7,1); l(u,-1,y1-(y7-y6),-1); nd;
+endchar('057,delta7,delta1+delta7-delta6,-ru+slant*delta7);
+beginchar(n0,&quot;the numeral 0&quot;,9,0,0);
+if fontmod land '400 then sqrt2←1.319507911 # 2^(2/5), for Piet Hein's superellipse;
+pn←hpen; w←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then comment boldface correction;
+	begin w←xnorm(rightof(xnorm(.75*u,w2),w2),w2);
+	end;
+mm←9.0*u+.5; z←mm/2; x←z+(z-w);
+y←.5*y2+.5*y6;
+darc(z,0,y6,1,x,0,y2,-1,w2);
+dround←true;
+darc(z,0,y6,1,w,0,y2,-1,w2);
+sqrt2←sqrt(2.0);
+endchar('060,delta6,0,-ru+slant*delta6);
+beginchar(n1,&quot;the numeral 1&quot;,9,0,0);
+pn←hpen; w←xnorm(4.5*u,w2);
+be(hpen); ps(w2); l(w,0,y6,1); l(w,0,y2,-1); nd;
+x←leftof(rightof(w,w2),w0); y←botof(y6,w0);
+z←w-2.0*u; v←botof(.8*y6+.2*y5,w0);
+be(lers); ps(w2+1); l(x,0,y6,0); l(x,0,y,0); nd;
+be(lers); ps(w2+1); hl(x,0,1.5*y6-.5*y5,0); l(x,0,y,0); l(z,0,v,0); sethoriz; nd;
+be(hpen); ps(w0); hl(x,0,1.5*y6-.5*y5,0); l(x,0,y,0); l(z,0,v,0); sethoriz; nd;
+be(hpen); ps(w0); l(leftof(w,w2)-2.0*u-eps,0,y2,-1);
+l(rightof(w,w2)+2.0*u+eps,0,y2,-1); nd;
+endchar('061,delta6,0,-ru+slant*delta6);
+beginchar(n2,&quot;the numeral 2&quot;,9,0,0);
+pn←hpen; yy←topof(y2,w0); w←rightof(norm(u),w0);
+xx←norm(8.0*u);zz←rightof(leftof(leftof(xx,w2),w2),w0);
+if s1=0 then 
+	begin pn←vpen;z←leftof(xx,w10);vv←w10;
+	end
+else	begin
+	be(hpen);ps(w0);
+	if w4=w5 then l(8.0*u,1,y2,-1) else l(7.5*u,1,y2,-1);
+	l(8.0*u,1,y2/3+(2/3)*y3,1); nd;
+	x←lx[1]; v←lx[2]; y←ly[1]; t←ly[2];
+	comment this line will be redrawn below;
+	z←x+(v-x)*(y2+w5-y)/(t-y);vv←w5;
+	end;
+be(vpen); ps(vv); l(w,0,y2,-1); l(z,0,y2,-1); nd;
+if s1≠0 then
+	begin be(rers);ps(w0+z-x+1);l(x,0,y2,0);l(x,0,y,0);
+	l(x,0,y,0); l(v,0,t,0); nd;
+	be(hpen);ps(w0);l(x,0,y,0);l(v,0,t,0);nd; comment redrawing it;
+	end;
+dot(leftof(w,w0),-1,y5,-1,w3); y←ly[1];
+be(hpen); ps(w0);
+l(w,0,y,0); setvert;
+l(.5*w+.5*zz,0,y6,1); sethoriz; nd;
+y←.3*y2+.7*y6;
+ww←.001*(5/7);
+be(lers); ps(2.0*u+1);l(zz,0,y,0); setvert;
+l(w,0,yy,0); hl(1.001*w-.001*zz,0,yy-ww*(y-yy),0); nd;
+pn←hpen; x←leftof(xx,w0);
+while x&gt;zz do
+	begin be(hpen); ps(w0);
+	l(.5*w+.5*zz,0,y6,1); sethoriz;
+	l(x,0,y,0); setvert;
+	l(w,0,yy,0); hl(1.001*w-.001*x,0,yy-ww*(y-yy),0); nd;
+	if cw&lt;1 then x←x-1.0 else x←x-cw;
+	end;
+be(hpen); ps(w0);
+l(.5*w+.5*zz,0,y6,1); sethoriz;
+l(zz,0,y,0); setvert;
+l(w,0,yy,0); hl(1.001*w-.001*zz,0,yy-ww*(y-yy),0); nd;
+endchar('062,delta6,0,-ru+slant*delta6);
+beginchar(n3,&quot;the numeral 3&quot;,9,0,0);
+cutoff←0.0;
+yy←.48*y2+.52*y6;
+ww←.25*w0+.75*w3;
+pn←cpen; y←topof(.25*y2+.75*y6+1,ww);
+if topof(y,ww)≥y6 then y←botof(y6,ww);
+dot(norm(1.5*u),-1,y,0,ww);
+be(hpen); ps(w0); l(norm(1.5*u),-1,y,0); setvert; setlin;
+l(0,0,y6,1) # lx[2] set below; sethoriz;
+psmax(w1);l(norm(8.0*u),1,.25*y2+.75*y6,0); setvert; lx[2]←.5*lx[1]+.5*lx[3];
+ps(w0); l(4.5*u,0,yy,0); sethoriz; l(3.5*u,0,yy,0); nd;
+pn←cpen; y←botof(.75*y2+.25*y6,w3);
+if botof(y,w3)≤y2 then y←topof(y2,w3);
+dot(norm(u),-1,y,0,w3);
+be(hpen); ps(w0); l(norm(u),-1,y,0); setvert; setlin;
+l(0,0,y2,-1) # lx[2] set below; sethoriz;
+psmax(w2); l(norm(8.0*u),1,.75*y2+.25*y6,0); setvert; lx[2]←.5*lx[1]+.5*lx[3];
+ps(w0); l(4.5*u,0,yy,0); sethoriz; nd;
+cutoff←0.5;
+endchar('063,delta6,0,-ru+slant*delta6);
+beginchar(n4,&quot;the numeral 4&quot;,9,0,0);
+pn←hpen; w←xnorm(6.5*u,w2); vertstroke(w,0,y6,1);
+if s1≠0 then
+	begin be(hpen); ps(w0);
+	l(leftof(w,w2)-1.5*u-.001,-1,y2,-1); l(rightof(w,w2)+1.5*u,1,y2,-1); nd;
+	end;
+x←leftof(rightof(w,w2),w0); z←rightof(norm(u),w0); y←botof(y6,w0);
+be(lers);ps(w2+1);l(x,0,y6,0);l(x,0,y,0);l(x,0,y,0);l(z,0,.3*y6+.7*y2,0);nd;
+be(hpen);ps(w0);l(x,0,y,0);l(z,0,.3*y6+.7*y2,0); nd;
+be(hpen);l(z,0,.3*y6+.7*y2,0); l(rightof(w,w2)+1.5*u,1,ly[1],0); nd;
+endchar('064,delta6,0,-ru+slant*delta6);
+beginchar(n5,&quot;the numeral 5&quot;,9,0,0);
+pn←hpen; w←xnorm(2.0*u,w0);
+be(vpen); ps(w6); hl(-.5*u,0,1.5*y6-.5*y2,0); l(w,0,y6,1);
+ps(.75*w6+.25*w4); l(0,0,.95*y6+.05*y2,1) # lx filled in on next line;
+ps(w4); l(8.0*u,1,y6,1); lx[2]←.5*lx[1]+.5*lx[3];
+hl(10.5*u,0,1.5*y6-.5*y2,0); nd;
+be(hpen); ps(w0); l(w,0,y6,1); l(w,0,.5*y6+.5*y2,0); nd;
+be(hpen);ps(w0); hl(3.5*u,0,y2,0); l(w,0,.5*y6+.5*y2,0);
+l(4.5*u,0,y5,1); sethoriz;
+psmax(w2); l(norm(8.0*u),1,.5*y2+.5*y5,0); setvert;
+ps(w0); l(3.5*u,0,y2,-1); sethoriz; setlin;
+l(norm(u),-1,y6/6+(5/6)*y2,0); setvert;
+nd;
+dot(norm(u),-1,y6/6+(5/6)*y2,0,.75*w3+.25*w0);
+endchar('065,delta6,0,-ru+slant*delta6);
+beginchar(n6,&quot;the numeral 6&quot;,9,0,0);
+dot(norm(7.5*u),1,.5*y5+.5*y6-1,0,w3); y←ly[1];
+w←xnorm(1.5*u,w2); x←xnorm(7.5*u,w2);
+if w2&gt;1.5*u then comment boldface correction;
+	begin w←xnorm(rightof(xnorm(0.75*u,w2),w2),w2);
+	x←xnorm(leftof(xnorm(8.25*u,w2),w2),w2);
+	end;
+vv←w; w←vv+.1*u;
+z←.5*w+.5*x;
+be(hpen); ps(w0); l(norm(7.5*u),1,y,0); setvert;
+l(z,0,y6,1); sethoriz; nd;
+be(hpen); ps(w0); l(z,0,y5,1); sethoriz;
+l(w,0,.5*y2+.5*y5,0); setvert; nd;
+be(hpen); ps(w0); l(z,0,y6,1); sethoriz;
+y←(botof(y5,w0)-.5*y5-.5*y2)/sqrt2;
+yy←y6-.5*(y5-y2);
+ps(w0/3+(2/3)*w2); l(z-(z-w)/sqrt2,0,yy+y,0);
+ps(.1*w0+.9*w2); l(w,0,yy,0);
+aspect←(lx[3]-lx[1])/(ly[3]-ly[1]);
+psmax(w2); l(vv,0,.5*yy+.5*(.5*y5+.5*y2),0);
+ps(.1*w0+.9*w2); l(w,0,.5*y5+.5*y2,0);
+ps(w0/3+(2/3)*w2); l(z-(z-w)/sqrt2,0,.5*y2+.5*y5-y,0);
+ps(w0); l(z,0,y2,-1); sethoriz;
+ps(w0/3+(2/3)*w2); l(z+(x-z)/sqrt2,0,.5*y2+.5*y5-y,0);
+psmax(w2); l(x,0,.5*y2+.5*y5,0); setvert;
+ps(w0/3+(2/3)*w2); l(z+(x-z)/sqrt2,0,.5*y2+.5*y5+y,0);
+ps(w0); l(z,0,y5,1); sethoriz;
+nd;
+endchar('066,delta6,0,-ru+slant*delta6);
+beginchar(n7,&quot;the numeral 7&quot;,9,0,0);
+w←norm(8.0*u);
+if s1=0 then
+	begin pn←vpen;z←rightof(u,w10);vv←w10;
+	end
+else	begin
+	be(hpen);ps(w0);
+	if w4=w5 then l(u,-1,y6,1) else l(1.5*u,-1,y6,1);
+	l(u,-1,y6/3+(2/3)*y5,-1); nd;
+	x←lx[1]; v←lx[2]; y←ly[1]; t←ly[2];
+	z←x+(v-x)*(y6-w5-y)/(t-y);vv←w5;
+	end;
+be(vpen); ps(vv); l(w,0,y6,1); l(z,0,y6,1); nd;
+if s1≠0 then
+	begin be(lers);ps(w0+x-z+1);l(x,0,y6,0);l(x,0,y,0);
+	l(x,0,y,0); l(v,0,t,0); nd;
+	be(hpen);ps(w0);l(x,0,y,0);l(v,0,t,0);nd;
+	end;
+pn←cpen; y←botof(y6,w0);
+w←xnorm(4.0*u,w2); v←topof((5/6)*y2+y5/6,w2); x←leftof(norm(8.0*u),w0);
+be(rers); ps(u+.5*w0);l(x,0,y,0); l(5.5*u,0,y5,0);
+hl(w,0,v,0); nd;
+be(rers); l(x,0,y,0); l(x,0,y6,0); nd;
+be(cpen); ps(w0);l(norm(8.0*u),1,y6,1); setlin;
+l(5.5*u,0,y5,0);
+psmax(w2);l(w,0,v,0);
+l(w,0,y2,-1); nd;
+endchar('067,delta6,0,-ru+slant*delta6);
+beginchar(n8,&quot;the numeral 8&quot;,9,0,0);
+zz←norm(.75*w0+.25*w1) # extra width to make this digit less light;
+pn←hpen;
+w←xnorm(1.25*u,zz); v←xnorm(u,zz); x←xnorm(7.75*u,zz); z←x+w-v;
+ww←w6+(w6-w5);
+y←.52*y6+.48*y2; t←.5*w+.5*x;
+comment		 w	 x
+		     y
+		v	  z;
+if w4≠ww then tt←(y6-y2)/(18.0*u) else tt←.0001;
+pn←hpen;ssdraw(t,botof(y6,zz),w,t,y,z,t,topof(y2,zz),tt,ww,zz);
+be(hpen);ps(zz);l(t,0,y6,1);sethoriz;
+l(x,0,ssy1,0);setvert;
+l(t+.002,0,y+.001*tt,0);l(t-.002,0,y-.001*tt,0);
+l(v,0,ssy2,0);setvert;
+l(t,0,y2,-1);sethoriz;nd;
+endchar('070,delta6,0,-ru+slant*delta6);
+beginchar(n9,&quot;the numeral 9&quot;,9,0,0);
+comment the following is a six, rotated 180 degrees;
+dot(norm(1.5*u),-1,.5*y3+.5*y2-1,0,w3); y←ly[1];
+w←xnorm(7.5*u,w2); x←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then comment boldface correction;
+	begin w←xnorm(leftof(xnorm(8.25*u,w2),w2),w2);
+	x←xnorm(rightof(xnorm(0.75*u,w2),w2),w2);
+	end;
+vv←w; w←vv-.1*u;
+z←.5*w+.5*x;
+be(hpen); ps(w0); l(norm(1.5*u),-1,y,0); setvert;
+l(z,0,y2,-1); sethoriz; nd;
+be(hpen); ps(w0); l(z,0,y3,-1); sethoriz;
+l(w,0,.5*y6+.5*y3,0); setvert; nd;
+be(hpen); ps(w0); l(z,0,y2,-1); sethoriz;
+y←(topof(y3,w0)-.5*y3-.5*y6)/sqrt2;
+yy←y2+.5*(y6-y3);
+ps(w0/3+(2/3)*w2); l(z-(z-w)/sqrt2,0,yy+y,0);
+ps(.1*w0+.9*w2); l(w,0,yy,0);
+aspect←(lx[3]-lx[1])/(ly[3]-ly[1]);
+psmax(w2); l(vv,0,.5*yy+.5*(.5*y3+.5*y6),0);
+ps(.1*w0+.9*w2); l(w,0,.5*y3+.5*y6,0);
+ps(w0/3+(2/3)*w2); l(z-(z-w)/sqrt2,0,.5*y6+.5*y3-y,0);
+ps(w0); l(z,0,y6,1); sethoriz;
+ps(w0/3+(2/3)*w2); l(z+(x-z)/sqrt2,0,.5*y6+.5*y3-y,0);
+psmax(w2); l(x,0,.5*y6+.5*y3,0); setvert;
+ps(w0/3+(2/3)*w2); l(z+(x-z)/sqrt2,0,.5*y6+.5*y3+y,0);
+ps(w0); l(z,0,y3,-1); sethoriz;
+nd;
+endchar('071,delta6,0,-ru+slant*delta6);
+beginchar(col,&quot;colon&quot;,5,0,0);
+if w0=w3 then ww←sqrt2*w3 else ww←w3;
+dot(2.5*u,0,y2,-1,ww);
+dot(2.5*u,0,y5,1,ww);
+endchar('72,delta5,0,-2.5*ru+.5*rw3+slant*delta5);
+beginchar(scol,&quot;semicolon&quot;,5,0,0);
+if w0=w3 then ww←sqrt2*w3 else ww←w3;
+pn←cpen; w←xnorm(2.5*u,ww);
+dot(w,0,y2,-1,ww);
+y←ly[1]; x←rightof(w,ww);
+be(hpen); ps(w0); l(x,1,y,0); setvert;
+if fixwidth then
+	begin l((35/18)*u,0,y1,-1); hl(-2.5*u,0,y1,-1);
+	end
+else	begin l(1.5*u,0,y1,-1); hl(-6.0*u,0,y1,-1);
+	end;
+nd;
+dot(2.5*u,0,y5,1,ww);
+endchar('73,delta5,delta1,-2.5*ru+.5*rw3+slant*delta5);
+beginchar(less,&quot;less than sign&quot;,18,0,0);
+ww←norm(.75*w0+.25*w2);
+y←.5*y6+.5*y1;
+be(cpen); ps(ww); l(norm(u),-1,y,0); l(norm(17.0*u),1,.5*y5+.5*y6,0); nd;
+be(cpen); l(lx[1],0,ly[1],0); l(lx[2],0,y-(ly[2]-y),0); nd;
+endchar('074,delta6,delta1,-ru+.5*slant*(delta5+delta6));
+beginchar(leq,&quot;less than or equal to sign&quot;,18,0,0);
+ww←norm(.75*w0+.25*w2);
+pn←cpen; y←.5*y6+.5*y1+botof(y6,ww)-(.5*y5+.5*y6);
+be(cpen); ps(ww); l(norm(u),-1,y,0); l(norm(17.0*u),1,y6,1); nd;
+be(cpen); l(lx[1],0,ly[1],0); l(lx[2],0,y-(ly[2]-y),0); nd;
+be(cpen); l(lx[1],0,y1,-1); l(lx[2],0,y1,-1); nd;
+endchar('034,delta6,delta1,-ru+slant*delta6);
+beginchar(geq,&quot;greater than or equal to sign&quot;,18,0,0);
+ww←norm(.75*w0+.25*w2);
+pn←cpen; y←.5*y6+.5*y1+botof(y6,ww)-(.5*y5+.5*y6);
+be(cpen); ps(ww); l(norm(17.0*u),1,y,0); l(norm(u),-1,y6,1); nd;
+be(cpen); l(lx[1],0,ly[1],0); l(lx[2],0,y-(ly[2]-y),0); nd;
+be(cpen); l(lx[1],0,y1,-1); l(lx[2],0,y1,-1); nd;
+endchar('035,delta6,delta1,-ru+slant*delta5);
+beginchar(equals,&quot;equal sign&quot;,18,0,0);
+ww←norm(.75*w0+.25*w2);
+y←.5*y6+.5*y1+.5*(y5-y3); z←.5*y6+.5*y1-.5*(y5-y3);
+be(cpen); ps(ww); l(norm(u),-1,y,0); l(norm(17.0*u),1,y,0); nd;
+be(cpen); ps(ww); l(norm(u),-1,z,0); l(norm(17.0*u),1,z,0); nd;
+endchar('075,.5*(delta6-delta1+delta5-delta3),0,-ru+slant*delta5);
+beginchar(greater,&quot;greater than sign&quot;,18,0,0);
+ww←norm(.75*w0+.25*w2);
+y←.5*y6+.5*y1;
+be(cpen); ps(ww); l(norm(17.0*u),1,y,0); l(norm(u),-1,.5*y5+.5*y6,0); nd;
+be(cpen); l(lx[1],0,ly[1],0); l(lx[2],0,y-(ly[2]-y),0); nd;
+endchar('076,delta6,delta1,-ru+slant*delta5);
+beginchar(query,&quot;question mark&quot;,7,0,0);
+dot(3.0*u,0,y2,-1,w3); yy←topof(ly[1],w3);
+y←.2*yy+.8*botof(y6,w0);
+dot(norm(1.0*u),-1,y,0,w3);
+be(hpen); ps(w0); l(norm(1.0*u),-1,y,0); setvert; setlin;
+l(3.0*u,0,y6,1); sethoriz;
+ps(w0/3+(2/3)*w2); l(0,0,0,0) # lx,ly set below;
+psmax(w2); l(xnorm(5.5*u,w2),0,y,0); setvert;
+lx[3]←lx[2]+(lx[4]-lx[2])/sqrt2;
+ly[3]←ly[4]+(ly[2]-ly[4])/sqrt2;
+aspect←(lx[4]-lx[2])/(ly[2]-ly[4]);
+nd;
+zz←ly[2];
+be(cpen); psmax(w2); l(lx[4],0,y,0); setvert;
+ww←.6*w0+.4*w2;
+ps(ww); l(4.0*u,0,y-(zz-y),0); sethoriz; setstable;
+nd;
+be(vpen); ps(ww); l(4.0*u,0,y-(zz-y),0); sethoriz;
+l(3.0*u,0,0,0); setvert # ly set below;
+l(3.0*u,0,.25*y5+.75*yy+1,-1);
+ly[2]←(2/3)*ly[1]+ly[3]/3; nd;
+endchar('077,delta6,0,-1.5*ru+.5*rw2+slant*delta6);
+beginchar(ucos,&quot;upper case Scandinavian O with slash&quot;,14,0,0);
+if fixwidth then sqrt2←1.319507911 # 2^(2/5), for Piet Hein's superellipse;
+mm←14.0*u+.5; t←mm/2 # point of left-right symmetry;
+pn←hpen; w←rightof(norm(t-6.0*u),w9);
+darc(t,0,y6,1,w,0,y2,-1,w9);
+dround←true; x←t+(t-w);
+darc(t,0,y6,1,x,0,y2,-1,w9);
+sqrt2←sqrt(2.0);
+be(hpen); ps(w0); l(rightof(w,w9),-1,y2-(y7-y6),-1); l(leftof(x,w9),1,y7,1); nd;
+endchar('100,delta7,delta7-delta6,-ru+slant*delta7);
+beginchar(at,&quot;at sign&quot;,14,0,0);
+pn←hpen; y←botof(y6,w0); v←topof(y2,w0);
+yy←.8*y+.2*v; vv←.8*v+.2*y;
+darc(7.0*u,0,yy,0,4.0*u,0,vv,0,w1);
+darc(7.0*u,0,yy,0,10.0*u,0,vv,0,w0);
+be(hpen); ps(w1); l(10.0*u,0,.8*yy+.2*vv,0); setlin;
+l(10.0*u,0,(2/3)*vv+y/6+v/6,0); setvert; setstable;
+ps(w0); l(11.25*u,0,vv,0); sethoriz; setstable; setlin;
+l(xnorm(13.0*u,w0),0,.5*y+.5*v,0); setvert;
+l(7.0*u,0,y,0); sethoriz; l(xnorm(u,w0),0,.5*y+.5*v,0); setvert;
+l(7.0*u,0,v,0); sethoriz;
+l(xnorm(13.0*u,w0),0,.9*v+.1*y,0);
+hl(xnorm(13.0*u,w0),0,.9*y+.1*v,0); nd;
+endchar('100,delta6,0,-ru+.5*slant*delta6);
+beginchar(uca,&quot;the letter A&quot;,13,sc2,sc2);
+pn←hpen; w←leftof(norm(11.5*u),w9); x←rightof(norm(1.5*u),w0);
+y←norm(.5*rightof(x,w0)+.5*leftof(w,w9)); z←leftof(rightof(y,w9),w0);
+be(hpen); ps(w9); l(y,0,y6,1); l(w,0,y2,-1); nd;
+t←ly[1]; v←ly[2];
+be(hpen); ps(w0); l(x+(z-x)*(y3-v)/(t-v),0,y3,0);
+		  l(w+(y-w)*(y3-v)/(t-v),0,y3,0); nd;
+be(lers); ps(w9+1); l(z,0,y6,0);l(z,0,t,0);l(z,0,t,0);l(x,0,v,0);nd;
+be(hpen); ps(w0); l(z,0,t,0); l(x,0,v,0); nd;
+if s2&gt;0 then
+	begin be(hpen); ps(w0);
+	xx←s2-.5*w8+eps # comment serif usually sticks out this much;
+	l(leftof(x,w0)-.5*xx,-1,y2,-1); l(rightof(x,w0)+xx,1,y2,-1); nd;
+	be(hpen); l(leftof(w,w9)-xx,-1,y2,-1);
+	l(rightof(w,w9)+.5*xx,1,y2,-1); nd;
+	end;
+endchar('101,delta6,0,0);
+beginchar(ucb,&quot;the letter B&quot;,12,sc2,0);
+pn←hpen; w←rightof(norm(2.0*u),w8); x←leftof(norm(11.0*u),w9);
+xx←leftof(norm(11.5*u),w9);
+ucleftserif(w,y6,1);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+y←.5*y2+.5*y6;
+be(hpen); ps(w0); l(w,0,y6,1); l(7.0*u,0,y6,1); nd;
+darc(7.0*u,0,y6,1,x,0,y,0,w9);
+be(hpen); ps(w0); l(w,0,y,0); l(7.5*u,0,y,0); nd;
+darc(7.5*u,0,y,0,xx,0,y2,-1,w9);
+be(hpen); ps(w0); l(w,0,y2,-1); l(7.5*u,0,y2,-1); nd;
+ucleftserif(w,y2,-1);
+endchar('102,delta6,0,-2.0*ru+slant*delta6);
+beginchar(ucc,&quot;the letter C&quot;,if s2 then 14 else 11,0,0);
+pn←hpen; x←leftof(norm(13.0*u),w0); w←rightof(norm(u),w9);
+if s2 then
+	begin y←y5; if y6-y5 &gt; .4*(y6-y2) then y←norm((2/3)*y6+y2/3);
+	yy←y2+(y6-y);
+	be(hpen); ps(w0); l(x,0,y6,1); alignedwidth(true,lx[n]+lw[n]/2.0,1);
+	psmax(w8); l(rightof(x,w0),1,y,0); nd;
+	t←ly[1];
+	be(lers); ps(w8+1); l(x,0,.5*y2+.5*y6,0); l(x,0,y,0); nd;
+	be(lers); hl(x,0,.5*y2+.5*y6,0); l(x,0,y,0); l(7.5*u,0,t,0); sethoriz; nd;
+	be(hpen); ps(w0);hl(x,0,.5*y2+.5*y6,0); l(x,0,y,0);
+	l(7.5*u,0,y6,1); sethoriz; nd;
+	be(hpen); ps(w0); l(7.5*u,0,y2,-1); sethoriz; l(x,0,yy,0);
+	hl(x,0,.5*y2+.5*y6,0); nd;
+	end
+else	begin
+	be(hpen); ps(w0); l(7.5*u,0,y2,-1); sethoriz;
+	l(norm(10.0*u),1,0,0) # ly set below;
+	hl(x,0,.5*y6+.5*y2,0);
+	ly[2]←ly[3]+(ly[1]-ly[3])*sqrt(1.0-((lx[2]-lx[1])/(lx[3]-lx[1]))^2);
+	aspect←(lx[3]-lx[1])/(ly[3]-ly[1]); nd;
+	be(hpen); ps(w0); l(7.5*u,0,y6,1); sethoriz;
+	l(norm(10.0*u),1,0,0) # ly set below;
+	hl(x,0,.5*y6+.5*y2,0);
+	ly[2]←ly[3]+(ly[1]-ly[3])*sqrt(1.0-((lx[2]-lx[1])/(lx[3]-lx[1]))^2);
+	aspect←(lx[3]-lx[1])/(ly[1]-ly[3]); nd;
+	end;
+darc(7.5*u,0,y6,1,w,0,y2,-1,w9);
+endchar('103,delta6,0,-ru+slant*delta6);
+beginchar(ucd,&quot;the letter D&quot;,14,sc2,0);
+pn←hpen; w←rightof(norm(2.0*u),w8); x←leftof(norm(13.0*u),w9);
+ucleftserif(w,y6,1);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+ucleftserif(w,y2,-1);
+be(hpen); ps(w0); l(w,0,y6,1); l(7.0*u,0,y6,1); nd;
+darc(7.0*u,0,y6,1,x,0,y2,-1,w9);
+be(hpen); ps(w0); l(7.0*u,0,y2,-1); l(w,0,y2,-1); nd;
+endchar('104,delta6,0,-ru+.5*slant*delta6);
+beginchar(uce,&quot;the letter E&quot;,12,sc2,1);
+pn←hpen; w←rightof(norm(2.0*u),w8);
+bracket(w,leftof(norm(10.5*u),w0),y6,1,.5*u,1.4*baspect*s2,w4);
+ucleftserif(w,y6,1);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+ucleftserif(w,y2,-1);
+bracket(w,leftof(norm(10.75*u),w0),y2,-1,.5*u,-1.4*baspect*s2,w4);
+y←.5*y6+.5*y2;
+x←xnorm(7.0*u,w0);
+be(hpen); ps(w0); l(w,0,y,0); l(x,0,y,0); nd;
+ww←((baspect*s2)min(.2*(y6-y2)-.5*w4))+eps;
+if s2≠0 and w0≠w8 then
+	begin t←x-u; cutoff←0.0;
+	while t&lt;x do
+		begin be(hpen);
+		ps(w0); l(t,0,y,0); sethoriz; l(x,0,y+ww,1); setvert; nd;
+		be(hpen); l(t,0,y,0); sethoriz; l(x,0,y-ww,-1); setvert; nd;
+		if cw&lt;1 then t←t+1.0 else t←t+cw;
+		end;
+	cutoff←0.5;
+	end;
+if s2≠0 then
+	begin be(hpen); ps(w0); l(x,0,y+ww,1); l(x,0,y-ww,-1); nd;
+	end;
+endchar('105,delta6,0,brc);
+beginchar(ucf,&quot;the letter F&quot;,12,sc2,1);
+pn←hpen; w←rightof(norm(2.0*u),w8);
+bracket(w,leftof(norm(10.5*u),w0),y6,1,.5*u,1.4*baspect*s2,w4);
+ucleftserif(w,y6,1);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+ucdoubleserif(w,y2,-1);
+y←.5*y6+.5*y2;
+x←xnorm(7.0*u,w0);
+be(hpen); ps(w0); l(w,0,y,0); l(x,0,y,0); nd;
+ww←((baspect*s2)min(.2*(y6-y2)-.5*w4))+eps;
+if s2≠0 and w0≠w8 then
+	begin t←x-u; cutoff←0.0;
+	while t&lt;x do
+		begin be(hpen);
+		ps(w0); l(t,0,y,0); sethoriz; l(x,0,y+ww,1); setvert; nd;
+		be(hpen); l(t,0,y,0); sethoriz; l(x,0,y-ww,-1); setvert; nd;
+		if cw&lt;1 then t←t+1.0 else t←t+cw;
+		end;
+	cutoff←0.5;
+	end;
+if s2≠0 then
+	begin be(hpen); ps(w0); l(x,0,y+ww,1); l(x,0,y-ww,-1); nd;
+	end;
+endchar('106,delta6,0,brc);
+beginchar(ucg,&quot;the letter G&quot;,14,0,0);
+pn←hpen; x←leftof(norm(12.0*u),w8); w←rightof(norm(u),w9);
+xx←leftof(norm(12.0*u),w0);
+y←y5; if y6-y5 &gt; .4*(y6-y2) then y←norm((2/3)*y6+y2/3);
+yy←.9*y3+.1*y5;
+if s2≠0 then
+	begin
+	be(hpen); ps(w0); l(xx,0,y6,1); alignedwidth(true,lx[n]+lw[n]/2.0,1);
+	psmax(w8); l(rightof(xx,w0),1,y,0); nd;
+	t←ly[1];
+	be(lers); ps(w8+1); l(xx,0,.5*y2+.5*y6,0); l(xx,0,y,0); nd;
+	be(lers); hl(xx,0,.5*y2+.5*y6,0); l(xx,0,y,0); l(7.5*u,0,t,0); sethoriz; nd;
+	end;
+be(hpen); ps(w0);hl(xx,0,.5*y2+.5*y6,0); l(xx,0,y,0); l(7.5*u,0,y6,1); sethoriz; nd;
+darc(7.5*u,0,y6,1,w,0,y2,-1,w9);
+if w0=w8 then
+	begin be(hpen); ps(w0); l(7.5*u,0,y2,-1); sethoriz;
+	l(x,0,yy,0); setvert; nd;
+	be(hpen); ps(w8); l(x,0,yy,0); l(x,0,y2,-1); nd;
+	end
+else	begin y←(2/3)*y2+yy/3;
+	be(hpen); l(7.5*u,0,y2,-1); sethoriz;
+	l(leftof(x,w8),-1,y,0); v←lx[n];
+	l(x,0,yy,0); setvert; nd;
+	be(hpen); ps(w8); l(x,0,yy,0); setlin; l(x,0,y,0); setvert;
+	alignedwidth(true,lx[n]+lw[n]/2.0,1);
+	ps(w0); l(rightof(x,w8),1,y2,-1);
+	hl(1.001*lx[n]-.001*v,0, 1.001*ly[n]-.001*(.5*y+.5*ly[n]),0); nd;
+	end;
+be(hpen); ps(w0); l(leftof(x,w8)-(s2 max (2.0*u))-eps,-1,yy,0);
+l(rightof(x,w8)+(if s2≠0 then u+eps else 0),1,yy,0); nd;
+endchar('107,delta6,0,-2.0*ru+slant*delta6);
+beginchar(uch,&quot;the letter H&quot;,13,sc2,sc2);
+pn←hpen; w←rightof(norm(2.0*u),w8); x←leftof(norm(11.0*u),w8);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+be(hpen); ps(w8); l(x,0,y6,1); l(x,0,y2,-1); nd;
+ucdoubleserif(w,y6,1); ucdoubleserif(w,y2,-1);
+ucdoubleserif(x,y6,1); ucdoubleserif(x,y2,-1);
+be(hpen); ps(w0); l(w,0,.5*y2+.5*y6,0); l(x,0,ly[1],0); nd;
+endchar('110,delta6,0,ucser);
+beginchar(uci,&quot;the letter I&quot;,6,0,0);
+pn←hpen; w←xnorm(3.0*u,w8);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+if s2=0 then s2←w-u;
+ucdoubleserif(w,y6,1); ucdoubleserif(w,y2,-1);
+s2←s2save;
+endchar('111,delta6,0,-ru+slant*delta6);
+beginchar(ucj,&quot;the letter J&quot;,9,0,sc2);
+pn←hpen; x←leftof(norm(7.0*u),w8); w←rightof(norm(u),w0); z←.5*x+.5*w;
+ucdoubleserif(x,y6,1);
+be(hpen); ps(w8); l(x,0,y6,1); l(x,0,.8*y2+.2*y6,0); yy←ly[n]; nd;
+dot(norm(u),-1,y6/6+(5/6)*y2,0,w3); y←ly[1];
+be(hpen); ps(w0); l(w,0,y,0); setvert; l(z,0,y2,-1); sethoriz; nd;
+arc(z,0,y2,-1,x,0,yy,0,w8); 
+endchar('112,delta6,0,ucser);
+beginchar(uck,&quot;the letter K&quot;,14,sc2,sc2);
+pn←hpen; w←rightof(norm(2.0*u),w8); x←leftof(norm(12.0*u),w9);
+xx←leftof(norm(12.0*u),w0);
+y←y6/3+(2/3)*y2;
+z←botof(y6,w0); v←topof(y2,w9);
+comment find intersection of the lines 
+	(right(w),z)...(right(x),v)  and  (w,y)...(xx,z);
+t←(1.0-(rightof(w,w9)-w)/(xx-w))/((x-w)/(xx-w)-(v-z)/(z-y));
+be(hpen); ps(w9); l(w+t*(x-w),0,z+t*(v-z),0); l(x,0,v,0); nd;
+be(lers); ps(w9+w0); l(xx,0,z,0); l(w,0,y,0); nd;
+be(hpen); ps(w0); l(xx,0,z,0); l(w,0,y,0); nd;
+doubleserif(w,y6,1); doubleserif(w,y2,-1);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+if s2≠0 then
+	begin ww←s2-.5*w8+eps;
+	vv←.5*ww;
+	be(hpen); ps(w0); l(xx-ww,0,y6,1); l(xx+vv,0,y6,1); nd;
+	be(hpen); l(leftof(x,w9)-ww,-1,y2,-1); l(rightof(x,w9)+vv,1,y2,-1);nd;
+	end;
+endchar('113,delta6,0,ucser2);
+beginchar(ucl,&quot;the letter L&quot;,12,sc2,1);
+pn←hpen; w←rightof(norm(2.0*u),w8);
+bracket(w,leftof(norm(10.5*u),w0),y2,-1,.5*u,-1.4*baspect*s2,w4);
+ucleftserif(w,y2,-1);
+be(hpen); ps(w8); l(w,0,y2,-1); l(w,0,y6,1); nd;
+ucdoubleserif(w,y6,1);
+endchar('114,delta6,0,0);
+beginchar(ucm,&quot;the letter M&quot;,16,sc2,sc2);
+pn←hpen; w←rightof(norm(2.0*u),w0); x←leftof(norm(14.0*u),w8);
+w←rightof(leftof(w,w0),w8); x←rightof(leftof(x,w8),w0);
+comment now draw a V;
+y←norm(.5*leftof(w,w8)+.5*leftof(x,w0));
+be(hpen); ps(w8); l(w,0,y6,1); l(y,-1,y2,-1); nd;
+t←ly[2]; v←ly[1]; z←rightof(y,w0);
+be(rers); ps(w8+1); l(z,0,y2,0); l(z,0,t,0); l(z,0,t,0); l(x,0,v,0); nd;
+be(hpen); ps(w0); l(z,0,t,0); l(x,0,v,0); nd;
+w←rightof(leftof(w,w8),w0); x←rightof(leftof(x,w0),w8);
+be(hpen); ps(w0); l(w,0,y6,1); l(w,0,y2,-1); nd;
+be(hpen); ps(w8); l(x,0,y6,1); l(x,0,y2,-1); nd;
+if s2≠0 then
+	begin ww←s2-.5*w8+eps;
+	be(hpen); ps(w0); l(w-ww,0,y6,1); l(w,0,y6,1); nd;
+	be(hpen); l(w-ww,0,y2,-1); l(w+ww,0,y2,-1); nd;
+	ucrightserif(x,y6,1); ucdoubleserif(x,y2,-1);
+	end;
+endchar('115,delta6,0,ucser);
+beginchar(ucn,&quot;the letter N&quot;,14,sc2,sc2);
+pn←hpen; w←rightof(norm(2.0*u),w0); x←leftof(norm(12.0*u),w0);
+be(hpen); ps(w9); l(w,0,y6,1); l(leftof(x,w0),-1,y2,-1); nd;
+be(rers); ps(w9); l(x,0,y6,0); l(x,0,y2,0); nd;
+be(hpen); ps(w0); l(x,0,y6,1); l(x,0,y2,-1); nd;
+be(lers); ps(w9); l(w,0,y6,0); l(w,0,y2,0); nd;
+be(hpen); ps(w0); l(w,0,y6,1); l(w,0,y2,-1); nd;
+if s2≠0 then
+	begin ww←s2-.5*w8+eps;
+	be(hpen); ps(w0); l(w-ww,0,y6,1); l(w,0,y6,1); nd;
+	be(hpen); l(w-ww,0,y2,-1); l(w+ww,0,y2,-1); nd;
+	be(hpen); l(x-ww,0,y6,1); l(x+ww,0,y6,1); nd;
+	end;
+endchar('116,delta6,0,ucser);
+beginchar(uco,&quot;the letter O&quot;,14,0,0);
+if fixwidth then sqrt2←sqrt(sqrt2) # makes a super-superellipse, distinct from 0;
+mm←14.0*u+.5; t←mm/2 # point of left-right symmetry;
+pn←hpen; w←rightof(norm(t-6.0*u),w9);
+darc(t,0,y6,1,w,0,y2,-1,w9);
+dround←true; x←t+(t-w);
+darc(t,0,y6,1,x,0,y2,-1,w9);
+sqrt2←sqrt(2.0);
+endchar('117,delta6,0,-ru+.5*slant*delta6);
+beginchar(ucp,&quot;the letter P&quot;,11,sc2,0);
+pn←hpen; w←rightof(norm(2.0*u),w8); x←leftof(norm(10.5*u),w9);
+ucleftserif(w,y6,1);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+ucdoubleserif(w,y2,-1);
+y←.5*y2+.5*y6;
+be(hpen); ps(w0); l(w,0,y6,1); l(7.0*u,0,y6,1); nd;
+darc(7.0*u,0,y6,1,x,0,y,0,w9);
+be(hpen); ps(w0); l(7.0*u,0,y,0); l(w,0,y,0); nd;
+endchar('120,delta6,0,-.5*ru+.75*slant*delta6);
+beginchar(ucq,&quot;the letter Q&quot;,14,0,0);
+if fixwidth then sqrt2←sqrt(sqrt2) # makes a super-superellipse, distinct from 0;
+mm←14.0*u+.5; t←mm/2 # point of left-right symmetry;
+pn←hpen; w←rightof(norm(t-6.0*u),w9);
+darc(t,0,y6,1,w,0,y2,-1,w9);
+dround←true; x←t+(t-w);
+darc(t,0,y6,1,x,0,y2,-1,w9);
+vv←ynorm(.9*y2+.1*y6+1.5*w4,w0);
+be(hpen); ps(w0); hl(4.5*u,0,y2,0);
+l(4.5*u,0,.5*y2+.5*y6-(botof(y6,w0)-.5*y2-.5*y6)*sqrt(1.0-((t-4.0*u)/(t-w))^2),0);
+l(6.0*u,0,vv,0); sethoriz; nd;
+pn←vpen; y←topof(y1,w10); yy←topof(y,w10);
+pn←hpen; yy←botof(yy,w0); zz←topof(y1,w0);
+while yy&gt;zz do
+	begin be(hpen); l(6.0*u,0,vv,0); sethoriz; 
+	l(11.0*u,0,yy,0); sethoriz; nd;
+	if cw&lt;1 then yy←yy-1.0 else yy←yy-cw;
+	end;
+be(hpen); l(6.0*u,0,vv,0); sethoriz;
+l(11.0*u,0,zz,0); sethoriz; nd;
+be(vpen); ps(w10); l(11.0*u,0,y1,-1); sethoriz; l(norm(13.0*u),1,y2,1); setvert; nd;
+sqrt2←sqrt(2.0);
+endchar('121,delta6,delta1,-ru+.5*slant*delta6);
+beginchar(ucr,&quot;the letter R&quot;,14,sc2,2*sc2);
+pn←hpen; w←rightof(norm(2.0*u),w8); x←leftof(norm(11.0*u),w9);
+xx←leftof(norm(10.0*u),w8);
+ucleftserif(w,y6,1);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+ucdoubleserif(w,y2,-1);
+y←.5*y2+.5*y6;
+be(hpen); ps(w0); l(w,0,y6,1); l(7.0*u,0,y6,1); nd;
+darc(7.0*u,0,y6,1,x,0,y,0,w9);
+be(hpen); ps(w0); l(7.0*u,0,y,0); l(w,0,y,0); nd;
+if s2=0 then 
+	begin be(hpen); ps(w8); l(7.0*u,0,y,0); l(norm(11.25*u),1,y2,-1); nd;
+	end
+else	begin comment this is like part of lower case a;
+	be(hpen); ps(w0); l(7.0*u,0,y,0); sethoriz;
+	ps(w0/6+(5/6)*w8); l(0,0,0,0) # lx,ly set below;
+	psmax(w8); l(xx,0,.5*y2+.5*y,0); setvert;
+	ly[2]←.5*ly[1]+.5*ly[3]; lx[2]←.1*lx[1]+.9*lx[3];
+	nd;
+	zz←rightof(leftof(xx,w8),w0);
+	xx←leftof(rightof(xx,w8),w0);
+	yy←xx; while yy&gt;zz do
+		begin be(hpen); ps(w0);
+		l(yy,0,.5*y2+.5*y,0); setvert;
+		l(0,0,y2,-1); sethoriz # lx set below;
+		l(norm(13.25*u),1,.75*y2+.25*y,0); setvert;
+		lx[2]←.5*xx+.5*lx[3]; nd;
+		if cw&lt;1 then yy←yy-1.0 else yy←yy-cw;
+		end;
+	be(hpen); ps(w0);
+	l(zz,0,.5*y2+.5*y,0); setvert;
+	l(0,0,y2,-1); sethoriz # lx set below;
+	l(norm(13.25*u),1,.75*y2+.25*y,0); setvert;
+	lx[2]←.5*xx+.5*lx[3]; nd;
+	end;
+endchar('122,delta6,0,if s2 then -3.0*ru+.75*slant*delta6 else
+	-3.0*ru+2.0*sc2*serifcorr*ru/usave+.75*slant*delta6);
+beginchar(ucs,&quot;the letter S&quot;,10,0,0);
+if (s2=0) or (w0=w10) then
+	begin xx←yy←5.0*u;
+	be(hpen); ps(w0);
+	z←(2/3)*topof(y2,w0)+y2/6+y6/6;
+	y←.75*botof(y6,w0)+.125*y2+.125*y6;
+	w←rightof(norm(u),w0); x←leftof(norm(9.0*u),w0);
+	hl(x,0,y2,0);
+	l(x,0,y,0); l(xx,0,y6,1); sethoriz; nd;
+	be(hpen); hl(w,0,y6,0); l(w,0,z,0);
+	l(yy,0,y2,-1); sethoriz; nd;
+	if s2≠0 then
+		begin be(hpen); l(w,0,z+baspect*s2+eps,0); l(w,0,y2,-1); nd;
+		be(hpen); l(x,0,y-baspect*s2-eps,0); l(x,0,y6,1); nd;
+		end;
+	end
+else	begin xx←4.5*u; yy←5.5*u;
+	comment prepare tricky serifs;
+	pn←hpen; w←rightof(norm(u),w0); x←leftof(norm(8.5*u),w0);
+	y←(2/3)*y6+y2/3+1; z←(2/3)*y2+y6/3-1;
+	be(hpen); ps(w0); l(x,0,y6,1); alignedwidth(true,lx[n]+lw[n]/2.0,1);
+	psmax(w8); l(rightof(x,w0),1,y,0); nd;
+	t←ly[1];
+	be(lers); ps(w8+1); l(x,0,.5*y2+.5*y6,0); l(x,0,y,0); nd; be(lers);
+	l(x,0,y,0); setvert; l(xx,0,t,0); sethoriz; nd;
+	be(hpen); ps(w0);
+	l(x,0,y,0); setvert; l(xx,0,t,0); sethoriz; nd;
+	be(hpen); ps(w0); l(w,0,y2,-1);alignedwidth(true,lx[n]-lw[n]/2.0,-1);
+	psmax(w8); l(leftof(w,w0),-1,z,0); nd;
+	t←ly[1];
+	be(rers); ps(w8+1); l(w,0,.5*y2+.5*y6,0); l(w,0,z,0); nd; be(rers);
+	l(w,0,z,0); setvert; l(yy,0,t,0); sethoriz; nd;
+	be(hpen); ps(w0);
+	l(w,0,z,0); setvert; l(yy,0,t,0); sethoriz; nd;
+	end;
+
+vv←.48*y2+.52*y6;
+pn←hpen;
+w←rightof(norm(u),w0); x←leftof(norm(9.0*u),w0) # left and right s-shape limits;
+ssdraw(xx,botof(y6,w0),w,5.0*u,vv,x,yy,topof(y2,w0),(y6-y2)/(50.0*u),w10,w0);
+endchar('123,delta6,0,-ru+slant*delta6);
+beginchar(uct,&quot;the letter T&quot;,13,1,1);
+pn←hpen; w←xnorm(6.5*u,w8); x←leftof(norm(11.5*u),w0);
+bracket(w,x,y6,1,.5*u,1.4*baspect*s2,w4);
+be(hpen); ps(w8); l(w,0,y6,1); l(w,0,y2,-1); nd;
+ucdoubleserif(w,y2,-1);
+dround←true;
+bracket(w,w-(x-w),y6,1,-.5*u,1.4*baspect*s2,w4);
+s2←s2save;
+endchar('124,delta6,0,brc);
+beginchar(ucu,&quot;the letter U&quot;,13,sc2,sc2);
+pn←hpen; w←rightof(norm(2.0*u),w8); x←leftof(norm(11.0*u),w0);
+if s2≠0 then
+	begin ucdoubleserif(w,y6,1);
+	ww←s2-.5*w8+eps; 
+	be(hpen); ps(w0); l(x-ww,0,y6,1); l(x+ww,0,y6,1); nd;
+	end;
+be(hpen); ps(w0); l(x,0,y6,1); l(x,0,.36*y6+.54*y2,0); setvert;
+l(.5*w+.5*x,0,y2,-1); sethoriz; nd;
+arc(.5*w+.5*x,0,y2,-1,w,0,.36*y6+.54*y2,0,w8);
+be(hpen); ps(w8); l(w,0,.36*y6+.54*y2,0); l(w,0,y6,1); nd;
+endchar('125,delta6,0,ucser);
+beginchar(ucv,&quot;the letter V&quot;,13,sc2,sc2);
+if s2=0 and w0=w1 then ww←w9 else ww←w0;
+pn←hpen; w←rightof(norm(1.5*u),w9); x←leftof(norm(11.5*u),ww);
+y←norm(.5*leftof(w,w9)+.5*leftof(x,ww));
+be(hpen); ps(w9); l(w,0,y6,1); l(y,-1,y2,-1); nd;
+t←ly[2]; v←ly[1]; z←rightof(y,ww);
+be(rers); ps(w9+1); l(z,0,y2,0); l(z,0,t,0); l(z,0,t,0); l(x,0,v,0); nd;
+be(hpen); ps(ww); l(z,0,t,0); l(x,0,v,0); nd;
+if s2≠0 then
+	begin ww←s2-.5*w8+eps # the serif usually sticks out this much;
+	vv←.5*ww;
+	be(hpen); ps(w0); l(leftof(w,w9)-vv,-1,y6,1);
+	l(rightof(w,w9)+ww,1,y6,1); nd;
+	be(hpen); l(x-ww,0,y6,1);
+	l(x+vv,0,y6,1); nd;
+	end;
+endchar('126,delta6,0,ucser2);
+beginchar(ucw,&quot;the letter W&quot;,18,sc2,sc2);
+if s2=0 and w0=w1 then zz←w9 else zz←w0;
+pn←hpen; w←rightof(norm(1.5*u),w9); x←leftof(norm(16.5*u),zz);
+mm←.5*(rightof(x,zz)-rightof(w,w9));
+comment we will make two V's, mm apart;
+x←leftof(rightof(w+mm,w9),zz);
+y←norm(.5*leftof(w,w9)+.5*leftof(x,zz));
+be(hpen); ps(w9); l(w,0,y6,1); l(y,-1,y2,-1); nd;
+t←ly[2]; v←ly[1]; z←rightof(y,zz);
+be(rers); ps(w9+1); l(z,0,y2,0); l(z,0,t,0); l(z,0,t,0); l(x,0,v,0); nd;
+be(hpen); ps(zz); l(z,0,t,0); l(x,0,v,0); nd;
+if s2≠0 then
+	begin ww←s2-.5*w8+eps # the serif usually sticks out this much;
+	vv←.5*ww;
+	be(hpen); ps(w0); l(leftof(w,w9)-vv,-1,y6,1);
+	l(rightof(w,w9)+(if w0=w9 then ww else vv),1,y6,1); nd;
+	be(hpen); l(leftof(w+mm,w9)-vv,-1,y6,1);
+	l(x+vv,0,y6,1); nd;
+	end;
+w←w+mm; x←x+mm; y←y+mm;
+be(hpen); ps(w9); l(w,0,y6,1); l(y,-1,y2,-1); nd;
+t←ly[2]; v←ly[1]; z←rightof(y,zz);
+be(rers); ps(w9+1); l(z,0,y2,0); l(z,0,t,0); l(z,0,t,0); l(x,0,v,0); nd;
+be(hpen); ps(zz); l(z,0,t,0); l(x,0,v,0); nd;
+if s2≠0 then
+	begin be(hpen); ps(w0); l(x-ww,0,y6,1); l(x+vv,0,y6,1); nd;
+	end;
+endchar('127,delta6,0,ucser2);
+beginchar(ucx,&quot;the letter X&quot;,13,sc2,sc2);
+pn←hpen; w←rightof(norm(1.5*u),w9); x←leftof(norm(11.5*u),w9);
+be(hpen); ps(w9); l(w,0,y6,1); l(x,0,y2,-1); nd;
+be(hpen); ps(w0); l(x,0,y6,1); l(w,0,y2,-1); nd;
+if s2≠0 then
+	begin ww←s2-.5*w8+eps;
+	vv←.5*ww;
+	be(hpen); ps(w0); l(leftof(w,w9)-vv,-1,y6,1);
+	l(rightof(w,w9)+ww,1,y6,1); nd;
+	be(hpen); ps(w0); l(leftof(x,w9)-ww,-1,y6,1);
+	l(rightof(x,w9)+vv,1,y6,1); nd;
+	be(hpen); ps(w0); l(leftof(w,w9)-vv,-1,y2,-1);
+	l(rightof(w,w9)+ww,1,y2,-1); nd;
+	be(hpen); ps(w0); l(leftof(x,w9)-ww,-1,y2,-1);
+	l(rightof(x,w9)+vv,1,y2,-1); nd;
+	end;
+endchar('130,delta6,0,ucser2);
+beginchar(ucy,&quot;the letter Y&quot;,13,sc2,sc2);
+pn←hpen; w←rightof(norm(1.5*u),w9); x←leftof(norm(11.5*u),w0);
+y←.5*leftof(w,w9)+.5*rightof(x,w0);
+be(hpen); ps(w9); l(w,0,y6,1); l(y,0,.5*y2+.5*y6,0);
+l(y,0,.5*y2+.5*y6,0); l(y,0,y2,-1); nd;
+be(hpen); ps(w0); l(x,0,y6,1); l(rightof(y,w9),1,.5*y2+.5*y6,0); nd;
+ucdoubleserif(y,y2,-1);
+if s2≠0 then
+	begin ww←s2-.5*w8+eps # the serif usually sticks out this much;
+	vv←.5*ww;
+	be(hpen); ps(w0); l(leftof(w,w9)-vv,-1,y6,1);
+	l(rightof(w,w9)+ww,1,y6,1); nd;
+	be(hpen); l(x-ww,0,y6,1);
+	l(x+vv,0,y6,1); nd;
+	end;
+endchar('131,delta6,0,ucser2);
+beginchar(ucz,&quot;the letter Z&quot;,11,0,0);
+pn←hpen; w←rightof(norm(u),w9); x←leftof(norm(10.0*u),w9);
+bracket(leftof(norm(10.0*u),w0),rightof(norm(1.5*u),w0),y6,1,
+	-.5*u,1.4*baspect*s2,w4);
+be(hpen); ps(w9); l(x,0,y6,1); l(w,0,y2,-1); nd;
+bracket(rightof(norm(u),w0),leftof(norm(9.5*u),w0),y2,-1,.5*u,-1.4*baspect*s2,w4);
+endchar('132,delta6,0,-ru+slant*delta6);
+beginchar(lbrk,&quot;left bracket&quot;,5,0,0);
+ww←norm(.75*w0+.25*w2);
+y←y1-(y7-y6);
+be(cpen); ps(ww); w←norm(2.5*u);
+l(w+1.75*u+eps,0,.51*y6+.49*y7,1);
+l(w,0,ly[1],0);
+l(w,0,ly[1],0);
+l(w,0,.51*y1+.49*y,-1);
+l(w,0,ly[4],0);
+l(w+1.75*u+eps,0,ly[4],0);
+nd;
+endchar('133,delta7,delta1+delta7-delta6,-.5*ru+slant*delta7);
+beginchar(opnq,&quot;open quotes&quot;,9,0,0);
+w←norm(4.0*u);
+dot(w,0,y5,-1,w3);
+be(hpen); ps(w0);
+l(w,0,y5,-1); sethoriz;
+l(xnorm(w-u,w0),0,(2/3)*topof(y5,w0)+botof(y6,w0)/3,0); setvert;
+l(w+.5*u,0,y6,1);
+hl(w+8.0*u,0,y6,1);
+nd;
+w←norm(7.5*u);
+dot(w,0,y5,-1,w3);
+be(hpen); ps(w0);
+l(w,0,y5,-1); sethoriz;
+l(xnorm(w-u,w0),0,(2/3)*topof(y5,w0)+botof(y6,w0)/3,0); setvert;
+l(w+.5*u,0,y6,1);
+hl(w+8.0*u,0,y6,1);
+nd;
+endchar('134,delta6,0,-ru+slant*delta6);
+beginchar(rbrk,&quot;right bracket&quot;,5,0,0);
+ww←norm(.75*w0+.25*w2);
+y←y1-(y7-y6);
+be(cpen); ps(ww); w←norm(2.5*u);
+dround←true # symmetric with respect to left bracket;
+l(w-1.75*u-eps,0,.51*y6+.49*y7,1);
+l(w,0,ly[1],0);
+l(w,0,ly[1],0);
+l(w,0,.51*y1+.49*y,-1);
+l(w,0,ly[4],0);
+l(w-1.75*u-eps,0,ly[4],0);
+nd;
+endchar('135,delta7,delta1+delta7-delta6,-.5*ru+slant*delta7);
+beginchar(en,&quot;en dash&quot;,9,0,0);
+be(hpen); ps(w0); l(0,-1,.5*y2+.5*y5,0); l(9.0*u,1,ly[1],0); nd;
+endchar('136,delta5,0,.5*slant*delta5);
+beginchar(em,&quot;em dash&quot;,18,0,0);
+be(hpen); ps(w0); l(0,-1,.5*y2+.5*y5,0); l(18.0*u,1,ly[1],0); nd;
+endchar('137,delta5,0,.5*slant*delta5);
+beginchar(raps,&quot;reverse apostrophe&quot;,5,0,0);
+w←norm(2.5*u);
+if fixwidth then v←(5/9)*u else v←u;
+dot(w,0,y5,-1,w3);
+be(hpen); ps(w0);
+l(w,0,y5,-1); sethoriz;
+l(xnorm(w-v,w0),0,(2/3)*topof(y5,w0)+botof(y6,w0)/3,0); setvert;
+l(w+.5*v,0,y6,1);
+hl(w+8.0*v,0,y6,1);
+nd;
+endchar('140,delta6,0,-1.5*ru+slant*delta6);
+beginchar(lca,&quot;the letter a&quot;,9,0,1);
+w←norm(1.5*u);
+pn←cpen;y←topof(y3+2+.5*w4,w3);
+if topof(y,w3)&gt;y5 then y←botof(y5,w3);
+dot(w,-1,y,0,w3);
+be(hpen); ps(w0);
+l(w,-1,y,0); setvert; setlin;
+l(4*u,0,y5,+1); sethoriz;
+x←xnorm(6.5*u,w1);
+ps(.25*w0+.75*w1); l(x-.5*u,0,.25*y3+.75*botof(y5,w0),0);
+psmax(w1); l(x,0,(2/3)*y3+y5/3,0); setvert; setlin;
+if s1=0 then
+	begin l(x,0,y2,-1); nd;
+	end
+else	begin comment draw small &quot;finial&quot;;
+	l(x,0,.8*topof(y2,w1)+.2*y3,0); setvert; setstable;
+	ps(w0); l(0,0,y2,-1); sethoriz; setstable; setlin # lx set below;
+	l(norm(8.5*u),1,y3/3+(2/3)*y2,0); setvert;
+	lx[n-1]←.5*leftof(rightof(x,w1),w0)+.5*lx[n]; nd;
+	end;
+be(hpen); ps(w0); y←y2+w4;
+l(x,0,y3,0); setlin; sethoriz;
+l(4*u,0,.1*y+.9*y3,0);
+w←xnorm(1.5*u,w2);
+ps(.2*w0+.8*w2); l(w+.25*u,0,.5*y+.5*y3,0);
+psmax(w2); l(w,0,.8*y+.2*y3,0); setvert;
+ps(.3*w0+.7*w2); l(3.0*u,0,y2,-1); sethoriz;
+ps(w0); l(4.0*u,0,.985*topof(y2,w2)+.015*y3,0); setlin; setstable;
+l(x,0,.7*topof(y2,w2)+.3*y3,0);
+hl(8.0*u,0,y3,0);
+nd;
+endchar('141,delta5,0,lccorr+slant*delta5);
+beginchar(lcb,&quot;the letter b&quot;,10,1,0);
+pn←hpen; w←xnorm(2.5*u,w1);
+leftserif(w,y6,1);
+be(hpen); ps(w1);
+x←leftof(w,w1);
+comment calculation of where bowl meets stem;
+z←.5*y2+.5*y5-(.5*y2+.5*y5-topof(y2,w4))*
+	sqrt(1.0-((rightof(w,w1)-5.5*u)/(rightof(leftof(w,w1),w0)-5.5*u))^2);
+l(x,-1,y6,1); setlin;
+l(x,-1,z,0);setvert; alignedwidth(true,lx[n]-lw[n]/2.0,-1);
+ps(w0); l(x,-1,y2,-1) # obtuse nick at foot of stem;
+hl(1.1*lx[n]-.1*lx[n-1],0,1.05*ly[n]-.05*ly[n-1],0);
+wmax←w1;
+nd;
+be(hpen); ps(w0);
+l(5.5*u,0,y2,-1); sethoriz;
+l(leftof(w,w1),-1,.5*y2+.5*y5,0); setvert; setlin;
+l(5.5*u,0,y5,1); sethoriz;
+aspect←(lx[1]-lx[2])/(ly[2]-ly[1]);
+nd;
+x←xnorm(8.5*u,w2);
+if w2&gt;1.5*u then x←xnorm(leftof(xnorm(9.25*u,w2),w2),w2) # boldface correction;
+darc(5.5*u,0,y5,1,x,0,y2,-1,w2);
+endchar('142,delta6,0,stm+.5*slant*delta5);
+beginchar(lcc,&quot;the letter c&quot;,8,0,0);
+pn←hpen; x←norm(7.0*u);
+pn←cpen;y←topof(y3+2+.5*w4,w3);
+if topof(y,w3)&gt;y5 then y←botof(y5,w3);
+dot(x,1,y,0,w3);
+be(hpen); ps(w0);
+l(x,1,y,0); setvert;
+l(4.5*u,0,y5,1); sethoriz; nd;
+w←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then w←xnorm(rightof(xnorm(.75*u,w2),w2),w2) # boldface correction;
+y←.5*y2+.5*y5;
+darc(4.5*u,0,y5,1,w,0,y2,-1,w2);
+be(hpen); ps(w0); l(4.5*u,0,y2,-1); sethoriz;
+if w0=w1 then
+	begin l(x,1,y-(botof(y5,w0)-y)*
+		sqrt(1.0-((leftof(x,w0)-4.5*u)/(w-4.5*u))^2),0);
+	hl(9.0*u-w,0,y,0);
+	end
+else	begin
+	l(x,-1,.5*y2+.5*y3-1,0); hl(x,-1,y3,0);
+	end;
+nd;
+endchar('143,delta5,0,-ru+slant*delta5);
+beginchar(lcd,&quot;the letter d&quot;,10,0,1);
+pn←hpen; w←xnorm(7.5*u,w1);
+leftserif(w,y6,1);
+vertstroke(w,0,y6,1);
+rightserif(w,y2,-1);
+be(hpen); ps(w0);
+l(4.5*u,0,y5,1); sethoriz;
+l(w,0,.5*y2+.5*y5,0); setvert;
+l(4.5*u,0,y2,-1); sethoriz;
+aspect←(lx[2]-lx[1])/(ly[1]-ly[2]);
+nd;
+x←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then x←xnorm(rightof(xnorm(.75*u,w2),w2),w2) # boldface correction;
+darc(4.5*u,0,y5,1,x,0,y2,-1,w2);
+endchar('144,delta6,0,lccorr+slant*delta6);
+beginchar(lce,&quot;the letter e&quot;,8,0,0);
+pn←hpen; x←xnorm(6.5*u,w2); w←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then
+	begin x←xnorm(leftof(xnorm(7.25*u,w2),w2),w2) # boldface correction;
+	w←xnorm(rightof(xnorm(.75*u,w2),w2),w2);
+	end;
+arc(4.0*u,0,y5,1,x,0,y3,0,w2);
+be(hpen); ps(w0);
+l(4.0*u,0,y5,1); sethoriz;
+comment calculation of points on ellipse; t←.5*y2+.5*y5;
+y←(ly[n]-t)/sqrt2;
+v←4.0*u-(4.0*u-w)*sqrt(1.0-((y3-t)/(ly[n]-t))^2);
+ps(w0/3+(2/3)*w2); l(4.0*u-(4.0*u-w)/sqrt2,0,t+y,0);
+psmax(w2); l(w,0,t,0); setvert;
+ps(w0/3+(2/3)*w2); l(4.0*u-(4.0*u-w)/sqrt2,0,t-y,0);
+ps(w0); l(4.5*u,0,y2,-1); sethoriz; setlin;
+if w0=w1 then
+	begin l(x,0,.5*y2+.5*y5-y*sqrt(2.0-2.0*((x-4.5*u)/(w-4.5*u))^2),0);
+	hl(9.0*u-w,0,.5*y2+.5*y5,0);
+	end
+else	begin
+	l(rightof(x,w2),1,.5*y2+.5*y3-1,0);
+	hl(rightof(x,w2),1,y3,0);
+	end;
+aspect←(lx[1]-lx[3])/(ly[1]-ly[3]);
+nd;
+be(hpen); ps(w0); l(v+1,0,y3,0); l(rightof(x,w2),1,y3,0);
+nd;
+endchar('145,delta5,0,stm+slant*delta3);
+beginchar(lcf,&quot;the letter f&quot;, 6,0,0);
+pn←hpen; w←xnorm(2.5*u,w1);
+if fixwidth then x←norm(5.0*u) else x←norm(6.5*u);
+dot(x,1,.2*y5+.8*y6+1,1,w3); v←ly[1];
+be(hpen); ps(w0);
+l(x,1,v,0); setvert; setlin;
+l(.5*w+.5*lx[1],0,y6,1); sethoriz; setstable;
+psmax(w1); l(w,0,.5*y5+.5*y6,0); setvert; setlin;
+l(w,0,y2,-1);
+nd;
+doubleserif(w,y2,-1);
+be(hpen); ps(w0);
+l(leftof(w,w1)-u-eps,0,y5,1); l(rightof(w,w1)+u+eps,0,y5,1);
+nd;
+endchar('146,delta6,0,.5*ru+slant*delta6);
+beginchar(lcg,&quot;the letter g&quot;,9,0,0);
+be(hpen); ps(w0); w←xnorm(1.5*u,w1); x←xnorm(6.0*u,w1);
+l(.5*w+.5*x,0,y5,1); sethoriz;
+psmax(w1); l(x,0,.25*y2+.25*y3+.5*ly[1],0); setvert;
+ps(w0); l(lx[1],0,.5*y2+.5*y3,0); sethoriz;
+ps(w1); l(w,0,ly[2],0); setvert;
+ps(w0); l(lx[1],0,ly[1],0); sethoriz;
+aspect←(lx[2]-lx[1])/(ly[1]-ly[2]);
+z←lx[1]+(lx[2]-lx[1])/sqrt2; y←ly[2]+(ly[1]-ly[2])/sqrt2;
+x←lx[1]-(lx[2]-lx[1])/sqrt2; w←ly[2]-(ly[1]-ly[2])/sqrt2;
+nd; comment remember intersection points;
+be(hpen); ps(w0);
+hl(5.0*u,0,y3,0);
+l(z,0,y,0);
+l(7.5*u,0,y5,1); sethoriz;
+nd;
+dot(7.5*u,0,y5,1,.5*w0+.5*w3);
+be(vpen); ps(w4);
+hl(6.0*u,0,y3,0);
+l(x,0,w,0);
+psmax(w6); l(x,0,y2,0); sethoriz; setlin;
+l(4.5*u,0,y2,0); sethoriz;
+z←xnorm(8.0*u,w0); y←ly[2];
+ps(w4); l(z,0,.5*y1+.5*y2,0); setvert;
+nd;
+be(hpen); ps(w0); l(z,0,.5*y1+.5*y2,0); setvert; setlin;
+l(4.5*u,0,y1,-1); sethoriz;
+psmax(.5*w0+.5*w1); l(xnorm(u,wmax),0,.5*y1+.5*y2,0); setvert;
+ps(w0); l(4.5*u,0,y2,0); sethoriz;
+nd;
+endchar('147,delta5,delta1,-ru+slant*delta5);
+beginchar(lcgvar,&quot;the letter g in simple style&quot;,9,0,0);
+pn←hpen; w←xnorm(7.5*u,w1);
+be(hpen); ps(w0);
+l(4.5*u,0,y5,1); sethoriz;
+l(w,0,.5*y2+.5*y5,0); setvert;
+l(4.5*u,0,y2,-1); sethoriz;
+aspect←(lx[2]-lx[1])/(ly[1]-ly[2]);
+nd;
+x←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then x←xnorm(rightof(xnorm(.75*u,w2),w2),w2) # boldface correction;
+darc(4.5*u,0,y5,1,x,0,y2,-1,w2);
+pn←cpen; z←xnorm(2.5*u,w3); dot(z,0,.25*y2+.75*y1,-1,w3); z←leftof(z,w3); v←ly[1];
+be(cpen); ps(w1); l(w,0,(5/6)*y5+y2/6,1); l(w,0,y2,0); nd;
+be(hpen); l(w,0,y2,0); setlin;
+l(w,0,.25*y1+.75*y2,-1); setvert; setstable;
+ps(w0); l(5.0*u,0,y1,-1); sethoriz; setlin; setstable;
+l(z,-1,v,0); setvert; nd;
+endchar('147,delta5,delta1,ru+lccorr+slant*delta5);
+beginchar(lch,&quot;the letter h&quot;,10,1,1);
+pn←hpen; w←xnorm(2.5*u,w1); x←xnorm(7.5*u,w1);
+leftserif(w,y6,1);
+vertstroke(w,0,y6,1);
+doubleserif(w,y2,-1);
+hstroke(w,x);
+doubleserif(x,y2,-1);
+endchar('150,delta6,0,lccorr+slant*delta5);
+beginchar(lci,&quot;the letter i&quot;,5,1,1);
+pn←hpen; w←xnorm(2.5*u,w1);
+leftserif(w,y5,1);
+vertstroke(w,0,y5,1);
+doubleserif(w,y2,-1);
+dot(rightof(w,w1),1,y6,1,w3);
+endchar('151,delta6,0,lccorr+slant*delta6);
+beginchar(lcj,&quot;the letter j&quot;,6,1,0);
+pn←hpen; x←xnorm(3.5*u,w1);
+if fixwidth then w←norm(u) else w←norm(-.5*u);
+dot(rightof(x,w1),1,y6,1,w3);
+leftserif(x,y5,1);
+dot(w,-1,.1*y2+.9*y1,-1,w3); v←ly[1];
+be(hpen); psmax(w1); l(x,0,y5,1); setlin;
+l(x,0,y1/3+(2/3)*y2,-1); setvert; setstable;
+ps(w0); l(.5*w+.5*x,0,y1,-1); sethoriz; setlin; setstable;
+l(w,-1,v,0); setvert;
+nd;
+endchar('152,delta6,delta1,lccorr+slant*delta6);
+beginchar(lck,&quot;the letter k&quot;,10,1,1);
+pn←hpen; w←xnorm(2.5*u,w1); x←xnorm(7.5*u,w1);
+y←.25*y2+.75*y3;
+z←botof(y5,w0); v←topof(y2,w1);
+comment find intersection of the lines (right(w),z)...(right(x),v) and
+	(w,y)...(x,z);
+t←(z-y)*(x-rightof(w,w1))/((x-w)*(2*z-y-v));
+be(hpen); ps(w1);
+l(w+t*(x-w),0,z+t*(v-z),0);
+l(x,0,v,0);
+nd;
+be(lers); ps(w1+1);
+l(x,0,z,0); l(w,0,y,0);
+nd; comment the unwanted left edge has been erased;
+be(hpen); ps(w0);
+l(x,0,z,0); l(w,0,y,0);
+nd;
+leftserif(x,z,0); rightserif(x-(if w0=w1 then 0 else .5*s1-.25*w1),z,0);
+doubleserif(x,v,0);
+leftserif(w,y6,1);
+vertstroke(w,0,y6,1);
+doubleserif(w,y2,-1);
+endchar('153,delta6,0,lcser);
+beginchar(lcl,&quot;the letter l&quot;,5,1,1);
+pn←hpen; w←xnorm(2.5*u,w1);
+leftserif(w,y6,1);
+vertstroke(w,0,y6,1);
+doubleserif(w,y2,-1);
+endchar('154,delta6,0,lccorr+slant*delta6);
+beginchar(lcm,&quot;the letter m&quot;, 15,1,1);
+pn←hpen; w←xnorm(2.5*u,w1); x←xnorm(7.5*u,w1); y←x+(x-w);
+leftserif(w,y5,1);
+vertstroke(w,0,y5,1);
+doubleserif(w,y2,-1);
+hstroke(w,x);
+doubleserif(x,y2,-1);
+hstroke(x,y);
+doubleserif(y,y2,-1);
+endchar('155,delta5,0,lccorr+slant*delta5);
+beginchar(lcn,&quot;the letter n&quot;,10,1,1);
+pn←hpen; w←xnorm(2.5*u,w1); x←xnorm(7.5*u,w1);
+leftserif(w,y5,1);
+vertstroke(w,0,y5,1);
+doubleserif(w,y2,-1);
+hstroke(w,x);
+doubleserif(x,y2,-1);
+endchar('156,delta5,0,lccorr+slant*delta5);
+beginchar(lco,&quot;the letter o&quot;,9,0,0);
+mm←9.0*u+.5;z←mm/2;
+pn←hpen; if fixwidth then w←xnorm(1.5*u,w2) else w←rightof(norm(.5*u),w2);
+x←z+(z-w);
+darc(z,0,y5,1,w,0,y2,-1,w2);
+dround←true;
+darc(z,0,y5,1,x,0,y2,-1,w2);
+endchar('157,delta5,0,-.5*ru+.5*slant*delta5);
+beginchar(lcp,&quot;the letter p&quot;,10,1,0);
+pn←hpen; w←xnorm(2.5*u,w1);
+leftserif(w,y5,1);
+be(hpen);ps(w1);l(w,0,y5,1); l(w,0,y1,-1); nd;
+doubleserif(w,y1,-1);
+be(hpen); ps(w0);
+l(5.5*u,0,y2,-1); sethoriz;
+l(w,0,.5*y2+.5*y5,0); setvert; setlin;
+l(5.5*u,0,y5,1); sethoriz;
+aspect←(lx[1]-lx[2])/(ly[2]-ly[1]);
+nd;
+x←xnorm(8.5*u,w2);
+if w2&gt;1.5*u then x←xnorm(leftof(xnorm(9.25*u,w2),w2),w2) # boldface correction;
+darc(5.5*u,0,y5,1,x,0,y2,-1,w2);
+endchar('160,delta5,delta1,stm+.5*slant*delta5);
+beginchar(lcq,&quot;the letter q&quot;,if fixwidth then 10 else 9,0,0);
+pn←hpen; w←xnorm(7.5*u,w1);
+doubleserif(w,y1,-1);
+be(hpen); psmax(w1);
+x←rightof(w,w1);
+comment calculation of where bowl meets stem;
+z←.5*y2+.5*y5+(.5*y2+.5*y5-topof(y2,w0))*
+	sqrt(1.0-((leftof(w,w2)-4.5*u)/(leftof(rightof(w,w1),w0)-4.5*u))^2);
+l(x,1,y1,-1); setlin;
+l(x,1,z,0); setvert; alignedwidth(true,lx[n]+lw[n]/2.0,1);
+ps(w0); l(x,1,y5,1) # obtuse nick at head of stem;
+hl(1.1*lx[n]-.1*lx[n-1],0,1.05*ly[n]-.05*ly[n-1],0);
+nd;
+be(hpen); ps(w0);
+l(4.5*u,0,y5,1); sethoriz;
+l(rightof(w,w1),1,.5*y2+.5*y5,0); setvert;
+l(4.5*u,0,y2,-1); sethoriz;
+aspect←(lx[2]-lx[1])/(ly[1]-ly[2]);
+nd;
+x←xnorm(1.5*u,w2);
+if w2&gt;1.5*u then x←xnorm(rightof(xnorm(.75*u,w2),w2),w2) # boldface correction;
+darc(4.5*u,0,y5,1,x,0,y2,-1,w2);
+endchar('161,delta5,delta1,ru+lccorr+slant*delta5);
+beginchar(lcr,&quot;the letter r&quot;,7,1,0);
+pn←hpen; w←xnorm(2.5*u,w1); x←norm(6.5*u);
+leftserif(w,y5,1);
+vertstroke(w,0,y5,1);
+doubleserif(w,y2,-1);
+dot(x,1,.9*y5+.1*y3,1,w3); y←ly[1];
+be(hpen); ps(w0);
+l(w,0,y3,0); setvert;
+l(5.0*u,0,y5,1); sethoriz;
+l(x,1,y,0); setvert;
+nd;
+endchar('162,delta5,0,-.5*ru+slant*delta5);
+beginchar(lcs,&quot;the letter s&quot;, 7,0,0);
+if (s1=0) or (w0=w1) then
+	begin xx←yy←3.5*u;
+	be(hpen); ps(w0);
+	z←.75*topof(y2,w0)+.25*y3;
+	y←.75*botof(y5,w0)+.25*y3;
+	w←rightof(norm(u),w0); x←leftof(norm(6.0*u),w0);
+	hl(x+u,0,y3,0);
+	l(x,0,y,0); l(xx,0,y5,1); sethoriz; nd;
+	be(hpen); hl(w-1.5*u,0,y3,0); l(w,0,z,0);
+	l(yy,0,y2,-1); sethoriz; nd;
+	if s1≠0 then
+		begin be(hpen); l(w,0,z+.5*baspect*s1+eps,0); l(w,0,y2,-1); nd;
+		be(hpen); l(x,0,y-.5*baspect*s1-eps,0); l(x,0,y5,1); nd;
+		end;
+	end
+else	begin xx←3.0*u; yy←4.0*u;
+	comment prepare tricky serifs;
+	pn←hpen; w←xnorm(u,w0); x←xnorm(6.0*u,w0);
+	y←(5/7)*y3+(2/7)*y5+1; z←(5/7)*y3+(2/7)*y2-1;
+	be(hpen); ps(w0); l(x,0,y5,1); alignedwidth(true,lx[n]+lw[n]/2.0,1);
+	psmax(w1); l(rightof(x,w0),1,y,0); nd;
+	t←ly[1];
+	be(lers); ps(w1+1); l(x,0,y3,0); l(x,0,y,0); nd; be(lers);
+	l(x,0,y,0); setvert; l(xx,0,t,0); sethoriz; nd;
+	be(hpen); ps(w0);
+	l(x,0,y,0); setvert; l(xx,0,t,0); sethoriz; nd;
+	be(hpen); ps(w0); l(w,0,y2,-1);alignedwidth(true,lx[n]-lw[n]/2.0,-1);
+	psmax(w1); l(leftof(w,w0),-1,z,0); nd;
+	t←ly[1];
+	be(rers); ps(w1+1); l(w,0,y3,0); l(w,0,z,0); nd; be(rers);
+	l(w,0,z,0); setvert; l(yy,0,t,0); sethoriz; nd;
+	be(hpen); ps(w0);
+	l(w,0,z,0); setvert; l(yy,0,t,0); sethoriz; nd;
+	end;
+
+vv←y3+(w4+.5*w6)*(1.0-2.0*(y3-y2)/(y5-y2)) # modified center line,
+	divides the white space in desired proportions;
+pn←hpen;
+w←rightof(norm(u),w0); x←leftof(norm(6.5*u),w0) # left and right s-shape limits;
+if s1=0 or w0=w1 then x←leftof(norm(6.0*u),w0);
+
+ssdraw(xx,botof(y5,w0),w,3.5*u,vv,x,yy,topof(y2,w0),
+	((y5-y3) max (y3-y2))/(18.0*u),w6,w0) # draw the shaded s curve;
+
+endchar('163,delta5,0,-ru+slant*delta5);
+beginchar(lct,&quot;the letter t&quot;,7,0,0);
+pn←hpen;x←xnorm(2.5*u,w1);
+if w0≠w1 then
+	begin w←leftof(rightof(x,w1),w0);
+	z←rightof(leftof(x-u,w1),w0);
+	while z&lt;w do
+		begin comment fill in an ellipse;
+		be(hpen); ps(w0); l(w,0,.75*y6+.25*y5,0); setvert;
+		l(z,0,y5,1); sethoriz; aspect←(lx[1]-lx[2])/(ly[1]-ly[2]); nd;
+		if cw&lt;1 then z←z+1.0 else z←z+cw;
+		end;
+	be(hpen); ps(w0); l(w,0,.75*y6+.25*y5,0); l(w,0,y5,1); nd;
+	end
+else	begin be(hpen); ps(w1); l(x,0,.75*y6+.25*y5,0); l(x,0,y5,1); nd;
+	end;
+be(hpen); ps(w0); l(leftof(x,w1)-u,0,y5,1); l(rightof(x,w1)+2.0*u,0,y5,1); nd;
+be(hpen); psmax(w1); l(x,0,y5,1); setlin;
+l(x,0,.5*y2+.5*y3,0); setvert; setstable;
+ps(w0); l(4.25*u,0,y2,-1); sethoriz; setstable; setlin;
+l(xnorm(6.0*u,w0),0,(2/3)*y3+y2/3,0); setvert;
+nd;
+endchar('164,.75*delta6+.25*delta5,0,lccorr+slant*delta5);
+beginchar(lcu,&quot;the letter u&quot;, 10,1,1);
+pn←hpen; w←xnorm(2.5*u,w1); x←xnorm(7.5*u,w1);
+leftserif(w,y5,1);
+leftserif(x,y5,1);
+comment the following is an upside-down hstroke;
+be(hpen); ps(w0);
+l(x,0,y2+(y5-y3),0); setvert; setlin;
+l(.5*w+.5*x,0,y2,-1); sethoriz;
+ps(.25*w0+.75*w1); l(w+.5*u,0,.25*(y2+y5-y3)+.75*topof(y2,w0),0);
+psmax(w1); l(w,0,.7*(y2+y5-y3)+.3*y2,0); setvert; setlin;
+l(w,0,y5,1);
+nd;
+vertstroke(x,0,y5,1);
+rightserif(x,y2,-1);
+endchar('165,delta5,0,lccorr+slant*delta5);
+beginchar(lcv,&quot;the letter v&quot;,10,1,1);
+pn←hpen; w←xnorm(2.0*u,w1); x←xnorm(8.0*u,w0);
+y←norm(.5*leftof(w,w1)+.5*leftof(x,w0));
+doubleserif(w,y5,1);
+be(hpen); ps(w1); l(w,0,y5,1); l(y,-1,y2,-1); nd; t←ly[2]; v←ly[1]; z←rightof(y,w0);
+be(rers); ps(w1+1); l(z,0,y2,0); l(z,0,t,0); l(z,0,t,0); l(x,0,v,0); nd;
+be(hpen); ps(w0); l(z,0,t,0); l(x,0,v,0); nd;
+leftserif(x,y5,1); rightserif(x-(if w0=w1 then 0 else .5*s1-.25*w1),y5,1);
+endchar('166,delta5,0,lcser);
+beginchar(lcw,&quot;the letter w&quot;,13,1,1);
+pn←hpen; w←xnorm(2.0*u,w1); x←leftof(norm(13.0*u-leftof(w,w1)),w0);
+mm←.5*(rightof(x,w0)-rightof(w,w1))+.5;
+comment we will make two v's, mm apart;
+x←leftof(rightof(w+mm,w1),w0);
+y←norm(.5*leftof(w,w1)+.5*leftof(x,w0));
+be(hpen); ps(w1); l(w,0,y5,1); l(y,-1,y2,-1); nd;
+t←ly[2]; v←ly[1]; z←rightof(y,w0);
+be(rers); ps(w1+1); l(z,0,y2,0); l(z,0,t,0); l(z,0,t,0); l(x,0,v,0); nd;
+be(hpen); ps(w0); l(z,0,t,0); l(x,0,v,0); nd;
+if s1≠0 then
+	begin ww←s1-.5*w1+eps # the serif usually sticks out this much;
+	if w0=w1 then vv←ww else vv←.5*ww;
+	be(hpen); ps(w0); l(leftof(w,w1)-ww,-1,y5,1);
+	l(rightof(w,w1)+ww,1,y5,1); nd;
+	be(hpen); l(leftof(w+mm,w1)-vv,-1,y5,1);
+	l(x+vv,0,y5,1); nd;
+	end;
+w←w+mm; x←x+mm; y←y+mm;
+be(hpen); ps(w1); l(w,0,y5,1); l(y,-1,y2,-1); nd;
+t←ly[2]; v←ly[1]; z←rightof(y,w0);
+be(rers); ps(w1+1); l(z,0,y2,0); l(z,0,t,0); l(z,0,t,0); l(x,0,v,0); nd;
+be(hpen); ps(w0); l(z,0,t,0); l(x,0,v,0); nd;
+if s1≠0 then
+	begin be(hpen); ps(w0); l(x-ww,0,y5,1); l(x+ww,0,y5,1); nd;
+	end;
+endchar('167,delta5,0,lcser);
+beginchar(lcx,&quot;the letter x&quot;,10,1,1);
+z←if w0=w1 then 0 else .5*s1-.25*w1;
+w←norm(2.5*u-z); x←norm(7.5*u+z);
+rightserif(w,y5,1); rightserif(w,y2,-1);
+leftserif(w+z,y5,1); leftserif(w+z,y2,-1);
+rightserif(x-z,y5,1); rightserif(x-z,y2,-1);
+leftserif(x,y5,1); leftserif(x,y2,-1);
+be(hpen); ps(w1); l(w,0,y5,1); l(x,0,y2,-1); nd;
+be(hpen); ps(w0); l(x,0,y5,1); l(w,0,y2,-1); nd;
+endchar('170,delta5,0,lcser);
+beginchar(lcy,&quot;the letter y&quot;,10,1,1);
+pn←hpen; w←xnorm(2.5*u,w1); 
+if (s1=0) or (w1=w0) then x←xnorm(7.5*u,w0) else x←xnorm(8.0*u,w0);
+y←norm(.5*leftof(w,w1)+.5*leftof(x,w0));
+doubleserif(w,y5,1);
+be(hpen); ps(w1); l(w,0,y5,1); l(y,-1,y2,-1); nd; t←ly[2]; v←ly[1]; z←rightof(y,w0);
+w←topof(.5*y2+.5*y1,w0);
+be(rers); ps(w1+1); l(x,0,v,0);
+l(x-(v-w)*(x-z)/(v-t),0,w,0);
+nd;
+leftserif(x,v,0); rightserif(x-(if w0=w1 then 0 else .5*s1-.25*w1),v,0);
+dot(norm(.25*u),-1,.9*y1+.1*y2,-1,w3); y←ly[1];
+be(hpen); ps(w0); l(x,0,v,0);
+l(x-(v-w)*(x-z)/(v-t),0,w,0);
+l(1.01*lx[n]-.01*lx[n-1],0,1.01*ly[n]-.01*ly[n-1],0);
+l(2.0*u,0,y1,-1); sethoriz;
+l(norm(.25*u),-1,y,0); setvert;
+nd;
+endchar('171,delta5,delta1,lcser);
+beginchar(lcz,&quot;the letter z&quot;,8,0,0);
+pn←hpen; w←rightof(norm(u),w1); x←leftof(norm(7.0*u),w1);
+bracket(leftof(norm(7.0*u),w0),rightof(norm(1.5*u),w0),y5,1,-.5*u,baspect*s1,w4);
+be(hpen); ps(w1); l(x,0,y5,1); l(w,0,y2,-1); nd;
+bracket(rightof(norm(u),w0),leftof(norm(6.5*u),w0),y2,-1,.5*u,-1.4*baspect*s1,w4);
+endchar('172,delta5,0,-ru+slant*delta5);
+beginchar(lcff,&quot;the ligature ff&quot;,11,0,0);
+pn←hpen; w←xnorm(2.5*u,w1);
+if w0≠w1 then x←norm(7.0*u) else x←norm(6.5*u);
+dot(x,1,.2*y5+.8*y6+1,1,w3); v←ly[1];
+be(hpen); ps(w0);
+l(x,1,v,0); setvert; setlin;
+l(.5*w+.5*lx[1],0,y6,1); sethoriz; setstable;
+psmax(w1); l(w,0,.5*y5+.5*y6,0); setvert; setlin;
+l(w,0,y2,-1);
+nd;
+doubleserif(w,y2,-1);
+pn←hpen; x←xnorm(7.5*u,w1);
+y←norm(11.5*u);
+dot(y,1,v,0,w3);
+be(hpen); ps(w0);
+l(y,1,v,0); setvert; setlin;
+l(.5*x+.5*lx[1],0,y6,1); sethoriz; setstable;
+psmax(w1); l(x,0,.5*y5+.5*y6,0); setvert; setlin;
+l(x,0,y2,-1);
+nd;
+doubleserif(x,y2,-1);
+be(hpen); ps(w0);
+l(leftof(w,w1)-u,0,y5,1); l(rightof(x,w1)+u,0,y5,1);
+nd;
+endchar('173,delta6,0,.5*ru+slant*delta6);
+beginchar(lcfi,&quot;the ligature fi&quot;,10,0,2);
+pn←hpen; w←xnorm(2.5*u,w1); x←xnorm(7.5*u-serifcorr,w1);
+dot(rightof(x,w1),1,.2*y5+.8*y6+1,1,w3); v←ly[1];
+be(hpen); ps(w0);
+l(rightof(x,w1),1,v,0); setvert; setlin;
+l(x-2.0*u,0,y6,1); sethoriz; setstable;
+psmax(w1); l(w,0,.75*y5+.25*y6,0); setvert; setlin;
+l(w,0,y2,-1);
+nd;
+doubleserif(w,y2,-1);
+be(hpen); ps(w0);
+l(leftof(w,w1)-u,0,y5,1); l(x,0,y5,1); ps(w1);
+l(x,0,y5,1); l(x,0,y2,-1);
+nd;
+doubleserif(x,y2,-1);
+endchar('174,delta6,0,lccorr+slant*delta6);
+beginchar(lcfl,&quot;the ligature fl&quot;,10,0,2);
+pn←hpen; w←xnorm(2.5*u,w1); x←xnorm(7.5*u-serifcorr,w1);
+dot(rightof(x,w1),1,.1*y5+.9*y6,1,w3); v←ly[1];
+be(hpen); ps(w0);
+l(rightof(x,w1),1,v,0); setvert; setlin;
+l(x-2.0*u,0,y6,1); sethoriz; setstable;
+psmax(w1); l(w,0,.75*y5+.25*y6,0); setvert; setlin;
+l(w,0,y2,-1);
+nd;
+doubleserif(w,y2,-1);
+be(hpen); ps(w0);
+l(leftof(w,w1)-u,0,y5,1); l(x,0,y5,1);
+nd;
+vertstroke(x,0,y6,1);
+doubleserif(x,y2,-1);
+endchar('175,delta6,0,lccorr+slant*delta6);
+beginchar(lcffi,&quot;the ligature ffi&quot;,15,0,2);
+pn←hpen; w←xnorm(2.5*u,w1); x←xnorm(7.5*u,w1);
+y←xnorm(12.5*u-serifcorr,w1);
+dot(rightof(x,w1),1,.2*y5+.8*y6+1,1,w3); v←ly[1];
+be(hpen); ps(w0);
+l(rightof(x,w1),1,v,0); setvert; setlin;
+l(x-2*u,0,y6,1); sethoriz; setstable;
+psmax(w1); l(w,0,.75*y5+.25*y6,0); setvert; setlin;
+l(w,0,y2,-1);
+nd;
+doubleserif(w,y2,-1);
+dot(rightof(y,w1),1,v,0,w3);
+be(hpen); ps(w0);
+l(rightof(y,w1), 1,v,0); setvert; setlin;
+l(y-2.0*u,0,y6,1); sethoriz; setstable;
+psmax(w1); l(x,0,.75*y5+.25*y6,0); setvert; setlin;
+l(x,0,y2,-1);
+nd;
+doubleserif(x,y2,-1);
+be(hpen); ps(w0);
+l(leftof(w,w1)-u,0,y5,1); l(y,0,y5,1); ps(w1);
+l(y,0,y5,1); l(y,0,y2,-1);
+nd;
+doubleserif(y,y2,-1);
+endchar('176,delta6,0,lccorr+slant*delta6);
+beginchar(lcffl,&quot;the ligature ffl&quot;,15,0,2);
+pn←hpen; w←xnorm(2.5*u,w1); x←xnorm(7.5*u,w1);
+y←xnorm(12.5*u-serifcorr,w1);
+dot(rightof(x,w1),1,.1*y5+.9*y6,1,w3); v←ly[1];
+be(hpen); ps(w0);
+l(rightof(x,w1),1,v,0); setvert; setlin;
+l(x-2*u,0,y6,1); sethoriz; setstable;
+psmax(w1); l(w,0,.75*y5+.25*y6,0); setvert; setlin;
+l(w,0,y2,-1);
+nd;
+doubleserif(w,y2,-1);
+dot(rightof(y,w1),1,.1*y5+.9*y6,1,w3);
+be(hpen); ps(w0);
+l(rightof(y,w1), 1,v,0); setvert; setlin;
+l(y-2.0*u,0,y6,1); sethoriz; setstable;
+psmax(w1); l(x,0,.75*y5+.25*y6,0); setvert; setlin;
+l(x,0,y2,-1);
+nd;
+doubleserif(x,y2,-1);
+be(hpen); ps(w0);
+l(leftof(w,w1)-u,0,y5,1); l(y,0,y5,1);
+nd;
+vertstroke(y,0,y6,1);
+doubleserif(y,y2,-1);
+endchar('177,delta6,0,lccorr+slant*delta6);
+beginchar(quotes,&quot;straight quotation marks&quot;,9,0,0);
+if w3-w0&lt;4.0 then w←w3 else w←w0;
+be(cpen); ps(w3); l(3.25*u,0,y6,1); ps(w); l(lx[1],0,y5,-1); nd;
+be(cpen); ps(w3); l(5.75*u,0,y6,1); ps(w); l(lx[1],0,y5,-1); nd;
+endchar('042,delta6,0,0);
+beginchar(apost,&quot;straight apostrophe&quot;,5,0,0);
+if w3-w0&lt;4.0 then w←w3 else w←w0;
+be(cpen); ps(w3); l(2.5*u,0,y6,1); ps(w); l(lx[1],0,y5,-1); nd;
+endchar('177,delta6,0,0);
+beginchar(rslash,&quot;reverse slash&quot;,9,0,0);
+ww←norm(.75*w0+.25*w2);
+be(cpen); ps(ww); l(u,-1,y7,1); l(8.0*u,1,y1-(y7-y6),-1); nd;
+endchar('134,delta7,delta1+delta7-delta6,0);
+beginchar(uparr,&quot;upward arrow&quot;,9,0,0);
+ww←norm(.75*w0+.25*w2);
+mm←9.0*u+.5; t←mm/2;
+be(cpen); ps(ww); l(t,0,y6,1); l(t,0,y1,-1); nd;
+pn←vpen; y←botof(y6,w5); w←(y6-y2)*.24;
+be(lers); ps(1.75*u+ww+1); hl(t,0,y+w,0); l(t,0,y,0);
+l(t-3.0*u-eps,0,y6-w,0); hl(t-6.0*u-eps,0,y6-w,0); nd;
+be(lers); l(t,0,y,0); l(t,0,y6+1,0); nd;
+be(vpen); ps(w5); hl(t,0,y+w,0); l(t,0,y,0);
+ps(w4); l(t-3.0*u-eps,0,y6-w,0); hl(t-6.0*u-eps,0,y6-w,0); nd;
+dround←true;
+be(rers); ps(1.75*u+ww+1); hl(t,0,y+w,0); l(t,0,y,0);
+l(t+3.0*u+eps,0,y6-w,0); hl(t+6.0*u+eps,0,y6-w,0); nd;
+be(rers); l(t,0,y,0); l(t,0,y6+1,0); nd;
+be(vpen); ps(w5); hl(t,0,y+w,0); l(t,0,y,0);
+ps(w4); l(t+3.0*u+eps,0,y6-w,0); hl(t+6.0*u+eps,0,y6-w,0); nd;
+endchar('136,delta6,0,-1.5*ru+slant*delta6);
+beginchar(lftarr,&quot;leftward arrow&quot;,18,0,0);
+ww←norm(.75*w0+.25*w2);
+yy←.5*y1+.5*y6;
+be(cpen); ps(ww); l(norm(u),-1,yy,0); l(norm(17.0*u),1,yy,0); nd;
+pn←hpen; x←rightof(norm(u),w1); z←(2/3)*(yy-y2)+eps;
+if fixwidth then w←6.0*u else w←3.0*u;
+be(lers); ps(w+1); hl(x-w,0,yy,0); l(x,0,yy,0);
+l(u+w,0,yy+z,0); hl(u+w,0,yy+z+z,0); nd;
+be(lers); ps(w+1); hl(x-w,0,yy,0); l(x,0,yy,0);
+l(u+w,0,yy-z,0); hl(u+w,0,yy-z-z,0); nd;
+be(hpen); ps(w1); hl(x-w,0,yy,0); l(x,0,yy,0);
+ps(w0); l(u+w,0,yy+z,0); hl(u+w,0,yy+z+z,0); nd;
+be(hpen); ps(w1); hl(x-w,0,yy,0); l(x,0,yy,0);
+ps(w0); l(u+w,0,yy-z,0); hl(u+w,0,yy-z-z,0); nd;
+endchar('137,delta5,0,-ru+slant*delta5);
+beginchar(lbrc,&quot;left brace&quot;,9,0,0);
+yy←.5*y6+.5*y1;
+pn←hpen; x←xnorm(4.5*u,w1); y←botof(y7,w0);
+z←(y-yy)/4.0 # desired slope intercept;
+be(hpen); ps(w1); l(x,0,yy+z,0); setvert; setstable;
+ps(w0); l(x-3.0*u,0,yy,0); setstable;
+hl(1.001*lx[n]-.001*(x+3.0*u),0,1.001*ly[n]-.001*ly[n-1],0); nd;
+be(hpen); ps(w1); l(x,0,yy+z,0); l(x,0,y-z,0); setvert; setstable;
+ps(w0); l(x+3.0*u,0,y,0); setstable;
+hl(1.001*lx[n]-.001*(x-3.0*u),0,1.001*ly[n]-.001*ly[n-1],0); nd;
+y←yy-(y-yy);
+z←(y-yy)/4.0 # desired slope intercept;
+be(hpen); ps(w1); l(x,0,yy+z,0); setvert; setstable;
+ps(w0); l(x-3.0*u,0,yy,0); setstable;
+hl(1.001*lx[n]-.001*(x+3.0*u),0,1.001*ly[n]-.001*ly[n-1],0); nd;
+be(hpen); ps(w1); l(x,0,yy+z,0); l(x,0,y-z,0); setvert; setstable;
+ps(w0); l(x+3.0*u,0,y,0); setstable;
+hl(1.001*lx[n]-.001*(x-3.0*u),0,1.001*ly[n]-.001*ly[n-1],0); nd;
+endchar('173,delta7,delta1+delta7-delta6,-1.5*ru+slant*delta7);
+beginchar(rbrc,&quot;right brace&quot;,9,0,0);
+yy←.5*y6+.5*y1;
+pn←hpen; x←xnorm(4.5*u,w1); y←botof(y7,w0);
+dround←true # for symmetry with left brace;
+z←(y-yy)/4.0 # desired slope intercept;
+be(hpen); ps(w1); l(x,0,yy+z,0); setvert; setstable;
+ps(w0); l(x+3.0*u,0,yy,0); setstable;
+hl(1.001*lx[n]-.001*(x-3.0*u),0,1.001*ly[n]-.001*ly[n-1],0); nd;
+be(hpen); ps(w1); l(x,0,yy+z,0); l(x,0,y-z,0); setvert; setstable;
+ps(w0); l(x-3.0*u,0,y,0); setstable;
+hl(1.001*lx[n]-.001*(x+3.0*u),0,1.001*ly[n]-.001*ly[n-1],0); nd;
+y←yy-(y-yy);
+z←(y-yy)/4.0 # desired slope intercept;
+be(hpen); ps(w1); l(x,0,yy+z,0); setvert; setstable;
+ps(w0); l(x+3.0*u,0,yy,0); setstable;
+hl(1.001*lx[n]-.001*(x-3.0*u),0,1.001*ly[n]-.001*ly[n-1],0); nd;
+be(hpen); ps(w1); l(x,0,yy+z,0); l(x,0,y-z,0); setvert; setstable;
+ps(w0); l(x-3.0*u,0,y,0); setstable;
+hl(1.001*lx[n]-.001*(x+3.0*u),0,1.001*ly[n]-.001*ly[n-1],0); nd;
+endchar('176,delta7,delta1+delta7-delta6,-1.5*ru+slant*delta7);
+beginchar(dnarr,&quot;downward arrow&quot;,9,0,0);
+ww←norm(.75*w0+.25*w2);
+mm←9.0*u+.5; t←mm/2;
+be(cpen); ps(ww); l(t,0,y6,1); l(t,0,y1,-1); nd;
+pn←vpen; y←topof(y1,w5); w←(y6-y2)*.24;
+be(lers); ps(1.75*u+ww+1); hl(t,0,y-w,0); l(t,0,y,0);
+l(t-3.0*u-eps,0,y1+w,0); hl(t-6.0*u-eps,0,y1+w,0); nd;
+be(lers); l(t,0,y,0); l(t,0,y1-1,0); nd;
+be(vpen); ps(w5); hl(t,0,y-w,0); l(t,0,y,0);
+ps(w4); l(t-3.0*u-eps,0,y1+w,0); hl(t-6.0*u-eps,0,y1+w,0); nd;
+dround←true;
+be(rers); ps(1.75*u+ww+1); hl(t,0,y-w,0); l(t,0,y,0);
+l(t+3.0*u+eps,0,y1+w,0); hl(t+6.0*u+eps,0,y1+w,0); nd;
+be(rers); l(t,0,y,0); l(t,0,y1-1,0); nd;
+be(vpen); ps(w5); hl(t,0,y-w,0); l(t,0,y,0);
+ps(w4); l(t+3.0*u+eps,0,y1+w,0); hl(t+6.0*u+eps,0,y1+w,0); nd;
+endchar('175,delta6,0,0);
+beginchar(ctimes,&quot;circle times operator&quot;,18,0,0);
+ww←norm(.75*w0+.25*w2);
+mm←18.0*u+.5; t←mm/2 # point of left/right symmetry;
+pn←cpen; x←rightof(norm(u),ww); y←botof(y6,ww);
+yy←.5*y1+.5*y6;
+be(cpen); ps(ww); l(t-(t-x)/sqrt2,0,yy-(y-yy)/sqrt2,0);
+l(t+(t-x)/sqrt2,0,yy+(y-yy)/sqrt2,0); nd;
+be(cpen); ps(ww); l(t+(t-x)/sqrt2,0,yy-(y-yy)/sqrt2,0);
+l(t-(t-x)/sqrt2,0,yy+(y-yy)/sqrt2,0); nd;
+z←t-norm(u);
+darc(t,0,y6,1,t-z,-1,y1,-1,w0);
+dround←true;
+darc(t,0,y6,1,t+z,1,y1,-1,w0);
+endchar('174,delta6,delta1,-ru+.5*slant*(delta6-delta1));
+procedure makeligtable # defines the ligature settings in .TFD files;
+begin
+define lig(c,d) = ⊂lgarry[lgn←lgn+1]←(c+(d lsh 18))⊃ # ligature (if next
+	character is c, use ligature d);
+define f = ⊂lor(1 rot -1)⊃ # turns sign bit on (end instructions);
+define link(c) = ⊂ligfield[c]←lgn⊃ # start character c at this instruction;
+define kern(c,x) = ⊂lgarry[lgn←lgn+1]←(c+((x-lgn+'200)lsh 18))⊃ # kern (if
+	next character is c, put x points of space between them);
+integer a1,a2,a3 # locations of kern spacing values;
+if s1 then a1←40 else a1←37;
+a2←a1+1;a3←a2+1;
+
+comment lgn=0 when we start;
+lig(&quot;'&quot;,'42)f;link(&quot;'&quot;);
+lig(&quot;`&quot;,'134)f;link(&quot;`&quot;);
+lig(&quot;-&quot;,'136)f;link(&quot;-&quot;);
+lig(&quot;-&quot;,'137)f;link('136);
+lig(&quot;i&quot;,'174);link(&quot;f&quot;);
+lig(&quot;f&quot;,'173);
+lig(&quot;l&quot;,'175)f;
+lig(&quot;i&quot;,'176);link('173);
+lig(&quot;l&quot;,'177)f;
+kern(&quot;o&quot;,a1);link(&quot;k&quot;);link(&quot;v&quot;);link(&quot;w&quot;);link(&quot;x&quot;);link(&quot;y&quot;);
+kern(&quot;e&quot;,a1);
+kern(&quot;c&quot;,a1)f;
+kern(&quot;A&quot;,a3);link(&quot;F&quot;);link(&quot;V&quot;);
+kern(&quot;O&quot;,a1);link(&quot;K&quot;);link(&quot;W&quot;);link(&quot;X&quot;);link(&quot;Y&quot;);
+kern(&quot;C&quot;,a1);
+kern(&quot;G&quot;,a1);
+kern(&quot;Q&quot;,a1)f;
+kern(&quot;A&quot;,a2)f;link(&quot;P&quot;);link(&quot;T&quot;);link(&quot;W&quot;);link(&quot;Y&quot;);
+kern(&quot;A&quot;,a1);link(&quot;O&quot;);
+kern(&quot;W&quot;,a1);
+kern(&quot;Y&quot;,a1);
+kern(&quot;V&quot;,a1);
+kern(&quot;X&quot;,a1)f;
+if s1 then
+	begin comment omit these kernings in sans-serif fonts;
+	kern(&quot;t&quot;,a1);link(&quot;h&quot;);link(&quot;m&quot;);link(&quot;n&quot;);
+	kern(&quot;u&quot;,a1);
+	kern(&quot;b&quot;,a1);
+	end;
+kern(&quot;v&quot;,a1);link(&quot;o&quot;);
+kern(&quot;w&quot;,a1);
+kern(&quot;y&quot;,a1);
+kern(&quot;x&quot;,a1)f;
+kern(&quot;T&quot;,a2);if lgn≥'100 then bail;link(&quot;A&quot;);link(&quot;L&quot;);if s2 then link(&quot;R&quot;);
+kern(&quot;O&quot;,a1);
+kern(&quot;U&quot;,a1);
+kern(&quot;C&quot;,a1);
+kern(&quot;W&quot;,a2);
+kern(&quot;Y&quot;,a2);
+kern(&quot;G&quot;,a1);
+kern(&quot;V&quot;,a3);
+kern(&quot;Q&quot;,a1)f;
+if lgn≠a1-1 then bail;
+memory[location(lgarry[lgn+1]),real]←-0.5*ru # one unit of kerning (a1);
+memory[location(lgarry[lgn+2]),real]←-1.5*ru # two units of kerning (a2);
+memory[location(lgarry[lgn+3]),real]←-2.5*ru # three units of kerning (a3);
+lgn←lgn+3;
+end;
+procedure tfout(integer xgpheight) # outputs the TEX font information file;
+begin integer ochan,eof;
+real gspace,gstr,gshr;
+open(ochan ← getchan, &quot;DSK&quot;, 8, 0, 2, 0, 0, eof);
+enter(ochan, fontfile&amp;deviceext, eof);
+wordout(ochan,128+6+(htn+1)+(wdn+1)+(dpn+1)+(msn+1)+lgn+(dwn+1)+6);
+arryout(ochan,finfo[0],128);
+wordout(ochan,wdn+1);
+wordout(ochan,htn+1);
+if dpn&lt;0 then bail;
+wordout(ochan,dpn);
+wordout(ochan,lgn+1) # slight trick due to the fact that lgarry[0] isn't there;
+wordout(ochan,msn+1);
+wordout(ochan,dwn+1);
+arryout(ochan,wdarry[0],wdn+1);
+arryout(ochan,htarry[0],htn+1);
+arryout(ochan,dparry[0],dpn+1);
+arryout(ochan,lgarry[1],lgn);
+arryout(ochan,msarry[0],msn+1);
+arryout(ochan,dwarry[0],dwn+1);
+wordout(ochan,memory[location(slant),integer]);
+if fixwidth then
+	begin gspace←9.0*ru; gstr←gshr←0.0;
+	end
+else	begin gspace←6.0*ru; gstr←3.0*ru; gshr←3.0*ru;
+	end;
+wordout(ochan,memory[location(gspace),integer]);
+wordout(ochan,memory[location(gstr),integer]);
+wordout(ochan,memory[location(gshr),integer]);
+wordout(ochan,memory[location(delta5),integer]);
+wordout(ochan,xgpheight);
+release(ochan);
+print(crlf,&quot;TEX font information written on &quot;,fontfile,deviceext);
+end;
+comment the body of the font procedure;
+
+comment initialize pen/eraser storage;
+integer j,k;
+for k←0 step 1 until npens-1 do for j←0 step 1 until maxwidth do penref[k,j]←-1;
+alloc←0;
+
+pen[1]←'400000; penloc[1]←0; m←1;
+xcorr←ycorr←topcorr←botcorr←leftcorr←rightcorr←0;
+penintostore(spec,0) # sets trivial `one-point' pen;
+
+y1←yy1+.5; y2←yy2+.5; y3←yy3+.5; y5←yy5+.5; y6←yy6+.5; y7←yy7+.5; y8←yy8+.5;
+w0←ww0+.5; w1←ww1+.5; w2←ww2+.5; w3←ww3+.5; w4←ww4+.5; w5←ww5+.5;
+w6←ww6+.5; w7←ww7+.5; w8←ww8+.5; w9←ww9+.5; w10←ww10+.5; w11←ww11+.5;
+
+symfont←symfont&amp;&quot;, generated by
+romfont(&quot;&amp;cvs(yy1)&amp;&quot;,&quot;&amp;cvs(yy2)&amp;&quot;,&quot;&amp;cvs(yy3)&amp;&quot;,&quot;&amp;cvs(yy5)&amp;&quot;,&quot;&amp;cvs(yy6)&amp;&quot;,&quot;&amp;
+	cvs(yy7)&amp;&quot;,&quot;&amp;cvs(yy8)&amp;&quot;,&quot;&amp;cvs(ww0)&amp;&quot;,&quot;&amp;cvs(ww1)&amp;&quot;,&quot;&amp;cvs(ww2)&amp;&quot;,&quot;&amp;
+	cvs(ww3)&amp;&quot;,&quot;&amp;cvs(ww4)&amp;&quot;,&quot;&amp;cvs(ww5)&amp;&quot;,&quot;&amp;cvs(ww6)&amp;&quot;,&quot;&amp;cvs(ww7)&amp;&quot;,&quot;&amp;
+	cvs(ww8)&amp;&quot;,&quot;&amp;cvs(ww9)&amp;&quot;,&quot;&amp;cvs(ww10)&amp;&quot;,&quot;&amp;cvs(ww11)&amp;&quot;,&quot;&amp;cvf(s1)&amp;&quot;,&quot;&amp;
+	cvf(s2)&amp;&quot;,&quot;&amp;cvf(u)&amp;&quot;,&quot;&amp;cvf(serifcorr)&amp;&quot;,&quot;&amp;cvf(slnt)&amp;&quot;,&quot;&amp;cvf(basp)&amp;
+	&quot;,'&quot;&amp;cvos(fontmod)&amp;&quot;)&quot;;
+	
+dround←false; sqrt2←sqrt(2.0); slant←slnt; baspect←basp;
+
+xshiftinit←norm(2.0*u+.5)-.5;
+param1←w4 # set thickness of horizontal flat pens;
+param2←w0 # set thickness of vertical flat pens;
+usave←u; s1save←s1; s2save←s2;
+xshift←xshiftinit;
+
+if makefont and magnify=1 then
+	begin comment initialization of font preparation info;
+	arrclr(fntarray);
+	ifnt←'400; maxwdth←0;
+	arrclr(finfo); arrclr(ligfield);
+	htn←wdn←dpn←dwn←-1;lgn←msn←0;msarry[0]←0;
+	if outmode land '40 and not noligs then makeligtable;
+	end;
+
+setprint(&quot;SPLINE.OUT&quot;,&quot;F&quot;);
+
+delta1←ry2-ry1; delta3←ry3-ry2; delta5←ry5-ry2; delta6←ry6-ry2; delta7←ry7-ry2;
+if s2 then brc←-1.5*ru+slant*delta6
+	else brc←-ru+serifcorr*ru/usave+slant*delta6 # italic corr. for T, etc.;
+if s2 then ucser←-ru-ru+s2*ru/usave-.5*rw8+slant*delta6
+	else ucser←-ru-ru+serifcorr*sc2*ru/usave+slant*delta6 # ital.corr.for M,...;
+if s2 then ucser2←-ru-ru+.5*s2*ru/usave-.25*rw8+slant*delta6
+	else ucser2←ucser # ital.corr.for K,V,...;
+if s1 then lcser←-2.5*ru+s1*ru/usave+slant*delta5
+	else lcser←-2.5*ru+serifcorr*ru/usave+slant*delta5 # ital.corr. for k, etc.;
+lccorr←-2.5*ru+.5*rw1;
+stm←(-1.5*ru+.5*rw2)min(-.75*ru);
+
+define cond(testn,m)=⊂if testn land (1 lsh m) then⊃;
+cond(test0,'00) ucgamma;
+cond(test0,'01) ucdelta;
+cond(test0,'02) uctheta;
+cond(test0,'03) uclambda;
+cond(test0,'04) ucxi;
+cond(test0,'05) ucpi;
+cond(test0,'06) ucsigma;
+cond(test0,'07) ucupsilon;
+cond(test0,'10) ucphi;
+cond(test0,'11) ucpsi;
+cond(test0,'12) ucomega;
+cond(test0,'13) lcivar;
+if fontmod land '1000 then begin y1←y1-(y2-y1); delta1←2.0*delta1 end;
+cond(test0,'14) lcjvar;
+if fontmod land '1000 then begin y1←y2-.5*(y2-y1); delta1←delta1/2.0 end;
+cond(test0,'15) grave;
+cond(test0,'16) acute;
+cond(test0,'17) hat;
+cond(test0,'20) vhat;
+cond(test0,'21) breve;
+cond(test0,'22) bar;
+cond(test0,'23) umlaut;
+cond(test0,'24) longum;
+cond(test0,'25) vec;
+cond(test0,'26) tilde;
+cond(test0,'27) circle;
+cond(test0,'30) lcae;
+cond(test0,'31) lclc;
+cond(test0,'32) lcia;
+cond(test0,'33) lcoe;
+cond(test0,'34) ucae;
+cond(test0,'35) uclc;
+cond(test0,'36) ucia;
+cond(test0,'37) ucoe;
+cond(test1,'00) if fontmod land '40 then blank else lcos;
+cond(test1,'01) exc;
+cond(test1,'02) if noligs then quotes else clsq;
+cond(test1,'03) if fontmod land '10 then sharp else lccc;
+cond(test1,'04) if fontmod land '10 then dollar else uccc;
+cond(test1,'05) pct;
+cond(test1,'06) amp;
+cond(test1,'07) aps;
+cond(test1,'10) lpren;
+cond(test1,'11) rpren;
+cond(test1,'12) ast;
+cond(test1,'13) plus;
+cond(test1,'14) com;
+cond(test1,'15) if fontmod land '100 then minus else hyp;
+cond(test1,'16) per;
+cond(test1,'17) slash;
+cond(test1,'20) n0;
+cond(test1,'21) n1;
+cond(test1,'22) n2;
+cond(test1,'23) n3;
+cond(test1,'24) n4;
+cond(test1,'25) n5;
+cond(test1,'26) n6;
+cond(test1,'27) n7;
+cond(test1,'30) n8;
+cond(test1,'31) n9;
+cond(test1,'32) col;
+cond(test1,'33) scol;
+cond(test1,'34) less;
+cond(test1,'35) equals;
+cond(test1,'36) greater;
+cond(test1,'37) query;
+cond(test2,'00) if fontmod land '200 then at else ucos;
+cond(test2,'01) uca;
+cond(test2,'02) ucb;
+cond(test2,'03) ucc;
+cond(test2,'04) ucd;
+cond(test2,'05) uce;
+cond(test2,'06) ucf;
+cond(test2,'07) ucg;
+cond(test2,'10) uch;
+cond(test2,'11) uci;
+cond(test2,'12) ucj;
+cond(test2,'13) uck;
+cond(test2,'14) ucl;
+cond(test2,'15) ucm;
+cond(test2,'16) ucn;
+cond(test2,'17) uco;
+cond(test2,'20) ucp;
+cond(test2,'21) ucq;
+cond(test2,'22) ucr;
+cond(test2,'23) ucs;
+cond(test2,'24) uct;
+cond(test2,'25) ucu;
+cond(test2,'26) ucv;
+cond(test2,'27) ucw;
+cond(test2,'30) ucx;
+cond(test2,'31) ucy;
+cond(test2,'32) ucz;
+cond(test2,'33) lbrk;
+cond(test2,'34) if noligs then rslash else opnq;
+cond(test2,'35) rbrk;
+cond(test2,'36) if noligs then uparr else en;
+cond(test2,'37) if noligs then lftarr else em;
+cond(test3,'00) raps;
+if fontmod land '1000 then begin y1←y1-(y2-y1); delta1←2.0*delta1 end;
+cond(test3,'01) lca;
+cond(test3,'02) lcb;
+cond(test3,'03) lcc;
+cond(test3,'04) lcd;
+cond(test3,'05) lce;
+cond(test3,'06) lcf;
+cond(test3,'07) if fontmod land 2 then lcgvar else lcg;
+cond(test3,'10) lch;
+cond(test3,'11) lci;
+cond(test3,'12) lcj;
+cond(test3,'13) lck;
+cond(test3,'14) lcl;
+cond(test3,'15) lcm;
+cond(test3,'16) lcn;
+cond(test3,'17) lco;
+cond(test3,'20) lcp;
+cond(test3,'21) lcq;
+cond(test3,'22) lcr;
+cond(test3,'23) lcs;
+cond(test3,'24) lct;
+cond(test3,'25) lcu;
+cond(test3,'26) lcv;
+cond(test3,'27) lcw;
+cond(test3,'30) lcx;
+cond(test3,'31) lcy;
+cond(test3,'32) lcz;
+if fontmod land '1000 then begin y1←y2-.5*(y2-y1); delta1←delta1/2.0 end;
+cond(test3,'33) if noligs then rbrc else lcff;
+cond(test3,'34) if noligs then ctimes else lcfi;
+cond(test3,'35) if noligs then dnarr else lcfl;
+cond(test3,'36) if noligs then lbrc else lcffi;
+cond(test3,'37) if noligs then apost else lcffl;
+
+if outmode land 8 and xshift≠xshiftinit then outputrast;
+
+setprint(&quot;SPLINE.OUT&quot;,&quot;O&quot;);
+if makefont and magnify=1 then
+	begin fontout(yy8+outmode div '1000,yy2);
+	if outmode land '40 then tfout(yy8-yy2+outmode div '1000);
+	end;
+
+end;
+procedure font(real y1,y2,y3,y5,y6,y7,y8,
+	w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,s1,s2,u,serifcorr,slnt;
+	integer fontmod; string id);
+begin comment This procedure calls romfont, scaling the parameters y1,...,u
+by the factor 1/36 to obtain the true value in points. The values of global
+variables testtype, test0...test3 and outmode (among a few others) affect the
+way romfont is actually called. This procedure has grown by a long series of
+patches and was used for many different purposes during the development
+of TEX, hence its ugly appearance. Hopefully I will have time to clean it
+up some day;
+
+define d = ⊂36.0⊃ # basic conversion factor in design parameters;
+
+real reso # resolution of output device per 72 points;
+real c,cf # conversion factors;
+real addedwidth;
+integer mm # temp storage;
+integer procedure t(real w); return((w+addedwidth)*c+.5);
+real procedure rt(real w); return(w/d);
+
+if outmode land '200 then fontmod ← fontmod lor '400;
+
+if testtype land '2000 then reso←259.2 comment super XGP used in TEX proofs;
+else if testtype land '4000 then reso←720 comment APS-5;
+else reso←2592; comment design size;
+
+addedwidth←testtype lsh -30 # amount to add to pen widths in design size;
+
+c←reso/(d*72.0);
+cf←c-1.0/y8 # adjustment for vertical shrinkage due to rounding;
+
+if testtype land '1000 then
+	begin comment display a magnified version as well as the real one;
+	mm←y8*cf+1.5; mm←(ysize-1)/(mm+1); magnify←mm min 35;
+	symfont←id;
+	if magnify&gt;1 then romfont(
+	y1*cf+1.5,y2*cf+1.5,y3*cf+1.5,y5*cf+1.5,y6*cf+1.5,y7*cf+1.5,y8*cf+1.5,
+	t(w0),t(w1),t(w2),t(w3),t(w4),t(w5),t(w6),t(w7),t(w8),t(w9),t(w10),t(w11),
+	s1*c,s2*c,u*c,serifcorr*c,slnt,w7/w3,fontmod,
+	y1/d,y2/d,y3/d,y5/d,y6/d,y7/d,rt(w0),rt(w1),rt(w2),rt(w3),rt(w4),rt(w5),
+	rt(w6),rt(w7),rt(w8),rt(w9),rt(w10),rt(w11),u/d);
+	magnify←1;
+	end;
+symfont←id;
+romfont(y1*cf+1.5,y2*cf+1.5,y3*cf+1.5,y5*cf+1.5,y6*cf+1.5,y7*cf+1.5,y8*cf+1.5,
+	t(w0),t(w1),t(w2),t(w3),t(w4),t(w5),t(w6),t(w7),t(w8),t(w9),t(w10),t(w11),
+	s1*c,s2*c,u*c,serifcorr*c,slnt,w7/w3,fontmod,
+	y1/d,y2/d,y3/d,y5/d,y6/d,y7/d,rt(w0),rt(w1),rt(w2),rt(w3),rt(w4),rt(w5),
+	rt(w6),rt(w7),rt(w8),rt(w9),rt(w10),rt(w11),u/d);
+comment Note that the default aspect ratio is the ratio of dot parameters;
+end;
+
+integer procedure readoctal(integer default);
+begin comment returns octal equivalent of user line;
+integer n,c; string s;
+n←0; s←inchwl; if not s then return(default);
+while c←lop(s) do if c ≠ &quot; &quot; then n←(n lsh 3) lor (c land 7);
+return(n);
+end;
+
+procedure mainloop;
+begin print(crlf,&quot;testtype←'&quot;); testtype←readoctal(-1);
+if testtype&lt;0 then quit;
+if testtype=0 then bail;
+print(&quot;test0←'&quot;); test0←readoctal(test0);
+print(&quot;test1←'&quot;); test1←readoctal(test1);
+print(&quot;test2←'&quot;); test2←readoctal(test2);
+print(&quot;test3←'&quot;); test3←readoctal(test3);
+if testtype land '1 then
+	font(20,90,180,250,340,360,360,
+	9,27,32,37,9,27,32,37,32,38,32,38,35,50,20,0,
+	0,'400,&quot;Computer Modern Roman 10 pt&quot;);
+if testtype land '2 then
+	font(20,90,180,250,340,360,360,
+	15,40,45,50,15,35,40,50,50,50,50,50,37,55,20,0,
+	0,'400,&quot;Computer Modern Roman 10 pt Bold&quot;);
+if testtype land '4 then
+	font(45,90,148,192,250,265,360,
+	7,25,30,37,7,25,30,37,25,30,25,30,27,35,15,0,
+	0,0,&quot;Computer Modern Roman 10 pt Small Caps&quot;);
+if testtype land '10 then
+	font(50,90,165,240,300,330,360,
+	20,20,20,30,20,20,20,30,20,20,20,20,28,39,23,0,
+	0,'1335,&quot;Computer Modern Typewriter&quot;);
+if testtype land '20 then
+	font(20,60,130,210,260,280,288,
+	25,25,25,25,25,25,25,25,30,30,30,30,0,0,20,10,
+	0,2,&quot;Computer Modern Quotation&quot;);
+if testtype land '40 then
+	font(20,90,180,250,340,360,360,
+	37,37,37,37,23,23,23,37,42,42,27,27,0,0,22,9,
+	0,0,&quot;Computer Modern Sans Serif 10 pt Bold Extended&quot;);
+if testtype land '100 then
+	font(20,90,180,250,340,360,360,
+	9,27,32,37,9,27,32,37,32,38,32,38,35,50,20,0,
+	0.25,'400,&quot;Computer Modern Slanted Roman 10 pt&quot;);
+if testtype land '200 then
+	font(20,60,130,210,260,280,288,
+	25,25,25,25,25,25,25,25,30,30,30,30,0,0,20,10,
+	2/7,2,&quot;Computer Modern Quotation Slanted&quot;);
+if testtype land '400 then
+	font(20,120,150,310,340,360,360,
+	8,12,16,20,12,12,16,30,20,20,30,30,9,10,16,0,
+	-.1,0,&quot;Computer Modern Funny&quot;);
+if testtype land '10000 then
+	font(18,81,162,225,306,324,324,
+	9,25,29,33,9,25,29,33,29,33,29,33,32,45,18.5,0,
+	0,'400,&quot;Computer Modern Roman 9 pt&quot;);
+if testtype land '20000 then
+	font(18,81,162,225,306,324,324,
+	9,25,29,33,9,25,29,33,29,33,29,33,32,45,18.5,0,
+	.25,'400,&quot;Computer Modern Roman 9 pt Slanted&quot;);
+if testtype land '40000 then
+	font(18,81,162,225,306,324,324,
+	15,37,42,46,15,37,42,46,46,46,46,46,34,50,18.5,0,
+	0,'400,&quot;Computer Modern Roman 9 pt Bold&quot;);
+if testtype land '100000 then
+	font(16,72,144,200,272,288,288,
+	9,23,27,30,9,23,27,30,27,30,27,30,29,40,17,0,
+	0,'400,&quot;Computer Modern Roman 8 pt&quot;);
+if testtype land '200000 then
+	font(16,72,144,200,272,288,288,
+	9,23,27,30,9,23,27,30,27,30,27,30,29,40,17,0,
+	.25,'400,&quot;Computer Modern Roman 8 pt Slanted&quot;);
+if testtype land '400000 then
+	font(16,72,144,200,272,288,288,
+	14,34,38,42,14,34,38,42,42,42,42,42,31,45,17,0,
+	0,'400,&quot;Computer Modern Roman 8 pt Bold&quot;);
+if testtype land '1000000 then
+	font(14,63,126,175,238,252,252,
+	8,21,24,26,8,21,24,26,24,26,24,26,26,35,16,0,
+	0,'400,&quot;Computer Modern Roman 7 pt&quot;);
+if testtype land '2000000 then
+	font(12,54,108,150,204,216,216,
+	8,19,22,23,8,19,22,23,22,23,22,23,22,31,14,0,
+	0,'400,&quot;Computer Modern Roman 6 pt&quot;);
+if testtype land '4000000 then
+	font(10,45,90,125,170,180,180,
+	7,17,19,20,7,17,19,20,19,20,19,20,19,26,12.5,0,
+	0,'400,&quot;Computer Modern Roman 5 pt&quot;);
+if testtype land '10000000 then
+	font(28,126,224,350,476,504,504,
+	89,89,89,89,55,55,55,89,99,99,55,55,0,0,35,10,
+	0,2,&quot;Computer Modern Sans Serif 14 pt Extrabold (Titles)&quot;);
+if testtype land '20000000 then
+	font(24,108,216,300,408,432,432,
+	30,30,30,30,25,25,25,30,30,30,25,25,0,0,24,12,
+	0,'400,&quot;Computer Modern Sans Serif 12 pt&quot;);
+if testtype land '40000000 then
+	font(34,89,178,233,322,356,356,
+	9,27,32,37,9,27,32,37,32,38,32,38,35,50,20,0,
+	0,'400,&quot;Computer Modern Fibonacci 10 pt&quot;);
+end;
+comment the main program starts here;
+
+print(&quot;outmode←'&quot;); outmode←readoctal('31);
+if outmode land 1 then
+	begin open(chan←getchan, &quot;DSK&quot;, '10, 0, 2, 0, 0, eof);
+	enter(chan,if outmode land 4 then &quot;XEROX.DAT&quot; else &quot;XGPSER.DAT&quot;, eof);
+	end;
+
+testtype←1; test0←test1←test2←test3←-1;
+ddout←printout←false;
+showpts←false;
+splparam←1.0;
+cutoff←0.5;
+xshiftinit←40.0;
+magnify←1;
+deviceext←&quot;.TFX&quot;;
+
+setformat(4,4);
+
+initdd;
+
+while true do mainloop;
+
+exit:
+close(chan);
+setprint(&quot;SPLINE.OUT&quot;,&quot;N&quot;);
+end
+
+</PRE>
+</BODY>
+</HTML>

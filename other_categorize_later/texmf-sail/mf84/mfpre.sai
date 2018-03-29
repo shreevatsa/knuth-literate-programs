@@ -1,0 +1,447 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00005 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00002 00002	begin &quot;MFPRE&quot; comment The METAFONT preprocessor.
+C00004 00003	Material copied from MFSYS
+C00022 00004	Initializing the memory
+C00030 00005	The driver routine
+C00031 ENDMK
+Cⓧ;
+begin &quot;MFPRE&quot; comment The METAFONT preprocessor.
+
+comment This program builds the tables that define METAFONT's initial
+memory state, including its built-in reserved words.
+The relevant sections of MFNTRP explain the format of these tables.
+
+MFPRE has been written as a separate module since it is unnecessary to have
+all this lengthy initialization code present when running METAFONT, and since the
+SAIL system has no mechanism for overlaying unneeded program segments.
+
+The next page of code is simply copied from MFSYS, then comes
+new stuff and a new driver program instead of the MFSYS main program;
+
+require &quot;MFHDR.SAI&quot; source_file;
+require &quot;MFNTRP.REL&quot; load_module;
+require &quot;MFRAST.REL&quot; load_module;
+require &quot;MFOUT.REL&quot; load_module;
+comment Material copied from MFSYS;
+
+comment Error handling procedures: quit,error,backerror,overflow,confusion;
+
+label end_of_MF,final_end;
+internal procedure quit # closes output files and terminates METAFONT;
+begin integer c;
+DEBUGONLY print(nextline,&quot;Quitting. Do you want a chance to see the memory?&quot;);
+DEBUGONLY c←inchrw;
+DEBUGONLY if c=&quot;y&quot; then bail;
+go to end_of_MF;
+end;
+
+internal boolean pausing_on_errors # should METAFONT wait after error messages?;
+internal boolean not_nonstop # for batch mode, but MFPRE doesn't use it;
+internal boolean deletions_allowed # is it safe for error routine to call getnext?;
+
+internal procedure error(string s) # prints an error message;
+begin comment The string s explains the type of error. This is displayed to the
+user and then the current source code position is indicated;
+print(nextline,&quot;! &quot;,s,&quot;.&quot;);
+dumpcontext # prints indication of where the scanner is now;
+if pausing_on_errors then
+  loop	begin integer c;
+	print(&quot;^&quot;) # prompt the user;
+	clrbuf # if user was typing ahead, clear the system buffer;
+	c←inchrw # wait for user to type a character;
+	setprint(null,&quot;F&quot;); print(c&amp;null); setprint(null,&quot;B&quot;) # echo on ERRORS.TMP;
+	if c='15 then begin c←inchrw # ignore the line-feed; return end;
+	if c='12 then begin pausing_on_errors←false; return end;
+	if c&gt;'140 then c←c-'40 # change lower case to upper case;
+	IFWAITS if c=&quot;E&quot; or c=&quot;T&quot; then
+		begin comment abort and enter the system editor;
+		if curfile then
+			begin setprint(null,&quot;N&quot;) # close the errors file;
+			edfile(curfile,curfline,curfpage);
+			end
+		else	begin print(&quot; (sorry, there's no current file)&quot;); quit;
+			end;
+		end; ENDWAITS
+	if c=&quot;I&quot; then
+		begin pushinput;
+		print(nextline,&quot;*&quot;); inbuf←inchwl # wait for user to type a line;
+		setprint(null,&quot;F&quot;); print(inbuf&amp;'15); setprint(null,&quot;B&quot;) # echo it;
+		curbuf←inbuf; filename←null;
+		return;
+		end;
+	if c=&quot;X&quot; then go to end_of_MF;
+	if c≥&quot;1&quot; and c≤&quot;9&quot; and deletions_allowed then
+		begin integer i; i←c-&quot;0&quot;;
+		while i&gt;0 do
+			begin getnext # recursive call shouldn't happen;
+			i←i-1;
+			end;
+		dumpcontext # print new scanner status;
+		continue;
+		end;
+	DEBUGONLY if c=&quot;B&quot; then
+	DEBUGONLY	begin bail;
+	DEBUGONLY	return;
+	DEBUGONLY	end;
+	print(nextline,&quot;Type &lt;cr&gt; to continue, &lt;lf&gt; to flash error messages,&quot;);
+	if deletions_allowed then print(nextline,
+		&quot;	1 or ... or 9 to ignore the next 1 to 9 tokens of input,&quot;);
+	print(nextline,&quot;	i or I to insert something,&quot;,
+	IFWAITS &quot; e or E to edit,&quot;, ENDWAITS
+	&quot; x or X to quit.&quot;,nextline);
+	end;
+end;
+
+internal procedure errorstop(string s) # prints message and dies;
+begin pausing_on_errors←false;
+error(s);
+quit;
+end;
+
+internal procedure reportoverflow(string s; integer n)
+	# for fatal errors when a METAFONT table is undersized;
+errorstop(&quot;METAFONT capacity exceeded, sorry [&quot;&amp;s&amp;&quot;=&quot;&amp;cvs(n)&amp;&quot;]&quot;);
+
+internaldef overflow(s)=⊂reportoverflow(&quot;s&quot;,s)⊃ # specifies inadequate table size;
+internal procedure memoverflow; overflow(memsize);
+internal procedure vmemoverflow; overflow(vmemsize);
+
+internal procedure confusion # METAFONT consistency check failure;
+errorstop(&quot;This can't happen&quot;);
+
+comment Dynamic memory allocation: links,memsize,vmemsize,mem,vmem,memreal,vmemint;
+
+comment METAFONT does nearly all of its own memory allocation, so that it can
+readily be transported into environments that do not have automatic
+facilities for strings, garbage collection, etc. The dynamic storage
+requirements of METAFONT are handled by providing a large integer array &quot;mem&quot; 
+and a smaller real array &quot;vmem&quot;. Pointer variables are indices into these arrays.
+When a pointer value p is less than vmemsize, it essentially is pointing to a
+two-word node (mem[p], vmem[p]). When p is ≥ vmemsize, it essentially points to
+the one-word node mem[p].
+
+Separate available-space lists are maintained for two-word nodes and one-word
+nodes. In an emergency, a two-word node will be temporarily assigned to one-word
+duty.
+;
+internaldef links = 13 # number of bits per pointer;
+internaldef memsize=5000 # size of dynamic list memory, must be ≤ 2^links;
+internaldef vmemsize=2500 # size of two-word list memory, must be &lt;&lt; memsize;
+comment MFHDR contains the true values of these volatile parameters;
+
+comment saf integer array mem[0:memsize-1] # dynamic list memory;
+comment saf real array vmem[0:vmemsize-1] # two-word list memory;
+comment mem and vmem have been made internal to MFNTRP, for the sake of more
+efficient code;
+
+internaldef memreal(p)=⊂memory[location(mem[p]),real]⊃ # mem[p] as type real;
+internaldef vmemint(p)=⊂memory[location(vmem[p]),integer]⊃ # vmem[p] as integer;
+
+SHOWMEM internal integer oneused,twoused # how much memory is in use;
+
+comment Partial field macros: field,ufield,link,info,setfield...setinfo;
+
+comment The following macros are for accessing and modifying partial fields
+of packed words. If f is a field name, then fs denotes its size in bits
+and fd denotes its displacement from the right of the word. These sizes and
+displacements are defined at compile time--e.g.,&quot;links&quot; for size of link fields.
+In the following definitions, x denotes the word being modified and y denotes
+a new value to be inserted into the specified field (it must not be too
+large for the field). The definitions look inefficient, but they take
+advantage of the fact that SAIL does a lot of local optimization;
+
+
+internaldef fs(f) = ⊂f⊃&amp;&quot;s&quot; # field size of f, in bits;
+internaldef fd(f) = ⊂f⊃&amp;&quot;d&quot; # field displacement of f, in bits;
+
+internaldef field(f,x) = ⊂ifc fd(f)=0 thenc ((x) land (2^fs(f)-1))
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc ((x) lsh -fd(f))
+	elsec (((x) lsh -fd(f)) land (2^fs(f)-1)) endc endc⊃ # field f of x;
+
+internaldef setfield(f,x,y) = ⊂ifc fd(f)=0 thenc x←(x land(-2^fs(f)))+(y)
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc 
+		x←((x lsh(bitsperwd-fd(f)))+(y))rot fd(f)
+	elsec x←(((x rot -fd(f))land(-2^fs(f)))+(y))rot fd(f) endc endc⊃
+		# sets field f of x equal to y, 0 ≤ y &lt; 2^fs(f);
+
+comment Sometimes an unshifted field is desired. For this purpose, we use
+ufield instead of field, and deal with values times 2^fd;
+
+internaldef ufield(f,x) = ⊂((x) land((1 lsh(fs(f)+fd(f)))-2^fd(f)))⊃
+		# unshifted field f of x;
+internaldef setufield(f,x,y) = ⊂x←(x land lnot((1 lsh(fs(f)+fd(f)))-2^fd(f)))+(y)⊃
+		# field f of x set to unshifted value y;
+
+comment The special case of a pointer field at the right of a word is
+most common, so there are special conventions for it. When p is a pointer,
+we write link(p) for the pointer field of mem[p] and info(p) for the
+(shifted) remaining fields of the word;
+
+internaldef linkd = 0 # displacement of link field;
+internaldef link(p) = ⊂field(link,mem[p])⊃ # link field of mem[p];
+internaldef setlink(p,y) = ⊂setfield(link,mem[p],y)⊃ # sets link(p)←y;
+internaldef infod = links, infos = bitsperwd-infod # definition of info field;
+internaldef info(p) = ⊂field(info,mem[p])⊃ # info field of mem[p];
+internaldef setinfo(p,y) = ⊂setfield(info,mem[p],y)⊃ # sets info(p)←y;
+
+DEBUGONLY integer procedure lk(integer x);
+DEBUGONLY return(x land(2^links-1)) # link field of packed word;
+DEBUGONLY integer procedure fo(integer x);
+DEBUGONLY return(x lsh -infod) # info field of packed word;
+
+comment Memory allocation: getavail, getvavail, freeavail, dslist;
+
+comment	The dynamic memory is accessed via three simple macros:
+	getavail(p) makes p point to a new one-word node,
+	gettavail(p) makes p point to a new two-word node,
+	freeavail(p) returns node p to storage.
+;
+internal integer avail # head of available space list for one-word nodes;
+internal integer vavail # head of available space list for two-word nodes;
+internaldef getavail(p) = ⊂begin if(p←avail)then
+	begin avail←mem[avail]: SHOWMEM oneused←oneused+1: end
+	else if(p←vavail)then
+	begin vavail←mem[vavail]: SHOWMEM twoused←twoused+1: end
+	else memoverflow: end⊃ # p ← new one-word node;
+internaldef getvavail(p) = ⊂begin if(p←vavail)then vavail←mem[vavail]
+	else vmemoverflow: SHOWMEM twoused←twoused+1: end⊃ # p ← new two-wd node;
+internaldef freeavail(p) = ⊂if p&lt;vmemsize then
+	begin mem[p]←vavail: vavail←p: SHOWMEM twoused←twoused-1: end
+	else begin mem[p]←avail: avail←p: SHOWMEM oneused←oneused-1: end⊃
+		# node p now available;
+
+comment The following procedure can be used to free up an entire linked list;
+internal procedure dslist(integer p) # makes list of nodes available;
+begin integer q # pointer to node following node p;
+while p do
+	begin q←link(p); freeavail(p); p←q;
+	end;
+end;
+
+comment Memory, continued: checkmem, searchmem;
+
+comment There are also two procedures that may come in handy when diagnosing
+mysterious errors;
+
+DEBUGONLY integer array free[0:memsize-1];
+DEBUGONLY internal procedure checkmem(boolean printlocs) # checks links in mem;
+DEBUGONLY begin comment This procedure checks the format of the available space
+DEBUGONLY lists and (if printlocs is true) prints those locations of mem that were
+DEBUGONLY free the last time this procedure was called but reserved now.
+DEBUGONLY All nodes should be returned to the avail lists when METAFONT is done with
+DEBUGONLY them, and checkmem can be used to check if this has been done correctly;
+DEBUGONLY integer p,i;
+DEBUGONLY p←avail;
+DEBUGONLY while p do
+DEBUGONLY 	begin if (mem[p]≥memsize) or (free[p] land 1) or
+DEBUGONLY		(mem[p]≠0 and mem[p]&lt;vmemsize) then
+DEBUGONLY 		begin print(nextline,&quot;avail list clobbered at &quot;,p);
+DEBUGONLY		bail;
+DEBUGONLY		done;
+DEBUGONLY 		end;
+DEBUGONLY 	free[p]←free[p] lor 1;
+DEBUGONLY 	p←mem[p];
+DEBUGONLY 	end;
+DEBUGONLY p←vavail;
+DEBUGONLY while p do
+DEBUGONLY 	begin if (mem[p]≥vmemsize) or (free[p] land 1) or (mem[p]&lt;0) then
+DEBUGONLY 		begin print(nextline,&quot;vavail list clobbered at &quot;,p);
+DEBUGONLY		bail;
+DEBUGONLY		done;
+DEBUGONLY 		end;
+DEBUGONLY 	free[p]←free[p] lor 1;
+DEBUGONLY 	p←mem[p];
+DEBUGONLY 	end;
+DEBUGONLY if printlocs then print(nextline,&quot;New busy locs: &quot;);
+DEBUGONLY for i←0 thru memsize-1 do
+DEBUGONLY 	begin if free[i] land 3 = 2 and printlocs then print(i,&quot; &quot;);
+DEBUGONLY 	free[i]←free[i] lsh 1;
+DEBUGONLY 	end;
+DEBUGONLY end;
+
+DEBUGONLY procedure searchmem(integer p) # finds pointers to p;
+DEBUGONLY begin integer i;
+DEBUGONLY for i←0 thru memsize-1 do
+DEBUGONLY 	begin if link(i)=p then print(nextline,&quot;link(&quot;,i,&quot;)&quot;);
+DEBUGONLY 	if name(i)=p then print(nextline,&quot;name(&quot;,i,&quot;)&quot;);
+DEBUGONLY	if field(link,vmemint(i))=p then print(nextline,&quot;vlink(&quot;,i,&quot;)&quot;);
+DEBUGONLY	if field(info,vmemint(i))=p then print(nextline,&quot;vinfo(&quot;,i,&quot;)&quot;);
+DEBUGONLY 	end;
+DEBUGONLY for i←0 thru hashsize-1 do if hashh[i]=p then
+DEBUGONLY	print(nextline,&quot;link in hash[&quot;,i,&quot;]&quot;);
+DEBUGONLY end;
+
+comment A few words of the memory are dedicated to fixed usage. Location mem[0]
+is used during elementary list manipulations, and location wvar (the one-word
+node) is the list head for w-variables;
+internaldef wvar = memsize-1 # head of list for w-variables;
+internaldef depvar = wvar-1 # head of list for dependent variables;
+internaldef temphead = depvar-1 # temporary list head for created lists;
+internaldef main = ⊂1⊃ # area header for main program;
+internaldef firstvmem = 2, lastmem = temphead-1 # nodes not specially dedicated;
+comment Initializing the memory;
+
+procedure identer(string t; integer typ,val);
+begin comment This procedure forms the packed name corresponding to string t
+and enters this identifier in the has table, giving it the specified type
+and value;
+integer c,s,l,firstfew;
+firstfew←(lop(t) land '37) lsh (bitsperwd-bitsrem-5); l←1;
+s←bitsperwd-bitsrem-5;
+while (c←lop(t)) do
+	begin l←l+1; s←s-5;
+	if s≥0 then firstfew ← firstfew+((c land '37) lsh s);
+	end;
+c←idlookup(firstfew,l);
+mem[c]←mem[c]+((typ-newid)lsh typed); vmemint(c)←val;
+end;
+
+procedure initmem # initializes the dynamic memory;
+begin integer i;
+mem[main]←areahead lsh typed; vmemint(main)←(main lsh infod)+main # no xy-variables;
+mem[wvar]←(areahead lsh typed) + wvar # no w-variables;
+for i←firstvmem thru vmemsize-2 do mem[i+1]←i; mem[firstvmem]←0; vavail←vmemsize-1;
+for i←vmemsize thru lastmem-1 do mem[i+1]←i; mem[vmemsize]←0; avail←lastmem;
+
+identer(&quot;input&quot;,innput,0);
+identer(&quot;var&quot;,varparam,0);
+identer(&quot;index&quot;,indexparam,0);
+identer(&quot;end&quot;,stop,0);
+identer(&quot;if&quot;,iff,0);
+identer(&quot;else&quot;,elsse,0);
+identer(&quot;fi&quot;,ffi,0);
+identer(&quot;lft&quot;,direction,lft);
+identer(&quot;rt&quot;,direction,rt);
+identer(&quot;top&quot;,direction,top);
+identer(&quot;bot&quot;,direction,bot);
+identer(&quot;nrand&quot;,randm,0);
+identer(&quot;sqrt&quot;,unary,root);
+identer(&quot;sind&quot;,unary,sine);
+identer(&quot;cosd&quot;,unary,cosine);
+identer(&quot;round&quot;,unary,round);
+identer(&quot;good&quot;,unary,good);
+identer(&quot;cpen&quot;,penname,cpen);
+identer(&quot;hpen&quot;,penname,hpen);
+identer(&quot;vpen&quot;,penname,vpen);
+identer(&quot;lpen&quot;,penname,lpen);
+identer(&quot;rpen&quot;,penname,rpen);
+identer(&quot;spen&quot;,penname,spen);
+identer(&quot;epen&quot;,penname,epen);
+identer(&quot;call&quot;,cawl,0);
+identer(&quot;new&quot;,new,0);
+identer(&quot;trxx&quot;,mfparam,1);
+identer(&quot;trxy&quot;,mfparam,2);
+identer(&quot;incx&quot;,mfparam,3);
+identer(&quot;tryx&quot;,mfparam,4);
+identer(&quot;tryy&quot;,mfparam,5);
+identer(&quot;incy&quot;,mfparam,6);
+identer(&quot;charwd&quot;,mfparam,7);
+identer(&quot;charht&quot;,mfparam,8);
+identer(&quot;chardp&quot;,mfparam,9);
+identer(&quot;charic&quot;,mfparam,10);
+identer(&quot;safetyfactor&quot;,mfparam,11);
+identer(&quot;maxvr&quot;,mfparam,12);
+identer(&quot;minvr&quot;,mfparam,13);
+identer(&quot;maxvs&quot;,mfparam,14);
+identer(&quot;minvs&quot;,mfparam,15);
+identer(&quot;epenxfactor&quot;,mfparam,16);
+identer(&quot;epenyfactor&quot;,mfparam,17);
+identer(&quot;epenxcorr&quot;,mfparam,18);
+identer(&quot;epenycorr&quot;,mfparam,19);
+identer(&quot;designsize&quot;,mfparam,20);
+identer(&quot;hresolution&quot;,mfparam,21) # xresolution looks like an x-var;
+identer(&quot;vresolution&quot;,mfparam,22) # yresolution looks like a y-var;
+identer(&quot;magnification&quot;,mfparam,23);
+identer(&quot;charwx&quot;,mfparam,24);
+identer(&quot;charwy&quot;,mfparam,25);
+identer(&quot;rotation&quot;,mfparam,26);
+identer(&quot;hpenht&quot;,mfparam,intpar+1);
+identer(&quot;vpenwd&quot;,mfparam,intpar+2);
+identer(&quot;lpenht&quot;,mfparam,intpar+3);
+identer(&quot;rpenht&quot;,mfparam,intpar+4);
+identer(&quot;dumplength&quot;,mfparam,intpar+5);
+identer(&quot;charcode&quot;,mfparam,intpar+6);
+identer(&quot;chardw&quot;,mfparam,intpar+7);
+identer(&quot;nseed&quot;,mfparam,intpar+8);
+identer(&quot;dumpwindow&quot;,mfparam,intpar+9);
+identer(&quot;maxht&quot;,mfparam,intpar+10);
+identer(&quot;fontfacebyte&quot;,mfparam,intpar+11);
+identer(&quot;fontidentifier&quot;,mfparam,stringpar+1);
+identer(&quot;codingscheme&quot;,mfparam,stringpar+2);
+identer(&quot;crsxbreak&quot;,break,3);
+identer(&quot;crsybreak&quot;,break,10);
+identer(&quot;crsbreak&quot;,break,10);
+identer(&quot;eqtrace&quot;,contrl,'1);
+identer(&quot;titletrace&quot;,contrl,'2);
+identer(&quot;calltrace&quot;,contrl,'4);
+identer(&quot;pause&quot;,contrl,'10);
+identer(&quot;pagewarning&quot;,contrl,'20);
+identer(&quot;penreset&quot;,contrl,'40);
+identer(&quot;drawtrace&quot;,contrl,'100);
+identer(&quot;modtrace&quot;,contrl,'200);
+identer(&quot;plottrace&quot;,contrl,'400);
+identer(&quot;proofmode&quot;,contrl,'1000);
+identer(&quot;chrmode&quot;,contrl,'2000);
+identer(&quot;tfmmode&quot;,contrl,'4000);
+identer(&quot;tfxmode&quot;,contrl,'4000) # this is included for compatibility with old stuff;
+identer(&quot;fntmode&quot;,contrl,'10000);
+identer(&quot;crsmode&quot;,contrl,'20000);
+identer(&quot;rstmode&quot;,contrl,'40000) # added RASTER mode for canon;
+identer(&quot;points&quot;,contrl,'400000);
+identer(&quot;chardisplay&quot;,contrl,'1000000);
+identer(&quot;drawdisplay&quot;,contrl,'2000000);
+IFPRESS identer(&quot;arrow&quot;,contrl,'4000000); ENDPRESS
+IFPRESS identer(&quot;color&quot;,contrl,'10000000); ENDPRESS
+IFDOVERMODES identer(&quot;ocmode&quot;,contrl,'20000000); ENDDOVERMODES
+IFDOVERMODES identer(&quot;dotwdmode&quot;,contrl,'40000000); ENDDOVERMODES
+IFDOVERMODES identer(&quot;vectorwidths&quot;,contrl,'100000000); ENDDOVERMODES
+identer(&quot;circlemode&quot;,contrl,'10000000000);
+identer(&quot;no&quot;,no,0);
+identer(&quot;draw&quot;,draw,0);
+identer(&quot;ddraw&quot;,ddraw,0);
+identer(&quot;subroutine&quot;,subrtn,0);
+identer(&quot;varchar&quot;,varchar,0);
+identer(&quot;charlist&quot;,charlist,0);
+identer(&quot;texinfo&quot;,texinfo,0);
+identer(&quot;lig&quot;,lig,0);
+identer(&quot;invisible&quot;,invisible,0);
+identer(&quot;kern&quot;,kern,0);
+identer(&quot;binput&quot;,binput,0);
+end;
+comment The driver routine;
+
+comment The declarations have now ended, MFPRE starts here after being loaded;
+
+integer chan;
+hptr←0;
+forcednew←false;
+initmem;
+open(chan←getchan,&quot;DSK&quot;,'10,0,2,0,0,eof);
+enter(chan,&quot;MFINI.TBL&quot;, eof);
+wordout(chan,hashsize);
+wordout(chan,vmemsize);
+wordout(chan,memsize);
+wordout(chan,hptr);
+arryout(chan,hashh[0],hashsize);
+arryout(chan,hname[0],hptr);
+arryout(chan,mem[0],memsize);
+arryout(chan,vmem[0],vmemsize);
+wordout(chan,avail);
+wordout(chan,vavail);
+release(chan);
+
+print(nextline,&quot;METAFONT's tables written on MFINI.TBL.&quot;);
+end_of_MF:
+final_end: end &quot;MFPRE&quot;
+
+</PRE>
+</BODY>
+</HTML>

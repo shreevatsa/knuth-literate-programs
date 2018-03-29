@@ -1,0 +1,231 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00010 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00003 00002	entry begin comment The extension module of TEX.
+C00010 00003	internal procedure initext # do this when initializing TEX
+C00011 00004	internal procedure extop # do this when &quot;\x&quot; sensed in user input
+C00014 00005	internal procedure dumpext(integer p) # do this in procedure dumpnodelist
+C00015 00006	internal procedure destroyext(integer p) # do this in procedure dsnodelist
+C00016 00007	internal integer procedure copyext(integer p) # do this in procedure boxcopy
+C00017 00008	internal procedure hpackext(integer p) # do this in procedure hpackage
+C00018 00009	In houtext, x and y are coordinates of the reference point,
+C00019 00010	internal procedure finishext # do this just before terminating TEX
+C00020 ENDMK
+Cⓧ;
+entry; begin comment The extension module of TEX.
+
+In order to extend TEX without changing other modules, you can supply
+procedures for the &quot;hooks&quot; internal to this module. Most of these procedures
+are called when TEX's routines come up with a case that is ordinarily
+undefined (usually when processing a node of type &quot;whatsit&quot;).
+
+Whatsit nodes can have variable length. The value field of the first word
+of a whatsit should identify what kind of whatsit it is. In the
+present extension module the types used are:
+	0	used for \send
+IFPARC	1	for elementary operations of color printing (by L. Guibas) ENDPARC
+
+The &quot;send&quot; routines are based on code developed by Jim Boyce. They appear in
+this module because they were the first trial extensions to TEX, although
+they are now considered to be &quot;primitives&quot;;
+
+require &quot;TEXHDR.SAI&quot; source_file;
+
+internaldef sendnodesize=2 # number of words to allocate for a send node;
+internaldef sendstream(p)=⊂value(p+1)⊃ # stream number for tokens to be sent;
+internaldef sendtoks(p)=⊂link(p+1)⊃ # token list to be sent;
+internal saf integer array sendout[&quot;0&quot;:&quot;9&quot;] # channel numbers for output streams;
+internal boolean firstonpage # no sends to terminal yet on this output page;
+IFPARC
+comment Warning: these definitions shared among TEXPRS and TEXHDR!!;
+internal boolean color;
+internal integer curbrightness, curhue, cursaturation;
+integer oldbrightness, oldhue, oldsaturation;
+define brightness=0, hue=1, saturation=2;
+define colornodesize=2 # number of words to allocate for a color node;
+define colorwhatsit=1 # type code for color whatsits;
+define colorcmd(p)=⊂((mem[p+1] lsh -8) land '3)⊃;
+define colorval(p)=⊂(mem[p+1] land '377)⊃;
+
+internal boolean nextfonteightbit;
+ENDPARC
+
+internal procedure whatsitappend(integer p) # appends node p to the current list;
+begin comment This is somewhat like &quot;simpleappend&quot; in TEXSEM p19;
+integer q;
+if abs(mode)≠mmode then q←p else
+	begin comment In math mode, append a &quot;nodenoad&quot;;
+	getavail(q); mem[q]←(nodenoad lsh typed)+(p lsh valued);
+	end;
+mem[curnode]←mem[curnode]+q; curnode←q;
+end;
+
+procedure sendit(integer p) # sends token list to the output stream;
+begin integer chan,token,tlist; if mem[p+1]=0 then return # already sent;
+chan←sendout[sendstream(p)]; tlist←sendtoks(p);
+getavail(token); mem[token]←((rbrace lsh cmdd)+&quot;}&quot;) lsh infod; inslist(token);
+insrclist(tlist); delrclink(tlist);
+getavail(token); mem[token]←((lbrace lsh cmdd)+&quot;{&quot;) lsh infod; inslist(token);
+comment We have prepared to run &quot;{&lt;toklist&gt;}&quot; thru TEX's scanner, as if
+	scanning an \xdef;
+mem[p+1]←0; curcmd←def; hashentry←hashsend; tlist←scantoks;
+poptokenlist # remove &quot;}&quot; from input stack;
+dumplist(link(tlist),0); dslist(tlist);
+if chan&lt;0 then 
+	begin if firstonpage then print(nextline);
+	print(tokstring[0],nextline);
+	firstonpage←false;
+	end
+else	begin
+	ifc SUAI or MIT thenc integer i,l; l←length(tokstring[0]);
+	while l≥150 do
+		begin comment We will break up the long line so TEX can read it;
+		i←60;
+		while i≤l and tokstring[0][i for 1]≠&quot; &quot; do i←i+1;
+		if i≥150 then done # no way found, just leave it unbroken;
+		out(chan,tokstring[0][1 to i-1]);
+		if tokstring[0][i-1 for 1]=escapechar then out(chan,&quot; &quot;);
+		out(chan,nextline);
+		l←l-i; tokstring[0]←tokstring[0][i+1 to ∞];
+		end;
+	endc
+	out(chan,tokstring[0]); out(chan,nextline);
+	end;
+end;
+
+internal procedure initext # do this when initializing TEX;
+begin integer d;
+for d←&quot;0&quot; thru &quot;9&quot; do sendout[d]←-1 # all \send channels are closed;
+IFPARC curbrightness←0; oldbrightness←0; curhue←0; oldhue←0;
+cursaturation←0; oldsaturation←0;
+color←false;
+nextfonteightbit←false; ENDPARC
+end;
+
+internal procedure extop # do this when &quot;\x&quot; sensed in user input;
+begin label unknown;
+ifc PARC thenc integer octal, i, p;
+do getnctok until curcmd ≠ spacer; backinput;
+if scanstring(&quot;color&quot;) then color←true
+else if scanstring(&quot;nocolor&quot;) then color←false
+else if scanstring(&quot;eightbit&quot;) then nextfonteightbit←true
+else if color then
+	begin
+	p←getnode(colornodesize);
+	mem[p]←(whatsitnode lsh typed)+(colorwhatsit lsh valued);
+	octal←0;
+	if scanstring(&quot;brightness&quot;) then
+		begin
+		mem[p+1]←brightness lsh 8;
+		for i ← 1 thru 3 do octal←8*octal+scandigit-&quot;0&quot;;
+		if octal &gt; '377 then octal←curbrightness←oldbrightness
+		else begin oldbrightness←curbrightness; curbrightness←octal; end;
+		end
+	else if scanstring(&quot;hue&quot;) then
+		begin
+		mem[p+1]←hue lsh 8;
+		for i ← 1 thru 3 do octal←8*octal+scandigit-&quot;0&quot;;
+		if octal &gt; '377 then octal←curhue←oldhue
+		else begin oldhue←curhue; curhue←octal; end;
+		end
+	else if scanstring(&quot;saturation&quot;) then
+		begin
+		mem[p+1]←saturation lsh 8;
+		for i ← 1 thru 3 do octal←8*octal+scandigit-&quot;0&quot;;
+		if octal &gt; '377 then octal←cursaturation←oldsaturation
+		else begin oldsaturation←cursaturation; cursaturation←octal; end;
+		end
+	else error(&quot;Unrecognized extension to TEX&quot;);
+	mem[p+1]←mem[p+1]+(octal land '377);
+	whatsitappend(p);
+	end;
+elsec
+unknown: error(&quot;Unrecognized extension to TEX&quot;);
+endc
+end;
+
+internal procedure dumpext(integer p) # do this in procedure dumpnodelist;
+case value(p) of begin
+[0] if mem[p+1] then begin comment \send;
+string s; dumplist(link(sendtoks(p)),0); s←tokstring[0];
+if length(s)&gt;30 then s←s[1 to 30]&amp;&quot;...\ETC&quot;;
+print(&quot;\send &quot;,sendstream(p)&amp;&quot;{&quot;,s,&quot;}&quot;) end else print(&quot;\sent&quot;);
+IFPARC
+[colorwhatsit] case colorcmd(p) of begin
+	[brightness] print(&quot;\x brightness '&quot;&amp;cvos(colorval(p)));
+	[hue] print(&quot;\x hue '&quot;&amp;cvos(colorval(p)));
+	[saturation] print(&quot;\x saturation '&quot;&amp;cvos(colorval(p)));
+	else confusion
+	  end;
+ENDPARC
+else print(&quot;whatsit?!&quot;)
+  end;
+
+internal procedure destroyext(integer p) # do this in procedure dsnodelist;
+case value(p) of begin
+[0] begin if mem[p+1] then delrclink(sendtoks(p)); freenode(p,sendnodesize) end;
+IFPARC [colorwhatsit] freenode(p,colornodesize); ENDPARC
+else errorstop(&quot;Dry rot--bad extension [unknown case in destroyext]&quot;)
+  end;
+
+internal integer procedure copyext(integer p) # do this in procedure boxcopy;
+begin integer r;
+case value(p) of begin
+[0] begin integer q; r←getnode(sendnodesize); mem[r]←whatsitnode lsh typed;
+mem[r+1]←mem[p+1]; q←sendtoks(r); if q then mem[q]←mem[q]+refct1 end;
+IFPARC
+[colorwhatsit] begin r←getnode(colornodesize); mem[r+1]←mem[p+1];
+mem[r]←(whatsitnode lsh typed)+(colorwhatsit lsh valued) end;
+ENDPARC
+else errorstop(&quot;Dry rot--bad extension [unknown case in copyext]&quot;)
+  end;
+return(r);
+end;
+
+internal procedure hpackext(integer p) # do this in procedure hpackage;
+;
+
+internal procedure vpackext(integer p) # do this in procedure vpackage;
+;
+
+internal procedure pageext(integer p) # do this in the addtopage routine;
+;
+
+internal procedure justext(integer p) # do this in the justification routine;
+;
+
+comment In houtext, x and y are coordinates of the reference point,
+while in voutext they are coordinates of the upper left corner;
+
+internal procedure houtext(integer p; reference real x,y) # do this in shipout;
+case value(p) of begin
+[0] sendit(p);
+IFPARC [colorwhatsit] if color then PutColor(colorcmd(p),colorval(p)); ENDPARC
+else comment do nothing;
+  end;
+
+internal procedure voutext(integer p; reference real x,y) # do this in shipout;
+case value(p) of begin
+[0] sendit(p);
+IFPARC [colorwhatsit] if color then PutColor(colorcmd(p),colorval(p)); ENDPARC
+else comment do nothing;
+  end;
+
+internal procedure finishext # do this just before terminating TEX;
+begin integer d;
+for d←&quot;0&quot; thru &quot;9&quot; do
+	begin if sendout[d]≥0 then release(sendout[d]);
+	end;
+end;
+end
+
+
+</PRE>
+</BODY>
+</HTML>

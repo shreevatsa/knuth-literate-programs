@@ -1,0 +1,1983 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00015 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00003 00002	entry begin comment The interpretive module of METAFONT.
+C00007 00003	A list of the type codes
+C00019 00004	The hash table: hashh, hname, idlookup, idremove, idhide
+C00026 00005	wxy-variables and area headers: wxylookup, indexname, idname
+C00035 00006	The input stacks: inbuf,curbuf,state,loc,recovery,filename
+C00040 00007	Tokens, token lists, and the diagnostic routines dumplist,dumptokens
+C00047 00008	Maintaining the input stacks: pushinput,popinput,initin,dumpcontext,inslist
+C00053 00009	Accessing user's files: scanfilename, inputfile
+C00058 00010	The basic input procedure getnext and its cousins gettok,getstring
+C00069 00011	Dependency lists and the dumpdlist procedure
+C00075 00012	Operations on dependency lists: simpl,entersym,add,simplify,neweq,dsvalue
+C00087 00013	Expression scanning routines: scanprimary, scanterm, scanexp, getexp
+C00098 00014	The path scanning routine (scanpath)
+C00107 00015	internal procedure maincontrol # governs all the activities
+C00133 ENDMK
+Cⓧ;
+entry; begin comment The interpretive module of METAFONT.
+
+(It is wise to read the memory allocation sections of MFSYS
+before delving very deeply into the following code.)
+
+The purpose of these routines is to figure out the algebraic structure of a
+user's METAFONT input, and to evaluate the formulas appropriately,
+meanwhile calling on procedures of MFRAST to draw the corresponding symbols.
+
+The routines are built around a low-level syntactic procedure &quot;getnext&quot;,
+which sets the value of two variables &quot;curtype&quot; and &quot;curval&quot; representing the
+next token of the input. Higher level procedures recursively interpret these tokens
+in a way that seems simple once you understand it.
+
+In spite of getnext's fairly straightforward duty, it must have a
+rather elaborate mechanism beneath it, to convert from character files to tokens.
+This complexity is due in part to the fact that subroutines are stored away
+as linked lists of tokens that are fed back through the scanner when a
+subroutine is called. One subroutine may, of course, be calling another. Furthermore
+we may at a given time be in the midst of reading input from several character
+files and from the user's terminal. To handle these situations, METAFONT has
+various stacks that hold information about any incomplete activities. These
+stack record the current state of an implicitly recursive process, while &quot;getnext&quot;
+itself has been coded nonrecursively.
+
+The higher-level scanning and evaluation procedures are explicitly recursive. They
+manipulate defined values and linear combinations of independent still-to-be-defined
+values, in such a way that values of variables are defined whenever sufficient
+information has been scanned.
+;
+require &quot;MFHDR.SAI&quot; source_file;
+internal saf integer array mem[0:memsize-1] # dynamic list memory;
+internal saf real array vmem[0:vmemsize-1] # two-word list memory;
+internal integer curtype # the current type code appearing in the input;
+internal real curval # the current value appearing in the input;
+internal real cursize # the current pen size;
+internal integer curpen # the current pen type;
+define curvalint = ⊂memory[location(curval),integer]⊃ # curval regarded as integer;
+comment A list of the type codes;
+
+comment The following definitions attach numeric codes to the various
+&quot;types&quot; output by getnext for interpretation by the METAFONT routines.
+The symbolic names of these codes are used everywhere in the program,
+so you don't need to read this page except when debugging. An attempt
+has been made to choose code numbers so that the range of types in
+case statements is reasonably small;
+
+internaldef innput=0	# &quot;input&quot;;
+internaldef rel=1	# &quot;&lt;&quot;, &quot;&gt;&quot;, &quot;=&quot;, &quot;≠&quot;, &quot;≤&quot;, or &quot;≥&quot;;
+internaldef ddot=2	# &quot;..&quot;;
+internaldef rpren=3	# &quot;)&quot;;
+internaldef lbrace=4	# &quot;{&quot;;
+internaldef rbrace=5	# &quot;}&quot;;
+internaldef hashmark=6	# &quot;#&quot;;
+internaldef comma=7	# &quot;,&quot;;
+internaldef colon=8	# &quot;:&quot;;
+internaldef varparam=9	# &quot;var&quot;;
+internaldef indexparam=10 # &quot;index&quot;;
+internaldef semi=11	# semicolon;
+internaldef quote=12	# &quot;&quot;&quot;&quot;;
+internaldef stop=13	# &quot;end&quot;;
+internaldef fullstop=14	# period ending a routine or subroutine;
+internaldef iff=15	# &quot;if&quot;;
+internaldef elsse=16	# &quot;else&quot;;
+internaldef ffi=17	# &quot;fi&quot;;
+internaldef ident=18	# identifier;
+internaldef wxy=19	# &quot;w&quot;, &quot;x&quot;, or &quot;y&quot;;
+internaldef rbrack=20	# &quot;]&quot;;
+internaldef lbrack=21	# &quot;[&quot;;
+internaldef digit=22	# &quot;0&quot;, &quot;1&quot;, ..., &quot;9&quot;;
+internaldef pnt=23	# &quot;.&quot;;
+internaldef apost=24	# &quot;'&quot;;
+internaldef letter=25	# &quot;A&quot;, &quot;B&quot;, ..., &quot;Z&quot;, &quot;a&quot;, &quot;b&quot;, ..., &quot;z&quot;;
+internaldef equals=26	# &quot;=&quot;;
+internaldef openq=27	# &quot;`&quot;;
+internaldef space=28	# &quot; &quot; or character ignored by scanner;
+internaldef carret=29	# carriage return or form feed or &quot;%&quot;;
+internaldef abbs=30	# &quot;|&quot;;
+internaldef index=31	# index argument;
+internaldef lpren=32	# &quot;(&quot;;
+internaldef char=33	# single character in constant or subroutine call;
+internaldef constant=34	# (real) constant;
+internaldef plusorminus=35	# &quot;+&quot; or &quot;-&quot;;
+internaldef timesordiv=36	# &quot;.&quot; or &quot;*&quot; or &quot;ⓧ&quot; or &quot;/&quot;;
+internaldef randm=37	# &quot;nrand&quot;;
+internaldef known=38	# variable whose value is known;
+internaldef direction=39	# &quot;lft&quot; or &quot;rt&quot; or &quot;top&quot; or &quot;bot&quot;;
+internaldef dependent=40	# variable whose value is a dependency list;
+internaldef newid=41	# identifier whose type has not yet been assigned;
+internaldef independent=42	# variable whose value is independent;
+internaldef unary=43	# &quot;sqrt&quot; or &quot;round&quot; or &quot;good&quot;;
+internaldef subroutine=44	# identifier corresponding to a stored subroutine;
+internaldef penname=45	# &quot;cpen&quot; or &quot;hpen&quot; or ... or &quot;spen&quot; or &quot;epen&quot;;
+internaldef cawl=46	# &quot;call&quot;;
+internaldef new=47	# &quot;new&quot;;
+internaldef mfparam=48	# &quot;charcode&quot;, &quot;maxvr&quot;, etc.;
+internaldef contrl=49	# &quot;proofmode&quot;, &quot;pause&quot;, &quot;eqtrace&quot;, etc.;
+internaldef no=50	# &quot;no&quot;;
+internaldef draw=51	# &quot;draw&quot;;
+internaldef ddraw=52	# &quot;ddraw&quot;;
+internaldef subrtn=53	# &quot;subroutine&quot;;
+internaldef param=54	# identifier that is a parameter;
+internaldef varchar=55	# &quot;varchar&quot;;
+internaldef charlist=56 # &quot;charlist&quot;;
+internaldef texinfo=57	# &quot;texinfo&quot;;
+internaldef lig=58	# &quot;lig&quot;;
+internaldef invisible=59	# &quot;invisible&quot;;
+internaldef kern=60	# &quot;kern&quot;;
+internaldef areahead=(2^types-1)	# area header node;
+
+comment The following codes are used for second-order differences;
+internaldef lft=0	# &quot;lft&quot;;
+internaldef rt=1	# &quot;rt&quot;;
+internaldef top=2	# &quot;top&quot;;
+internaldef bot=3	# &quot;bot&quot;;
+internaldef root=0	# &quot;sqrt&quot;;
+internaldef sine=1	# &quot;sind&quot;;
+internaldef cosine=2	# &quot;cosd&quot;;
+internaldef round=3	# &quot;round&quot;;
+internaldef good=4	# &quot;good&quot;;
+internaldef cpen=0	# &quot;cpen&quot;;
+internaldef hpen=1	# &quot;hpen&quot;;
+internaldef vpen=2	# &quot;vpen&quot;;
+internaldef lpen=3	# &quot;lpen&quot;;
+internaldef rpen=4	# &quot;rpen&quot;;
+internaldef spen=5	# &quot;spen&quot;;
+internaldef epen=6	# &quot;epen&quot;;
+internaldef badpen=7	# illegal pen type (the initial value);
+
+comment The following table assigns type codes to all ascii characters;
+preload_with space,space,space,space,space,space,space,space,
+	space,space,space,space,carret,carret,space,space,
+	space,space,space,space,space,space,timesordiv,space,
+	space,space,space,rel,rel,rel,space,space,
+	space,space,quote,hashmark,space,carret,space,apost,
+	lpren,rpren,timesordiv,plusorminus,comma,plusorminus,pnt,timesordiv,
+	digit,digit,digit,digit,digit,digit,digit,digit,
+	digit,digit,colon,semi,rel,equals,rel,space,
+	space,letter,letter,letter,letter,letter,letter,letter,
+	letter,letter,letter,letter,letter,letter,letter,letter,
+	letter,letter,letter,letter,letter,letter,letter,wxy,
+	wxy,wxy,letter,lbrack,space,rbrack,space,space,
+	openq,letter,letter,letter,letter,letter,letter,letter,
+	letter,letter,letter,letter,letter,letter,letter,letter,
+	letter,letter,letter,letter,letter,letter,letter,wxy,
+	wxy,wxy,letter,lbrace,abbs,rbrace,rbrace,space;
+saf integer array chartype[0:127] # type codes for METAFONT scanning;
+
+comment The following data is used for METAFONT's basic parameters;
+internaldef realpars=19,intpars=9 # number of real and integer parameters;
+internaldef penparam=realpars+2 # distinguish the first two integer parameters;
+internaldef intpar=realpars # offset used for integer parameters;
+internal saf real array realparam[1:realpars] # real parameters to METAFONT;
+internal saf integer array intparam[intpar+1:intpar+intpars] # integer parameters;
+internaldef xxtr=⊂realparam[1]⊃, xytr=⊂realparam[2]⊃, xtr=⊂realparam[3]⊃,
+	yxtr=⊂realparam[4]⊃, yytr=⊂realparam[5]⊃, ytr=⊂realparam[6]⊃;
+internaldef charwd=⊂realparam[7]⊃ # width of character to be output;
+internaldef charht=⊂realparam[8]⊃ # height of character to be output;
+internaldef chardp=⊂realparam[9]⊃ # depth of character to be output;
+internaldef charic=⊂realparam[10]⊃ # italic correction of character to be output;
+internaldef safetyfactor=⊂realparam[11]⊃ # extra factor for overlap in ddraw;
+internaldef maxvr=⊂realparam[12]⊃, minvr=⊂realparam[13]⊃,
+	maxvs=⊂realparam[14]⊃, minvs=⊂realparam[15]⊃ # velocity thresholds;
+internaldef epenxfactor=⊂realparam[16]⊃, epenyfactor=⊂realparam[17]⊃,
+	excorr=⊂realparam[18]⊃,	eycorr=⊂realparam[19]⊃ # parameters for \&amp;{epen}s;
+internaldef hpenht=⊂intparam[intpar+1]⊃ # hpen height;
+internaldef vpenwd=⊂intparam[intpar+2]⊃ # vpen width;
+preload_with &quot;hpen height&quot;,&quot;vpen width&quot;; saf string array sympar[intpar+1:intpar+2];
+internaldef dumplength=⊂intparam[intpar+3]⊃ # length of strings for dumping;
+internaldef charcode=⊂intparam[intpar+4]⊃ # ascii code of character to be output;
+internaldef chardw=⊂intparam[intpar+5]⊃ # device width of character to be output;
+internaldef seed=⊂intparam[intpar+6]⊃ # controls random number generator;
+internaldef dumpwindow=⊂intparam[intpar+7]⊃ # number of characters in error m'ges;
+internaldef crsbreak=⊂intparam[intpar+8]⊃ # $y$ coordinate for breaking a character;
+internaldef maxht=⊂intparam[intpar+9]⊃ # maximum height above baseline;
+
+internal integer control # bits that control various METAFONT functions;
+comment The individual control bits have the following significance:
+	'1	tracing definitions of variables
+	'2	tracing titles of routines
+	'4	tracing calls of subroutines
+	'10	pausing before each input line from a file
+	'20	warning messages if page ended unexpectedly
+	'40	pen type and size are undefined on entry to subroutine
+Bits '100 thru '400 are defined in MFRAST (if anywhere)
+Bits '1000 thru '400000 are defined in MFOUT for particular output modes
+Bits '1000000 thru '4000000 govern on-line raster display;
+define trdefs=⊂(control land 1)⊃, trtitles=⊂(control land 2)⊃,
+	trcalls=⊂(control land 4)⊃, pausing=⊂(control land '10)⊃,
+	warning=⊂(control land '20)⊃, penreset=⊂(control land '40)⊃;
+comment The hash table: hashh, hname, idlookup, idremove, idhide;
+
+comment Identifiers, some of which are predeclared as &quot;reserved words,&quot; 
+are recorded in a hash table, with an associated table of their equivalent meanings.
+This table is accessed via &quot;chaining with separate lists&quot; (cf. Section 6.4 of
+ACP)--in other words, there are three parts to the table: An array hashh contains
+list heads for each possible hash code--these list heads are pointers into mem,
+starting a linked list representing all identifiers having a given hash code.
+Identifiers that represent parameters in more than one subroutine appear several
+times in the linked list, once for each subroutine.
+Another array hname contains the first few characters of each identifier.
+(As many 5-bit characters are kept as will fit in a machine word.)
+The third part of the hash table consists of the linked lists in mem, with two-word
+nodes containing type, name, and link fields in one word and a value field in the
+other. The type and value fields are reported by getnext after it finds the
+identifier. The name field points to the hname array, and the link field points
+to the next node in the list.
+
+The hash code for an identifier is the remainder of (first few characters)+(length)
+divided by the size of the hashh table. Thus, identifiers with the same first few
+characters but different lengths (modulo the size of hashh) will never be confused
+with each other;
+
+internaldef hashsize = 89 # hashtable size, should be prime;
+internaldef namesize = 300 # maximum number of different identifiers, is &lt;&lt; 2^names;
+comment The difference between 2^names and namesize is the maximum allowable
+	subscript on a w-, x-, or y-variable;
+internal saf integer array hashh[0:hashsize-1] # list heads for hashing;
+internal saf integer array hname[0:namesize-1] # first characters of identifiers;
+internal integer hptr # number of different identifiers currently in memory;
+
+internaldef types=6, typed=bitsperwd-types	# type field in nodes;
+internaldef names=typed-links, named=links 	# name field in nodes;
+internaldef type(p)=⊂field(type,mem[p])⊃	# type field in node p;
+internaldef name(p)=⊂field(name,mem[p])⊃	# name field in node p;
+internaldef bitsrem=bitsperwd mod 5 # extra bits at left of hname entries;
+define letsperwd=(bitsperwd-bitsrem)div 5 # number of letters per word;
+
+internal boolean forcednew # identifier when looked up will not match any other;
+
+internal integer procedure idlookup(integer firstfew,length) # look for identifier;
+begin comment This procedure finds the given identifier using the hash table
+mechanisms, inserting it (with type code &quot;newid&quot; and value pointing to
+itself) if it is not present already. If global variable &quot;forcednew&quot; is true, the
+given identifier is added to the table even if it is already present;
+integer h,q;
+h←(firstfew+length)mod hashsize; q←hashh[h];
+if not forcednew then while q do
+	begin if hname[name(q)]=firstfew then return(q);
+	q←link(q);
+	end;
+comment Identifier not found, must insert it;
+if hptr≥namesize then overflow(namesize);
+hname[hptr]←firstfew # new name into the table;
+getvavail(q); mem[q]←(newid lsh typed)+(hptr lsh named)+hashh[h];
+vmemint(q)←q; hashh[h]←q;
+hptr←hptr+1;
+return(q);
+end;
+
+procedure idhide(integer iloc) # covers up an identifier;
+begin comment This procedure makes an identifier invisible, given the location
+of that identifier's entry in the mem array. (It is used for subroutine
+arguments after the subroutine has been stored away.);
+integer t # temporary storage for letters while computing the length;
+integer l # length;
+integer h # hash location;
+integer p # pointer that follows q;
+integer q # pointer that runs through hash lists;
+boolean oncethru # we have run to the end of the hash table;
+if name(iloc) ≥ hptr then confusion # the identifier is assumed present;
+h←t←hname[name(iloc)];
+if t land '37 then l←letsperwd
+else	begin l←1; t←t rot(bitsrem+10);
+	while t land '37 do
+		begin l←l+1; t←t rot 5;
+		end;
+	end;
+h←(h+l)mod hashsize; oncethru←false;
+loop	begin p←0; q←hashh[h];
+	while q do if q=iloc then
+		begin if p=0 then hashh[h]←link(q) else setlink(p,link(q));
+		return;
+		end
+	else	begin p←q; q←link(q);
+		end;
+	h←h+1; if h≥hashsize then
+		begin if oncethru then confusion;
+		h←0; oncethru←true;
+		end;
+	end;
+end;
+comment wxy-variables and area headers: wxylookup, indexname, idname;
+
+comment The METAFONT language gives special meaning to identifiers that begin
+with w, x, or y, namely they must be of the form w&lt;index&gt; or x&lt;index&gt; or
+y&lt;index&gt;. Inside the METAFONT system an index variable is represented as a pair
+(info,link) where info is a small integer subscript and link points to an
+&quot;area header&quot;. Within a subroutine, x1 refers to a variable local to that
+subroutine, and all x-variables of that subroutine are addressed via its area
+header. The area header of the main program (i.e., outside subroutines) is pointed
+to by &quot;main&quot;.
+
+Linked lists are maintained for the x-variables and y-variables of each area.
+(All w-variables come from a single area, whose list starts in mem[wvar].)
+The name field in this list is the subscript plus namesize, while the type and
+value fields are the same as for ordinary identifiers. The lists are kept in
+order by subscript, and the last node of the list points back to the area
+header.
+
+An area header p is a two-word node containing
+	areahead, in the type field of mem[p]
+	a character code, in the name field of mem[p] (e.g., &quot;call`c&quot; on a
+		subroutine puts &quot;c&quot; in this field)
+	pointer to enclosing area header, in the link field of mem[p]
+	pointer to first x-variable, in the info field of vmemint(p)
+	pointer to first y-variable, in the link field of vmemint(p).
+The area headers in existence at any given time constitute a stack corresponding
+to subroutines that have been called and not yet terminated. The global variable
+curarea points to the top of this stack, while main points to the bottom;
+
+integer curarea # pointer to the current area header;
+
+comment The following procedures are used to access wxy-variables, analogous to
+the routines for other identifiers;
+
+integer procedure wxylookup(integer chr,indx) # find a wxy-identifier;
+begin comment This procedure finds a given wxy-variable, when chr is
+&quot;w&quot;, &quot;x&quot;, or &quot;y&quot;, mod 32, and indx is an index value;
+integer n,p,q,m,prevp;
+n←field(info,indx)+namesize;
+case chr of begin
+[&quot;w&quot; land '37] p←link(wvar);
+[&quot;x&quot; land '37] begin m←field(link,indx); p←field(info,vmemint(m)) end;
+[&quot;y&quot; land '37] begin m←field(link,indx); p←field(link,vmemint(m)) end;
+else confusion
+  end;
+prevp←0 # indicates that p was found in the area header node;
+while type(p)≠areahead do
+	begin integer nn;
+	if(nn←name(p))&gt;n then done
+	else if nn=n then return(p);
+	prevp←p; p←link(p);
+	end;
+comment The variable is not in the list, it needs to be inserted
+	between prevp and p;
+if n≥(1 lsh names) then overflow(names) # not enough bits to represent such a
+	large subscript;
+getvavail(q);
+mem[q]←(newid lsh typed)+(n lsh named)+p; vmemint(q)←q;
+if prevp then setlink(prevp,q)
+else case chr of begin
+[&quot;w&quot; land '37] setlink(wvar,q);
+[&quot;x&quot; land '37] setfield(info,vmemint(m),q);
+[&quot;y&quot; land '37] setfield(link,vmemint(m),q);
+else confusion
+  end;
+return(q);
+end;
+
+internal string procedure indexname(integer i) # symbolic name of an index value;
+begin comment If the main procedure says call&quot;a&quot; sub1 and sub1 says call&quot;b&quot; sub2
+and the argument i is an index for variables x3 and y3 in sub2, this
+procedure returns the string &quot;ab3&quot;;
+string s; integer p; s←&quot;&quot;;
+p←field(link,i);
+while p≠main do
+	begin if name(p) then s←name(p)&amp;s;
+	p←link(p);
+	end;
+return(s&amp;cvs(field(info,i)));
+end;
+
+integer idarea # communication between entersym and idname;
+
+internal string procedure idname(integer p) # produces name for printouts;
+begin comment This procedure is sort of an inverse to idlookup and wxylookup:
+Given the output of one of those procedures, it figures out the corresponding
+identifier. Since the procedure is used only for error messages, it need not be
+too efficient. If the identifier begins with &quot;x&quot; or &quot;y&quot;, global variable
+idarea is set to the corresponding areahead;
+integer n; string s;
+if(n←name(p))&lt;namesize then
+	begin comment normal identifier;
+	integer t,x,l,i;
+	t←hname[n] lsh bitsrem; s←&quot;&quot;; l←0;
+	while(x←(t rot 5)land '37) do
+		begin s←s&amp;(x+'140); l←l+1; t←t lsh 5;
+		end;
+	if l&lt;letsperwd then return(s);
+	for i←1 thru 10 do
+		begin comment try to find the identifier;
+		integer q;
+		q←hashh[(hname[n]+l)mod hashsize];
+		while q do if q=p then return(s) else q←link(q);
+		s←s&amp;&quot;x&quot;; l←l+1;
+		end;
+	comment Not found. (If METAFONT is working, this means the identifier is
+	extremely long, or it's a parameter name that has been hidden.);
+	return(s[1 to letsperwd]&amp;&quot;X&quot;);
+	end
+else	begin comment wxy-identifier;
+	integer r;
+	s←cvs(n-namesize) # string representing the index;
+	idarea←link(p);
+	loop	begin comment search for area;
+		if idarea=0 then return(&quot;wxy??&quot;) # unknown indentifier;
+		if type(idarea)≠areahead then idarea←link(idarea) else done;
+		end;
+	if idarea=wvar then return(&quot;w&quot;&amp;s);
+	r←idarea;
+	while link(r) do
+		begin integer x;
+		if(x←name(r)) then s←x&amp;s # put call characters into the name;
+		r←link(r);
+		end;
+	r←field(info,vmemint(idarea));
+	loop	begin comment look thru the x-list;
+		if r=p then return(&quot;x&quot;&amp;s) # x-variable found;
+		if r=0 then confusion;
+		if type(r)≠areahead then r←link(r) else done;
+		end;
+	r←field(link,vmemint(idarea));
+	loop	begin comment look thru the y-list;
+		if r=p then return(&quot;y&quot;&amp;s) # y-variable found;
+		if r=0 then confusion;
+		if type(r)≠areahead then r←link(r) else done;
+		end;
+	return(&quot;wxy??&quot;) # doesn't check out: not w, x, or y; 
+	end;
+end;
+comment The input stacks: inbuf,curbuf,state,loc,recovery,filename;
+
+comment The state of the scanning routine appears in several stacks.
+Global variables inbuf, curbuf, loc, recovery, and filename contain
+the current status, while arrays inbufstack, curbfstack, ..., filenmstack contain
+the status of activities that have temporarily been suspended. The stack
+pointer is called inptr, and it is set so that, for example, inbufstack[0] thru
+inbufstack[inptr-1] are the suspended inbufs;
+
+internaldef stacksize=40 # maximum number of simultaneous input sources;
+internal saf string array inbufstack[0:stacksize]; internal string inbuf
+	# current lines being input from a character file;
+internal saf string array curbfstack[0:stacksize]; internal string curbuf
+	# the parts of inbuf that haven't yet been input;
+internal saf string array filenmstack[0:stacksize]; internal string filename
+	# the names of the current character files;
+internal saf integer array locstack[0:stacksize]; internal integer loc
+	# current scanner locations;
+internal saf integer array recvrystack[0:stacksize]; internal integer recovery
+	# information about what to do when done on each level;
+comment The upper limit in these declarations is stacksize rather than stacksize-1
+so that the dumpcontext routine doesn't cause embarrassing stack overflow;
+internal integer inptr # first unused location in input stacks;
+
+comment When the current input is from an external character file (this is indicated
+by recovery ≥ 0), inbuf contains the current line, and curbuf contains
+the remains of the current line as its characters are being lopped off.
+String filename is the name of the file -- this is used only for printing error
+messages and returning to the editor (cf. the error procedure in MFSYS).
+The loc contains page number and line number of the current line, in its
+respective info and link fields. The channel number appears in recovery.
+A null filename denotes input from the user terminal. (In this case loc and
+recovery are zero.)
+
+When the state specifies reading from an internal linked list of tokens,
+inbuf and curbuf and filename are not used. The loc points to the next low-level
+token to be scanned, and recovery contains the negative of the address of the
+beginning of this token list;
+
+internal string pagewarning # most recent quoted string scanned;
+comment When \\{pagewarning} is non-null, the user's source file
+	probably shouldn't contain any form-feeds (end-of-page marks);
+
+comment The global variable &quot;cond&quot; is true when scanning a condition 
+(between &quot;if&quot; and the following &quot;:&quot;);
+boolean cond # &quot;=&quot; signs should be treated as relations like &quot;&lt;&quot;;
+comment Tokens, token lists, and the diagnostic routines dumplist,dumptokens;
+
+comment A low-level token is either an identifier that isn't a wxy-variable,
+or the letter &quot;w&quot;, &quot;x&quot;, or &quot;y&quot;, or a digit, or a punctuation mark.
+Subroutines are represented as linked lists of low-level tokens. For example, the
+subroutine body (using &quot;:&quot; for semicolons because of SAIL's comment convention)
+	hpen: lft0 x1 = lft8 xi - 3.05ssd: call`a sb(i): w0 draw 1..i.
+consists of the tokens
+	&lt;hpen&gt;,semi,&lt;lft&gt;,0,x,1,equals,&lt;lft&gt;,8,x,&lt;i&gt;,op-,
+	3,pnt,0,5,&lt;ssd&gt;,semi,&lt;call&gt;,char a,&lt;sb&gt;,lpren,
+	&lt;i&gt;,rpren,semi,w,0,&lt;draw&gt;,1,ddot,&lt;i&gt;,fullstop.
+Here &lt;...&gt; means an identifier pointer, op- means the operator minus, and so
+on. Tokens are represented in mem by type and name fields,
+so that, for example, &lt;hpen&gt; has type ident and its name field is a pointer to
+the mem entry for that identifier. Note that different uses of certain characters
+like &quot;.&quot; and &quot;-&quot; are disambiguated in their type fields. 
+The name field in a token is equal to the
+corresponding character whenever possible, so that a token list can be
+printed out in a readable form.
+
+A high-level token is like a low-level token except that constants like &quot;3.05&quot;
+are combined into one item, and so are wxy-variables. The type of a high-level
+token is never &quot;ident&quot;, it is the type of the identifier. High-level tokens
+that aren't low-level tokens never appear in token lists (since the information
+on how to print them is not available).
+
+The token list for a subroutine begins with the identifier representing its name,
+followed by tokens indicating parameters (if any), followed by a colon, and it
+ends with the &quot;fullstop&quot; token following that subroutine.
+
+The procedure dumplist illustrates the above conventions. It is used
+for diagnostic purposes;
+
+internal saf string array tokstring[0:1] # output of dumplist;
+internal procedure dumplist(integer p,q) # makes strings out of a token list;
+begin comment This procedure is used for diagnostic messages. It creates two
+strings from the token list pointed to by p, namely tokstring[0] for all
+tokens up to but not including the one pointed to by q, and tokstring[1]
+for the remaining tokens if any.  For example, if p points to the node &lt;hpen&gt;
+in the above example and if q points to the second &quot;0&quot;, the result will be
+	tokstring[0]=&quot;hpen: lft0 x1 = lft8 xi - 3.&quot;
+	tokstring[1]=&quot;05 ssd: call`a sb(i): w0 draw 1..i.&quot;
+(But with semicolons instead of colons.)
+This routine is intended to be robust in the sense that one can try it while
+debugging just to see whether a particular memory location makes sense
+if regarded as a token list;
+
+integer j # 0 until q is reached, then 1;
+string optspace # &quot; &quot; if next id should be preceded by space, otherwise &quot;&quot;;
+integer chr,t,n; string s;
+
+if (n←dumplength)≤ 0 then n←1000 # maximum length of strings produced;
+tokstring[0]←tokstring[1]←null; j←0; optspace←&quot;&quot;;
+while p do
+	begin if p=q then j←1;
+	if p&lt;0 or p≥memsize then
+		begin tokstring[j]←tokstring[j]&amp;&quot;CLOBBERED&quot;; done;
+		end;
+	t←type(p); chr←name(p);
+	case t of begin
+	[ident] if chr&lt;vmemsize then 
+		begin integer typ;
+		s←optspace&amp;idname(chr); typ←type(chr);
+		if typ=iff or typ=draw or typ=ddraw or
+		(typ=unary and vmemint(chr)≠good) then
+			begin s←s&amp;&quot; &quot;; optspace←&quot;&quot;;
+			end
+		else optspace←&quot; &quot;;
+		end
+	else	begin s←optspace&amp;&quot;IMPOSSIBLE&quot;; optspace←&quot; &quot;;
+		end;
+	[wxy] begin s←optspace&amp;chr; optspace←&quot;&quot; end;
+	[lbrace][hashmark][lbrack][pnt][abbs][lpren] begin s←chr; optspace←&quot;&quot; end;
+	[char] begin s←&quot;`&quot;&amp;chr; optspace←&quot; &quot; end;
+	[rpren][rbrace][rbrack][digit][apost] begin s←chr; optspace←&quot; &quot; end;
+	[comma][colon][semi][fullstop] begin s←chr&amp;&quot; &quot;; optspace←&quot;&quot; end;
+	[ddot] begin s←&quot;..&quot;; optspace←&quot;&quot; end;
+	[varparam] begin s←&quot;(var &quot;&amp;idname(chr)&amp;&quot;)&quot;; optspace←&quot;&quot; end;
+	[indexparam] begin s←&quot;(index &quot;&amp;idname(chr)&amp;&quot;)&quot;; optspace←&quot;&quot; end;
+	[timesordiv] begin s←chr; optspace←&quot;&quot; end;
+	[rel][equals][plusorminus] begin s←&quot; &quot;&amp;chr&amp;&quot; &quot;; optspace←&quot;&quot; end;
+	else begin s←optspace&amp;&quot;BAD&quot;; optspace←&quot; &quot; end
+	  end;
+	tokstring[j]←tokstring[j]&amp;s;
+	if length(tokstring[j])&gt;n then
+		begin tokstring[j]←tokstring[j]&amp;optspace&amp;&quot;ETC&quot;; done;
+		end;
+	p←link(p);
+	end;
+end;
+
+internal string procedure dumptokens(integer p) # simple special case of dumplist;
+begin dumplist(p,0); return(tokstring[0]);
+end;
+comment Maintaining the input stacks: pushinput,popinput,initin,dumpcontext,inslist;
+
+internal simp procedure pushinput # save current input status on the stacks;
+if inptr≥stacksize then overflow(stacksize) else
+begin inbufstack[inptr]←inbuf;
+curbfstack[inptr]←curbuf;
+filenmstack[inptr]←filename;
+locstack[inptr]←loc;
+recvrystack[inptr]←recovery;
+inptr←inptr+1;
+end;
+
+internal simp procedure popinput # finish input level, restore the previous;
+begin integer t;
+inptr←inptr-1;
+inbuf←inbufstack[inptr];
+curbuf←curbfstack[inptr];
+filename←filenmstack[inptr];
+loc←locstack[inptr];
+recovery←recvrystack[inptr];
+end;
+
+define crffbreak=1,ffbreak=2 # break table codes, see below;
+internal integer brchar # break character stored by system input;
+internal integer eof # end-of-file code stored by system input;
+
+internal procedure initin # get TEX input system ready to start;
+begin setbreak(crffbreak,'15&amp;'14,null,&quot;INA&quot;) # crffbreak will now read the
+	input up to and including a carriage return or page mark,
+	ignoring oldstyle line numbers;
+setbreak(ffbreak,'14,null,&quot;INS&quot;) # ffbreak is used only to read past a
+	file directory page, it goes up to the first page mark;
+inptr←0 # set input stacks empty;
+inbuf←curbuf←filename←null;
+loc←recovery←0;
+pagewarning←null;
+cond←false;
+end;
+
+internal string curfile # current input file name, set by dumpcontext;
+internal integer curfpage,curfline # set by dumpcontext;
+
+internal procedure dumpcontext # prints where the scanner is;
+begin comment This procedure shows the top levels of input, omitting
+tokenlists that are about to be flushed (since they were most likely
+inserted with inslist), until coming to a level that is a character file;
+label processtokens # go here to process tokenlist levels of input;
+integer ptr,t,n; string firstline # first line of a pair of context lines;
+if (n←dumpwindow)≤0 then n←32 # max number of chars to include in printout;
+ptr←inptr;
+inbufstack[ptr]←inbuf;
+curbfstack[ptr]←curbuf;
+filenmstack[ptr]←filename;
+locstack[ptr]←loc;
+recvrystack[ptr]←recovery;
+processtokens: while recvrystack[ptr]&lt;0 do
+	begin firstline←&quot;&lt;subroutine&gt; &quot;;
+	dumplist(-recvrystack[ptr],locstack[ptr]);
+	if length(tokstring[0])&gt;n then firstline←firstline&amp;&quot;...&quot;;
+	firstline←firstline&amp;tokstring[0][∞-n+1 to ∞];
+	print(nextline,firstline);
+	setprint(&quot;&quot;,&quot;O&quot;);
+	IFSUAI print(&quot;&quot;&amp;'12) # terminal gets &lt;linefeed&gt;; ENDSUAI
+	IFTENEX print(&quot;&quot;&amp;nextline&amp;&quot;		&quot;) ENDTENEX # fake it;
+	setprint(&quot;&quot;,&quot;F&quot;); print(nextline,
+&quot;                                                                                  &quot;
+		[1 to length(firstline)]) # file gets a bunch of spaces;
+	setprint(&quot;&quot;,&quot;B&quot;) # resume printing both to file and terminal;
+	print(tokstring[1][1 to n]);
+	if length(tokstring[1])&gt;n then print(&quot;...&quot;);
+	ptr←ptr-1;
+	end;
+curfile←filenmstack[ptr];
+curfpage←field(info,locstack[ptr]);
+curfline←field(link,locstack[ptr]);
+if curfile then firstline←&quot;p.&quot;&amp;cvs(curfpage)&amp;&quot;,l.&quot;&amp;cvs(curfline)&amp;&quot; &quot;
+else firstline←&quot;(*) &quot;;
+if inbufstack[ptr] = '12 then t←2 else t←1 # ignore initial linefeed;
+firstline←firstline&amp;inbufstack[ptr][t to (∞-length(curbfstack[ptr]))];
+print(nextline,firstline);
+setprint(&quot;&quot;,&quot;O&quot;);
+IFSUAI print(&quot;&quot;&amp;'12) # terminal gets &lt;linefeed&gt;; ENDSUAI
+IFTENEX print(&quot;&quot;&amp;nextline&amp;&quot;		&quot;) ENDTENEX # fake it;
+setprint(&quot;&quot;,&quot;F&quot;); print(nextline,
+&quot;                                                                                  &quot;
+	[1 to length(firstline)]) # file gets a bunch of spaces;
+setprint(&quot;&quot;,&quot;B&quot;) # resume printing both to file and terminal;
+print(curbfstack[ptr]);
+if curfile=0 and ptr then
+	begin comment this level is an online insertion;
+	ptr←ptr-1; go to processtokens;
+	end;
+print(nextline);
+end;
+comment Accessing user's files: scanfilename, inputfile;
+
+comment This page contains the most operating-system dependent aspects
+of the METAFONT input system;
+
+IFSUAI
+internal saf string array fname[0:2] # file name, extension, and directory;
+internal simp procedure scanfilename # sets up fname[0:2];
+begin integer j,c;
+fname[0]←fname[1]←fname[2]←null;
+j←0;
+while curbuf and chartype[curbuf]=space do c←lop(curbuf);
+loop	begin c←chartype[curbuf];
+	case c of begin
+	[pnt] j←1;
+	[lbrack] j←2;
+	[comma][wxy][rbrack][digit][letter] ;
+	else done
+	  end;
+	fname[j]←fname[j]&amp;lop(curbuf);
+	end;
+end;
+
+procedure inputfile;
+begin comment &quot;input&quot; has just been scanned. This procedure scans the user's
+file name, employing the appropriate operating system naming conventions,
+then reads in the first line and feeds it to the input system;
+integer chan;
+label abort # if something goes wrong trying to read the file;
+label retry # go here to try again;
+boolean firsttry # first attempt to read the file;
+string flname;
+integer pageno # number of pages successfully read;
+define checkeof=⊂if eof then begin print(&quot;)&quot;);go to abort end⊃;
+firsttry←true; retry:
+scanfilename;
+if fname[1]=0 then fname[1]←&quot;.mf&quot;;
+flname←fname[0]&amp;fname[1]&amp;fname[2];
+open(chan←getchan,&quot;DSK&quot;,0,if inptr=0 then 19 else 2, 0,
+	150,brchar,eof);
+comment On the SAIL system, 19 buffers is the most efficient for disk files;
+comment The lines read in must have at most 150 characters;
+lookup(chan,flname,eof);
+if eof and fname[2]=0 then lookup(chan,fname[0]&amp;fname[1]&amp;&quot;[1,3]&quot;,eof);
+if eof then
+	begin error(&quot;Lookup failed on file &quot;&amp;flname);
+	if firsttry then
+		begin firsttry←false; release(chan); go to retry;
+		end;
+	go to abort;
+	end;
+print(&quot; (&quot;,flname);
+pushinput # save present file status;
+recovery←chan; filename←flname;
+inbuf←input(chan,crffbreak) # get first line of file;
+checkeof; print(&quot; 1&quot;);
+if equ(inbuf[1 to 9],&quot;COMMENT ⓧ&quot;) then
+	begin comment Skip TVedit directory page;
+	while brchar≠'14 and not eof do inbuf←input(chan,ffbreak);
+	checkeof;
+	inbuf←input(chan,crffbreak) # get first line of second page;
+	checkeof; print(&quot; 2&quot;);
+	pageno←2;
+	end
+else pageno←1;
+while brchar='14 do
+	begin comment Ignore empty pages at beginning of file;
+	inbuf←input(chan,crffbreak); checkeof; pageno←pageno+1; print(&quot; &quot;,pageno);
+	end;
+loc ← (pageno lsh infod) + 1 # line 1 of the current page;
+if pausing then
+	begin integer p # garbage bin;
+	if inbuf='12 then p←lop(inbuf);
+	if length(inbuf)=1 then inbuf←&quot; &quot;&amp;inbuf;
+	print(nextline);
+	IFSUAI ptostr(0,inbuf[1 to ∞-1]) # show inbuf on screen; ENDSUAI
+	IFTENEX outstr(inbuf[1 to ∞-1]); ENDTENEX
+	inbuf←inchwl&amp;inbuf[∞ to ∞];
+	end;
+curbuf←inbuf;
+
+comment Now define the output file name if it hasn't yet been defined;
+if ofilname=0 then ofilname←fname[0];
+return;
+
+abort: release(chan);
+popinput;
+end;
+ENDSUAI;
+
+IFTENEX require &quot;MFFIL.SAI&quot; source_file; ENDTENEX
+
+comment The basic input procedure getnext and its cousins gettok,getstring;
+
+procedure page_end_error # gives error message when page ended unexpectedly;
+if warning then
+	begin deletions_allowed←false # prevents possible recursion;
+	error(&quot;Input page ended while scanning &quot;&amp;pagewarning);
+	deletions_allowed←true;
+	end;
+
+define curchar=⊂memory[location(curval),integer]⊃ # curchar ≡ curvalint;
+integer nexttype # the type of the next token, when building constants;
+
+simp procedure gettok # sends next low-level input token to curtype, curchar;
+begin comment This procedure scans low-level tokens and also computes &quot;nexttype&quot;
+(the type of the next low-level token) if the present low-level token might
+be part of a constant that hasn't ended yet. Although a lot of cases
+need to be handled, the inner loop is reasonably short and fast;
+label switch;
+switch: if recovery≥0 then
+	begin comment reading an external file;
+	label innerswitch;
+innerswitch:if(curchar←lop(curbuf))then
+	case (curtype←chartype[curchar]) of begin
+	[space] go to innerswitch # ignore spaces;
+	[letter] begin integer c,s,l,firstfew; s←bitsperwd-bitsrem-5;
+	firstfew←(curchar land '37)lsh(bitsperwd-bitsrem-5); l←1;
+	while (c←chartype[curbuf])=letter or c=wxy do
+		begin l←l+1; s←s-5;
+		if s≥0 then firstfew←firstfew+((lop(curbuf)land '37)lsh s)
+		else c←lop(curbuf);
+		end;
+	curtype←ident; curchar←idlookup(firstfew,l) end;
+	[pnt] begin integer c; c←chartype[curbuf];
+	if c=pnt then
+		begin comment &quot;..&quot;;
+		c←lop(curbuf); curtype←ddot;
+		end
+	else if c≠space and c≠carret then
+		begin comment decimal point or multiplication symbol;
+		if (nexttype←chartype[curbuf])≠digit then curtype←timesordiv;
+		end
+	else curtype←fullstop end;
+	[carret] begin curbuf←&quot;&quot;; go to innerswitch end # move to next line;
+	[openq] begin curtype←char; curchar←lop(curbuf) end # quoted character;
+	[digit][apost] begin nexttype←chartype[curbuf];
+	if nexttype=pnt and chartype[curbuf[2 to 2]]≠digit then
+	nexttype←space end;
+	else comment do nothing;
+	  end
+	else	begin comment curbuf is empty, must go to next line of file;
+		if filename then
+			begin comment reading a character file;
+			integer p # temporary integer variable;
+			inbuf←input(recovery,crffbreak) #
+				read file up to carriage return or form feed;
+			if eof then
+				begin comment done with reading a file;
+				inbuf←null;
+				print(&quot;)&quot;);
+				release(recovery) # deactivate the channel;
+				popinput # restore previous status;
+				if pagewarning then page_end_error;
+				go to switch # keep scanning;
+				end;
+			if brchar=0 then
+				begin comment Input line more than 150 chars long;
+				print(nextline,
+				&quot;Warning: Long input line has been broken.&quot;);
+				end;
+			if pausing then
+				begin if inbuf='12 then p←lop(inbuf);
+				if length(inbuf)=1 then inbuf←&quot; &quot;&amp;inbuf;
+				print(nextline);
+				IFSUAI ptostr(0,inbuf[1 to ∞-1]) # show inbuf on screen; ENDSUAI
+				IFTENEX outstr(inbuf[1 to ∞-1]); ENDTENEX
+				inbuf←inchwl&amp;inbuf[∞ to ∞];
+				end;
+			if brchar='14 then
+				begin comment page mark;
+				p←field(info,loc)+1 # advance page number;
+				print(&quot; &quot;,p) # print progress report for user;
+				loc ← p lsh infod # reset line number to zero;
+				curbuf←inbuf←&quot;&quot;;
+				if pagewarning then page_end_error;
+				end
+			else loc←loc+1 # advance line number;
+			comment No attempt is made here to remember the line
+				numbers on old style editing systems;
+			end
+		else if inptr then
+			begin comment done with line inserted during error routine;
+			popinput; go to switch;
+			end
+		else	begin comment reading online from terminal;
+			print(nextline,&quot;*&quot;) # prompt user for input;
+			inbuf←inchwl&amp;'15 # append carriage-return deleted by system;
+			setprint(null,&quot;F&quot;);print(inbuf);setprint(null,&quot;B&quot;) #
+				echo the input on ERRORS.TMP file for the record;
+			end;
+		curbuf ← inbuf;
+		go to innerswitch;
+		end
+	end
+else	begin comment traversing a tokenlist;
+	if loc then
+		begin curtype←type(loc) # get type of token;
+		curchar←name(loc) # get char field of token;
+		loc←link(loc) # advance to next element of token list;
+		if loc then nexttype←type(loc) else nexttype←0;
+		end
+	else	begin comment end of tokenlist;
+		popinput; go to switch;
+		end;
+	end
+end;
+
+simp integer procedure scanindex # scans an &lt;index&gt;, returns 0 if not found;
+begin gettok;
+if curtype=digit then
+	begin integer n; n←curchar-&quot;0&quot;;
+	while nexttype=digit do
+		begin gettok; n←10*n+curchar-&quot;0&quot;;
+		end;
+	return((n lsh infod)+curarea);
+	end;
+if curtype≠ident or type(curchar)≠index then return(0);
+return(vmemint(curchar));
+end;
+	
+internal simp procedure getnext # sends next high-level token to curtype, curval;
+begin comment This procedure uses gettok to get the next high-level token
+(combining constants and wxy-variables into single tokens);
+real v,radix,scale; label realconst,intconst,finconst;
+label tryagain # if at first you don't succeed, go back here;
+tryagain: gettok;
+case curtype of begin
+[ident] begin curtype←type(curchar); 
+if curtype=innput then
+	begin inputfile; go to tryagain;
+	end;
+curval←vmem[curchar] end;
+[wxy] begin integer c,p; c←curchar land '37; p←scanindex;
+if p then
+	begin p←wxylookup(c,p); curtype←type(p); curval←vmem[p];
+	end
+else	begin error((c+'140)&amp;&quot;-variable not followed by proper subscript&quot;);
+	curtype←known; curval←0;
+	end end;
+[equals] if cond then curtype←rel;
+[digit] begin v←curchar-&quot;0&quot;; radix←10; go to intconst end;
+[apost] begin v←0; radix←8; go to intconst end;
+[pnt] begin v←0; radix←10; go to realconst end;
+else comment do nothing;
+  end;
+return;
+intconst: while nexttype=digit do
+	begin gettok; v←radix*v+curchar-&quot;0&quot;;
+	end;
+if nexttype≠pnt then go to finconst;
+gettok;
+realconst: scale←1.0;
+while nexttype=digit do
+	begin gettok; scale←scale/radix; v←v+(curchar-&quot;0&quot;)*scale;
+	end;
+finconst: curtype←constant; curval←v;
+end;
+
+string curstring # string set by getstring;
+simp procedure getstring # sets curstring to next string in the input;
+begin comment A quote mark has just been scanned. This procedure scans the
+rest of the string, which is not allowed to contain quote marks or
+carriage returns;
+integer c;
+curstring←&quot;&quot;;
+while curbuf and (curbuf≠&quot;&quot;&quot;&quot;) and curbuf≠'15 do
+	curstring←curstring&amp;lop(curbuf);
+if curbuf=&quot;&quot;&quot;&quot; then c←lop(curbuf)
+else error(&quot;String must end on the line where it begins&quot;);
+end;
+comment Dependency lists and the dumpdlist procedure;
+
+comment The values of variables in METAFONT are defined implicitly by
+linear equations, not directly by assignments. The METAFONT system handles
+this by considering that the variable represented in node p has three
+kinds of value depending on its type:
+	type(p)			vmem(p)
+	known			a real number
+	independent		p
+	dependent		pointer to linear combination of independents
+For example, suppose we have the two equations
+	x1 - .2 x2 = .3 x3 - .1 x4:
+	x4 = 5.5.
+Then x4 is known to have the value 5.5, and x1 is the linear combination
+	.2 x2 + .3 x3 - .55,
+where x2 and x3 are independent. Such a representation can be maintained by
+METAFONT in the following way: When a new equation α = β comes along, the
+difference α - β is calculated as a linear combination of independent
+variables, and this linear combination λ should be equated to zero.
+If λ involves no independent variables, the equation is either redundant
+or inconsistent, depending on whether the constant term is zero or nonzero.
+If λ involves exactly one independent variable, we can solve for that
+variable and its status changes to &quot;known&quot;. This fact is used to simplify
+all linear combinations involving that variable, and other variables might
+therefore become known. Similarly, if λ involves two or more independent
+variables, we choose one with the largest coefficient and let it depend on
+the others, substituting this new linear combination where it appears in
+other dependencies. Thus we reach a state where once again all the current
+information is expressed in terms of known, independent, and dependent variables.
+During the calculations with linear dependencies, a coefficient whose
+magnitude is less than .0001 is regarded as zero. (This is reasonable since
+the variables have values in units of pixels.)
+
+Here's how a linear combination of independent variables is expressed as a
+linked list: The linear combination α1v1 + ... + αkvk + β appears in k+1
+two-word nodes, whose vmem fields respectively contain α1, ..., αk, and β.
+The addresses of independent variables v1, ..., vk are assumed to be in
+decreasing order, and these addresses appear in the info fields. The address
+in the last node is zero. The link field in the first k nodes points to the
+next node, while the link field in the last node is either zero or a
+pointer to a dependent variable. Such a linked list is called a &quot;dependency list,&quot;
+and the link in the last node is called its &quot;final pointer.&quot;
+(A more elaborate data structure could be
+employed to avoid sequential searching during simplification, but in practice
+the dependency lists are very short so this simple method seems adequate.)
+
+If p points to a dependent variable, vmemint(p) points to the associated
+dependency list. The program maintains an implicit list of all dependent variables:
+mem[depvar] points to the first one, and the final pointer at the end of the first
+one's dependency list points to the second one, etc.;
+
+procedure dumpdlist(integer p) # prints dependency list pointed to by p;
+begin comment Like dumplist, this procedure is extra-robust;
+integer q,r;
+q←p;
+loop	begin if q≥vmemsize then
+		begin print(&quot;???&quot;); done;
+		end;
+	print(if vmem[q]≥0 then &quot;+&quot; else &quot;-&quot;,cvf(abs(vmem[q])));
+	if (r←info(q))=0 then done;
+	print(&quot; &quot;,if r≥vmemsize then &quot;BAD&quot; else idname(r),&quot; &quot;);
+	q←link(q);
+	end;
+end;
+comment Operations on dependency lists: simpl,entersym,add,simplify,neweq,dsvalue;
+
+integer procedure simpl(real v) # makes a dependency list of constant value v;
+begin comment This procedure returns a pointer to a dependency list having
+only a constant term, with value v;
+integer p; getvavail(p); vmem[p]←v; mem[p]←0; return(p);
+end;
+
+internal procedure entersym(integer p) # called when a variable becomes known;
+begin comment We are in proof mode and the interpreter has just changed the
+variable in location \\p to &quot;known&quot; status;
+integer q,r # pointer variables;
+integer xco,yco # coordinates of new point;
+string s # symbolic name of new point;
+integer idn # numeric index;
+s←idname(p);
+case s of begin
+[&quot;x&quot;] r←field(link,vmemint(idarea)) # prepare to search $y$-list;
+[&quot;y&quot;] r←field(info,vmemint(idarea)) # prepare to search $x$-list;
+else return
+  end # If not an $x$ or $y$ variable, we don't store it;
+idn←name(p);
+loop	begin integer nn # temporary storage;
+	if type(r)=areahead then return;
+	if (nn←name(r))=idn then done;
+	if nn&gt;idn then return;
+	r←link(r);
+	end;
+if type(r)≠known then return;
+comment Now both coordinates are defined;
+if s=&quot;x&quot; then
+	begin xco←xxtr*vmem[p]+xytr*vmem[r]+xtr;
+	yco←yxtr*vmem[p]+yytr*vmem[r]+ytr;
+	end
+else	begin xco←xxtr*vmem[r]+xytr*vmem[p]+xtr;
+	yco←yxtr*vmem[r]+yytr*vmem[p]+ytr;
+	end;
+comment Now we search the tree;
+proofins(xco+.5,yco+.5,s[2 to ∞]);
+end;
+
+define uinfo(p)=⊂ufield(info,mem[p])⊃ # info field of node p, not shifted right;
+
+integer procedure add(integer p; real c; integer q) # forms p+cq, destroying p;
+begin comment This procedure operates on two dependency lists, pointed to by
+p and q, and it forms the dependency list corresponding to the linear combination
+represented by p plus c times the linear combination represented by q. The
+dependency list p is destructively modified while forming the new list, but
+the dependency list q is not changed. The final pointer in the resulting
+dependency list is the same as the final pointer in the original p list;
+integer r,s,pp,qq; real v;
+r←0 # mem[0] serves as temporary list head;
+pp←uinfo(p); qq←uinfo(q) # pp,qq have this relation to p,q for efficiency;
+loop if pp=qq then
+	begin vmem[p]←vmem[p]+c*vmem[q];
+	if pp=0 then done # stop when the constant terms are processed;
+	s←p; p←link(p); pp←uinfo(p); q←link(q); qq←uinfo(q) # advance p,q;
+	if abs(vmem[s])&lt;0.0001 then freeavail(s)
+	else	begin setlink(r,s); r←s;
+		end;
+	end
+   else if pp&gt;qq then
+	begin setlink(r,p); r←p; p←link(p); pp←uinfo(p);
+	end
+   else	begin v←c*vmem[q]; if abs(v)≥0.0001 then
+		begin getvavail(s); vmem[s]←v; mem[s]←mem[q];
+		setlink(r,s); r←s;
+		end;
+	q←link(q); qq←uinfo(q);
+	end;
+setlink(r,p); return(mem[0]);
+end;
+
+integer procedure simplify(integer p,q,r) # simplifies p if variable q now equals r;
+begin comment Given that p and r point to dependency lists, this procedure
+returns a pointer to a dependency list equivalent to p but with r substituted for
+q, if q occurs as an independent variable in p. List p may be destroyed in
+the process, but list r remains unchanged;
+integer s # pointer runs through list p;
+integer ss # pointer that trails behind s;
+integer qq # unshifted version of q (for efficiency's sake);
+integer qqq # unshifted version of q+1;
+real v # the coefficient of q;
+ss←0; s←p; qq←q lsh infod; qqq←qq+(1 lsh infod);
+while mem[s]≥qqq do
+	begin ss←s; s←link(s);
+	end;
+if uinfo(s)≠qq then return(p) # variable q wasn't in the list;
+v←vmem[s];
+mem[0]←p; setlink(ss,link(s)) # take the node involving q out of the list;
+freeavail(s) # and delete it;
+return(add(mem[0],v,r)) # add v*r to the list;
+end;
+
+integer procedure neweq(integer lhs,rhs) # updates the variables given that lhs=rhs;
+begin comment Here lhs and rhs point to dependency lists whose final pointer is 0.
+This procedure changes one variable from independent to dependent, based on the
+equation lhs=rhs, and then changes variables from dependent to known if this is
+now possible. The output of this procedure is a dependency list, whose final
+pointer is 0, and whose value is the common value of lhs and rhs. Lists lhs and
+rhs are destroyed in the process;
+integer p # points to dependency list being equated to 0;
+integer q # |vmem[q]| is maximum over all coefficients in list p;
+integer r # pointer runs through list p;
+integer s # pointer that follows r;
+real v # the maximum coefficient, vmem[q], before node q is destroyed;
+real w # temp storage for new coefficient;
+integer x # address of variable that becomes dependent;
+
+p←add(lhs,-1.0,rhs) # compute lhs minus rhs, destroying lhs;
+if mem[p]=0 then
+	begin comment There are no independent variables to define;
+	if vmem[p] then error(&quot;Inconsistent equation&quot;)
+	else error(&quot;Redundant equation&quot;);
+	freeavail(p); return(rhs) # the equation is effectively ignored;
+	end;
+q←p; r←link(p);
+while uinfo(r) do
+	begin if abs(vmem[r])&gt;abs(vmem[q]) then q←r;
+	r←link(r);
+	end;
+mem[0]←p; s←0; r←p; v←vmem[q]; x←info(q);
+loop	begin if r=q or abs(w←vmem[r]/v)&lt;0.0001 then
+		begin comment delete node r from the list;
+		setlink(s,link(r)); freeavail(r); r←link(s);
+		end
+	else	begin vmem[r]←-w; s←r; r←link(s);
+		end;
+	if uinfo(r)=0 then done;
+	end;
+vmem[r]←-vmem[r]/v # adjust the constant term;
+p←mem[0];
+comment Now p points to the new dependency, and mem[r] is the final pointer;
+if trdefs then
+	begin print(nextline,&quot;ⓧⓧⓧ &quot;,idname(x),&quot; = &quot;); dumpdlist(p);
+	end;
+if mem[p]=0 then
+	begin comment variable x is now &quot;known&quot;;
+	mem[x]←mem[x]+((known-independent)lsh typed);
+	vmem[x]←vmem[p];
+	if symbolic then entersym(x);
+	r←depvar # prepare for simplification loop below;
+	end
+else	begin comment variable x is now &quot;dependent&quot;;
+	mem[x]←mem[x]+((dependent-independent)lsh typed);
+	vmemint(x)←p;
+	mem[r]←mem[depvar]; mem[depvar]←x;
+	end;
+
+comment The following code is used to simplify all dependencies, now that variable
+x is no longer independent. Now r will run through nodes in the list of
+dependent variables, while q and s will be used for temporary storage;
+while(s←mem[r])do
+	begin q←simplify(vmemint(s),x,p);
+	if uinfo(q)=0 then
+		begin comment The dependent variable s has become &quot;known&quot;;
+		mem[s]←mem[s]+((known-dependent)lsh typed);
+		vmem[s]←vmem[q];
+		mem[r]←mem[q]; freeavail(q);
+		if trdefs then print(nextline,&quot;ⓧⓧⓧⓧⓧⓧ &quot;,idname(s),&quot; = &quot;,vmem[s]);
+		if symbolic then entersym(s);
+		end
+	else	begin comment Variable s remains dependent;
+		vmemint(s)←q;
+		do q←link(q) until uinfo(q)=0;
+		r←q;
+		end;
+	end;
+
+q←simplify(rhs,x,p); if mem[p]=0 then freeavail(p); return(q);
+end;
+
+procedure dsvalue(integer p) # prepare to delete or redefine identifier node p;
+begin case type(p) of begin
+[dependent][independent] begin integer q,r,s;
+error(&quot;Variable &quot;&amp;idname(p)&amp;&quot; never defined&quot;);
+if type(p)=independent then
+	begin comment An independent variable is effectively set to one;
+	q←simpl(1.0);r←simpl(0.0);getvavail(s);mem[s]←r+(p lsh infod);vmem[s]←1.0;
+	q←neweq(s,q); freeavail(q);
+	end
+else	begin comment A dependent variable is removed from the dependency list;
+	q←depvar;
+	loop	begin if mem[q]=p then done else if mem[q]=0 then confusion;
+		q←vmemint(mem[q]);
+		while uinfo(q) do q←link(q) # go to end of dependency list;
+		end;
+	r←vmemint(p);
+	while uinfo(r) do r←link(r);
+	mem[q]←mem[r]; mem[r]←0; dslist(vmemint(p));
+	end end;
+[subroutine] dslist(vmemint(p)) # delete token list;
+else comment do nothing;
+  end;
+end;
+comment Expression scanning routines: scanprimary, scanterm, scanexp, getexp;
+
+procedure checkscalar(integer p; string s; real v) # ensure p is simple scalar;
+begin comment This procedure gives error messages when a quantity that is
+supposed to be scalar turns out to depend on other variables, and in that
+case the value of v is substituted. Here p must point to a dependency list whose
+final pointer is 0;
+if mem[p] then
+	begin print(nextline,&quot;! &quot;); dumpdlist(p);
+	error(&quot;Undefined &quot;&amp;s&amp;&quot;, replaced by &quot;&amp;cvf(v));
+	dslist(link(p)); mem[p]←0; vmem[p]←v;
+	end;
+end;
+
+integer procedure checkscanindex # scans and returns an index value;
+begin integer i; if(i←scanindex) then return(i);
+error(&quot;Improper index specification&quot;);
+return(curarea) # 0 is assumed;
+end;
+
+real nsave # saved normaldeviate (we compute them two at a time);
+simp real procedure normaldeviate # independent normal deviate with unit variance;
+begin comment This procedure uses the &quot;polar method&quot; (Algorithm 3.4.1P);
+real v1,v2,s,r;
+if nsave then
+	begin r←nsave; nsave←0.0; return(r);
+	end;
+loop	begin v1←2*ran(seed)-1; v2←2*ran(0)-1; seed←0;
+	s←v1^2+v2^2;
+	if s&lt;1.0 then done;
+	end;
+r←sqrt(-2*log(s)/s); nsave←v1*r; return(v2*r);
+end;
+
+forward recursive integer procedure scanexp # scans and evaluates an &lt;exp&gt;;
+forward recursive integer procedure scanterm # scans and evaluates a &lt;term&gt;;
+
+recursive integer procedure scanprimary # scans and evaluates a &lt;primary&gt;;
+begin comment This procedure scans the syntactic category called &lt;primary&gt;,
+assuming that the first token already is in curtype and curval. Then it
+returns a pointer to the dependency list represented by the primary.
+Afterwards the token following the primary will have been scanned;
+integer t # temp storage for dependency list to return;
+case curtype of begin
+[lpren] begin getnext; t←scanexp;
+if curtype≠rpren then error(&quot;Right parenthesis substituted here&quot;) end;
+[direction] begin integer i # index value; integer j # direction code;
+integer p # pointer to simple expression; j←curvalint;
+i←checkscanindex; p←wxylookup(&quot;w&quot; land '37,i);
+if type(p)=known then p←simpl(penadj(vmem[p],j))
+else	begin error(&quot;Undefined size w&quot;&amp;cvs(field(info,i))); p←simpl(0.0);
+	end;
+getnext; t←add(scanterm,1.0,p); freeavail(p); return(t) end;
+[unary]	begin integer op # the unary operator; integer w # size, if needed;
+op←curchar; if op=good then
+	begin integer j,p; j←checkscanindex # good&lt;index&gt;&lt;term&gt;;
+	p←wxylookup(&quot;w&quot; land '37,j);
+	if type(p)=known then w←vmem[p]+.5
+	else	begin error(&quot;Undefined size w&quot;&amp;cvs(field(info,j))); w←1;
+		end;
+	end;
+getnext; t←scanterm;
+case op of begin
+	[root] begin checkscalar(t,&quot;square root&quot;,0.0); vmem[t]←sqrt(vmem[t]) end;
+	[sine] begin checkscalar(t,&quot;sine&quot;,0.0); vmem[t]←sind(vmem[t]) end;
+	[cosine] begin checkscalar(t,&quot;cosine&quot;,0.0); vmem[t]←cosd(vmem[t]) end;
+	[round] begin checkscalar(t,&quot;roundee&quot;,0.0); vmem[t]←floor(vmem[t]+.5) end;
+	[good] begin checkscalar(t,&quot;goodee&quot;,0.0); if w land 1 then vmem[t] ←
+	floor(vmem[t]+.5) else vmem[t]←floor(vmem[t])+.5 end;
+	else confusion
+	  end;
+return(t) end # the next token has already been scanned;
+[randm] t←simpl(normaldeviate);
+[constant][known] t←simpl(curval);
+[char] t←simpl(curchar);
+[dependent] begin integer p,q,r # pointer variables for copying the list;
+getvavail(p); t←p; q←curvalint;
+loop	begin vmem[p]←vmem[q]; mem[p]←uinfo(q);
+	if (mem[p]←uinfo(q))=0 then done;
+	getvavail(r); mem[p]←mem[p]+r; p←r; q←link(q);
+	end end;
+[newid][independent] begin integer p; getvavail(t); getvavail(p);
+if curtype=newid then mem[curvalint]←mem[curvalint]+((independent-newid)lsh typed);
+vmem[t]←1.0; vmem[p]←0.0; mem[t]←(curvalint lsh infod)+p; mem[p]←0 end;
+else	begin error(&quot;You can't begin a &quot;&quot;primary&quot;&quot; like that&quot;); t←simpl(0.0);
+	end
+  end;
+getnext # scan the next token;
+return(t);
+end;
+
+recursive integer procedure scanterm # scans and evaluates a &lt;term&gt;;
+begin comment This procedure scans the syntactic category called &lt;term&gt;,
+assuming that the first token already is in curtype and curval. Then it
+returns a pointer to the dependency list represented by the term.
+Afterwards the token following the term will have been scanned;
+integer t # temp storage for dependency list to return;
+t←scanprimary;
+loop	begin case curtype of begin
+	[lpren][char][constant][timesordiv][randm][known][direction][dependent]
+	[newid][independent][unary] begin integer lhs,rhs # operands in mult or div;
+	integer opchar # specifies multiplication or division;
+	if curtype≠timesordiv then opchar←&quot;*&quot;
+	else	begin opchar←curchar; getnext;
+		end;
+	lhs←t; rhs←scanprimary;
+	if opchar=&quot;/&quot; then
+		begin checkscalar(rhs,&quot;divisor&quot;,1.0);
+		if vmem[rhs]=0.0 then
+			begin error(&quot;Division by 0&quot;); vmem[rhs]←1.0;
+			end
+		else vmem[rhs]←1.0/vmem[rhs] # reduce division to multiplication;
+		end
+	else if mem[rhs] then
+		begin checkscalar(lhs,&quot;factor&quot;,1.0);
+		lhs↔rhs;
+		end;
+	comment rhs is a scalar, multiply lhs by it;
+	t←add(simpl(0.0),vmem[rhs],lhs); freeavail(rhs); dslist(lhs) end;
+	[lbrack] begin comment &lt;term&gt;[&lt;exp&gt;,&lt;exp&gt;];
+	integer u,v # pointers to the expression values;
+	real alpha # the fraction;
+	getnext; u←scanexp;
+	if curtype≠comma then error(&quot;Comma substituted here&quot;);
+	getnext; v←scanexp;
+	if curtype≠rbrack then error(&quot;Right bracket substituted here&quot;);
+	getnext;
+	v ← add(v,-1.0,u) # set v ← v-u;
+	if mem[v] then checkscalar(t,&quot;interval fraction&quot;,0.0) else v↔t;
+	alpha←vmem[t]; freeavail(t);
+	t ← add(u,alpha,v) # set t to desired result;
+	dslist(v) end;
+	else done
+	  end;
+	end;
+return(t);
+end;
+
+recursive integer procedure scanexp # scans and evaluates an &lt;exp&gt;;
+begin comment This procedure scans the syntactic category called &lt;exp&gt;,
+assuming that the first token already is in curtype and curval. Then it
+returns a pointer to the dependency list represented by the exp.
+Afterwards the token following the exp will have been scanned;
+integer t # temp storage for dependency list to return;
+case curtype of begin
+[plusorminus] t←simpl(0.0);
+[lpren][char][constant][randm][known][direction][dependent][newid][independent]
+[unary] t←scanterm;
+else	begin error(&quot;You can't start an expression like that&quot;);
+	t←simpl(0.0); getnext;
+	end
+  end;
+while curtype=plusorminus do
+	begin real pomo # plus or minus one; integer rhs # the righthand operand;
+	if curchar=&quot;+&quot; then pomo←+1.0 else pomo←-1.0;
+	getnext; rhs←scanterm;
+	t←add(t,pomo,rhs); dslist(rhs);
+	end;
+return(t);
+end;
+
+real procedure getexp # scans an expression and returns its value;
+begin comment After calling this procedure, the token following the expression
+has already been scanned;
+integer p;
+getnext; p←scanexp; checkscalar(p,&quot;expression&quot;,0.0); freeavail(p); return(vmem[p]);
+comment This uses the fact that freeavail doesn't clobber the value of vmem[p];
+end;
+comment The path scanning routine (scanpath);
+
+comment Procedure &quot;scanpath&quot; is used to interpret and &quot;draw&quot; and &quot;ddraw&quot;
+instructions. The syntax of paths is
+	[(&lt;point&gt;..] &lt;point&gt; &lt;..&lt;point&gt;&gt;* [(..&lt;point&gt;)]
+where &lt;point&gt; is
+	[|&lt;exp&gt;[#]|] &lt;index&gt; [{&lt;exp&gt;,&lt;exp&gt;}]
+and |&lt;exp&gt;| denotes pen size, # denotes stability, {&lt;exp&gt;,&lt;exp&gt;} denotes a
+tangent direction. The corresponding information, when there are n points in
+the path, is stored in positions 0 to n+1 of the arrays listed below, and n is
+stored in the global variable npts. Pen size and stability information are
+not allowed in the paths for &quot;ddraw&quot;;
+
+internaldef maxpoints=20 # maximum number of points per path;
+internal integer npts # number of points in current path;
+internal saf integer array pointi[0:maxpoints+1] # index associated with a point;
+internal saf real array pointw[0:maxpoints+2] # pen size at a point;
+internal saf real array pointx[0:maxpoints+1] # x coordinate at a point;
+internal saf real array pointy[0:maxpoints+1] # y coordinate at a point;
+internal saf real array tanx,tany[0:maxpoints+1] # tangent direction at a point
+	(or (0,0) if METAFONT is to choose the tangent direction);
+internal saf boolean array pointstab[0:maxpoints+1] # pen size should be stable
+	at the current point (i.e., the derivative should be zero);
+internal saf integer array dpnti[0:maxpoints+1] # pointi for first path in ddraw;
+internal saf real array dpntx,dpnty,dtanx,dtany[0:maxpoints+1] # pointx,pointy,
+	tanx,tany arrays for the first path in ddraw;
+
+comment If the optional (&lt;point&gt;..) appears at the path's beginning, the
+corresponding information is stored in position 0, otherwise pointi[0] is
+set to -1. Information about the optional (..&lt;point&gt;) appearing at a path's end
+is, similarly, stored in position npts+1;
+
+boolean procedure scanpath(boolean ddrw) # scans paths to be drawn or ddrawn;
+begin comment If the next input tokens don't specify a valid path, this
+procedure returns &quot;false&quot;. Otherwise it puts the path information into the
+point arrays and returns &quot;true&quot;, having already scanned the token that
+immediately follows the path. Global variable cursize is updated to the last
+specified pen size in a valid path;
+
+label switch # go here to scan a token and branch to different cases;
+label endpath # go here when the path is fully scanned;
+boolean optend # the (..&lt;point&gt;) is present;
+integer v # location of an x- or y-variable in memory;
+integer i # loop index running from 0 to npts+1;
+real pensize # current pen size;
+
+npts←0; optend←false; pointi[0]←-1; pointw[1]←-1.0; pensize←cursize max 1.0;
+comment The pointw entries are set temporarily to -1.0, a value that is reset
+	when an explicit size is specified;
+
+switch: getnext; case curtype of begin
+[lpren] if npts=0 then
+	begin npts←-1; pointw[0]←-1.0; go to switch;
+	end
+else return(false);
+[abbs] begin if ddrw then return(false);
+if (pointw[npts+1]←getexp)&lt;1.0 then
+	begin error(&quot;Pen size too small (&quot;&amp;cvf(pointw[npts+1])&amp;
+		&quot;), replaced by 1.0&quot;); pointw[npts+1]←1.0;
+	end;
+if curtype=hashmark then
+	begin pointstab[npts+1]←true; getnext;
+	end
+else pointstab[npts+1]←false;
+if curtype≠abbs then return(false); go to switch end;
+[index] pointi[npts+1]←curvalint;
+[constant] begin integer n; n←curval;
+if n≠curval then return(false) # non-integer subscript;
+pointi[npts+1]←(n lsh infod)+curarea end;
+else return(false)
+  end;
+
+comment An &lt;index&gt; has just been scanned, and its value is in pointi[npts+1];
+if npts&gt;maxpoints then overflow(maxpoints);
+npts←npts+1; pointw[npts+1]←-1.0;
+v←wxylookup(&quot;x&quot; land '37, pointi[npts]);
+if type(v)=known then pointx[npts]←vmem[v]
+else	begin error(&quot;Variable x&quot;&amp;indexname(pointi[npts])&amp;
+		&quot; is undefined, 0.0 assumed&quot;);
+	pointx[npts]←0.0;
+	end;
+v←wxylookup(&quot;y&quot; land '37, pointi[npts]);
+if type(v)=known then pointy[npts]←vmem[v]
+else	begin error(&quot;Variable y&quot;&amp;indexname(pointi[npts])&amp;
+		&quot; is undefined, 0.0 assumed&quot;);
+	pointy[npts]←0.0;
+	end;
+getnext;
+if curtype=lbrace then
+	begin tanx[npts]←getexp; if curtype≠comma then return(false);
+	tany[npts]←getexp; if curtype≠rbrace then return(false);
+	getnext;
+	end
+else tanx[npts]←tany[npts]←0.0;
+if optend then
+	begin if curtype≠rpren then return(false);
+	npts←npts-1; getnext; go to endpath;
+	end;
+if curtype=ddot then
+	if npts=0 then
+		begin getnext;
+		if curtype=rpren then go to switch else return(false);
+		end
+	else go to switch;
+if npts=0 then return(false);
+if curtype=lpren then
+	begin optend←true; getnext;
+	if curtype≠ddot then return(false);
+	go to switch;
+	end;
+comment The path has ended without the optional (..&lt;point&gt;);
+if npts&gt;maxpoints then overflow(maxpoints);
+pointi[npts+1]←-1;
+pointx[npts+1]←pointx[npts]; pointy[npts+1]←pointy[npts];
+
+endpath: if npts≤0 then return(false);
+if pointi[0]&lt;0 then
+	begin comment The path began without the optional (&lt;point&gt;..);
+	pointx[0]←pointx[1]; pointy[0]←pointy[1]; pointw[0]←pointw[1];
+	end;
+comment Now the arrays pointx[0:npts+1], pointy[0:npts+1], tanx[1:npts],
+	and tany[1:npts] are set properly for the &quot;drawit&quot; routine in MFRAST.
+	It remains to set up pointw[0:npts+1] and pointstab[1:npts],
+	for the cases when no pen size was specified;
+for i←0 thru npts+1 do 
+	if pointw[i]&lt;0 then
+		begin pointw[i]←pensize; pointstab[i]←true;
+		end
+	else pensize←pointw[i];
+return(true);
+end;
+internal procedure maincontrol # governs all the activities;
+begin comment This procedure contains the master switch that causes all the
+various pieces of METAFONT to do their things in the right order---unless
+the user's input contains unexpected strangenesses. We have here the grand
+climax of the program, the applications of all the tools that have been
+so laboriously constructed. And it's also the messiest part of the program,
+in the sense that it necessarily refers to other pieces of code all over the
+place;
+
+label beginstmt # go here in order to begin processing a command;
+label mainswitch # like beginstmt, but first token of command has been scanned;
+label endstmt # go here when you are done processing a command and curtype
+	should be semi or fullstop;
+label finstmt # go here to call getnext and go to endstmt;
+label flush # go here to ignore tokens until semi or fullstop or stop;
+
+DEBUGONLY boolean checkingmem # trying to find out where memory assumptions die;
+integer curtop # top of the auxiliary subroutine stack;
+
+procedure flusherror(string s) # error causing current command to be flushed;
+begin error(s&amp;&quot;, command flushed&quot;); go to flush;
+end;
+
+
+curarea←main; curtop←0 # set subroutine call stacks empty;
+control←'260 # modtrace, pagewarning, penreset;
+clearpens(true) # initialize the pen memory;
+forcednew←false # set normal state for identifier lookup;
+maxvr←maxvs←4.0; minvr←minvs←0.5;
+charclear # initialize charwd, charht, etc.;
+epenxfactor←epenyfactor←1.0; excorr←eycorr←0.0;
+xxtr←yytr←1.0; xytr←yxtr←xtr←ytr←0.0; safetyfactor←2.0 # parameters ← defaults;
+hpenht←vpenwd←1;
+dumpwindow←32; dumplength←1000; maxht←0;
+IFSUAI seed←call(0,&quot;ACCTIM&quot;) # date and time of day; ENDSUAI
+IFTENEX seed←gtad; ENDTENEX
+nsave←0.0 # initialize the random-number generator;
+DEBUGONLY checkingmem←false;
+
+beginstmt:getnext;
+DEBUGONLY if checkingmem then checkmem(false);
+
+mainswitch: case curtype of begin
+
+[quote] begin getstring; pagewarning←&quot;&quot;&quot;&quot;&amp;curstring&amp;&quot;&quot;&quot;&quot;;
+if trtitles then print(nextline,curstring,&quot;...&quot;);
+if not maintitle then maintitle←curstring;
+go to finstmt end;
+
+[semi][fullstop] go to endstmt # empty command;
+
+[lpren][char][constant][plusorminus][randm][known][direction][dependent][newid]
+[independent][unary] begin integer lhs,rhs; lhs←scanexp;
+if curtype=equals then
+	begin while curtype=equals do
+		begin getnext; rhs←scanexp; lhs←neweq(lhs,rhs);
+		end;
+	dslist(lhs); go to endstmt;
+	end;
+if curtype=draw or curtype=ddraw then
+	begin if mem[lhs]=0 then
+		begin cursize←vmem[lhs]; freeavail(lhs);
+		end
+	else	begin print(nextline,&quot;! &quot;); dumpdlist(lhs);
+		error(&quot;Undefined pen size&quot;); dslist(lhs);
+		end;
+	go to mainswitch;
+	end;
+print(nextline,&quot;! &quot;); dumpdlist(lhs); dslist(lhs);
+flusherror(&quot;Missing = sign&quot;) end;
+
+[penname] begin integer i; label nogood;
+curpen←curvalint; curploc←0; cursize←0;
+if curpen=spen then
+	begin comment special pen, we must scan a pen specification;
+	getnext;
+	if curtype=lpren then
+		begin for i←1 thru 7 do
+			begin spenspec[i]←getexp;
+			if (i&lt;7 and curtype≠comma) or (i=7 and curtype≠rpren) then
+				go to nogood;
+			end;
+		getnext;
+		end;
+	end
+else if curpen=epen then
+	begin getnext;
+	if curtype≠semi and curtype≠fullstop and curtype≠hashmark then
+		begin i←0; epen0←-1;
+		loop	begin case curtype of begin
+			[hashmark][semi][fullstop] done;
+			[timesordiv] begin if curchar≠&quot;.&quot; then go to nogood;
+			epen0←i end;
+			[lpren] begin i←i+1;
+			if i&gt;epensize then overflow(epensize);
+			epenlspec[i]←getexp; if curtype≠comma then go to nogood;
+			epenrspec[i]←getexp; if curtype≠rpren then go to nogood;
+			if epenlspec[i]&gt;epenrspec[i] then go to nogood end;
+			else go to nogood
+			  end;
+			getnext;
+			end;
+		if epen0&lt;0 then epen0←i;
+		epenptr←i;
+		end;
+	end
+else getnext;
+if curtype=hashmark then
+	begin getnext; eraser←true;
+	end
+else eraser←false;
+go to endstmt;
+nogood: resetpens; flusherror(&quot;Improper pen specs&quot;);
+end;
+
+[subrtn] begin comment Scan and store a subroutine as a token list;
+integer p # location of last token stored;
+integer q # location to store the next token;
+integer subname # address of subroutine name;
+define store(t,n)=⊂begin getavail(q); mem[p]←mem[p]+q; p←q;
+	mem[p]←(t lsh typed)+(n lsh named) end⊃ # stores a token;
+if pagewarning then error(&quot;Subroutine definition should follow &quot;&quot;.&quot;&quot;&quot;);
+p←temphead; mem[p]←0 # temphead will point to the token list created;
+gettok; if curtype≠ident then flusherror(&quot;No subroutine name&quot;);
+subname←curchar # address of the subroutine name;
+dsvalue(subname); setfield(type,mem[subname],subroutine);
+store(ident,subname); pagewarning←&quot;definition of &quot;&amp;idname(subname);
+gettok;
+while curtype≠colon do
+	begin label ng # go here if no good;
+	if (curtype=lpren) or (curtype=comma) then
+		begin getnext;
+		if curtype=varparam or curtype=indexparam then
+			begin integer d; d←curtype; 
+			forcednew←true; gettok; forcednew←false;
+			if curtype=ident then
+				begin store(d,curchar);
+				setfield(type,mem[curchar],param);
+				gettok; if curtype=rpren then gettok;
+				continue;
+				end;
+			error(&quot;No parameter name&quot;); go to ng;
+			end;
+		error(&quot;Should say var or index here&quot;); go to ng;
+		end;
+	error(&quot;Should be &quot;&quot;(&quot;&quot; or &quot;&quot;,&quot;&quot; or &quot;&quot;:&quot;&quot; here&quot;);
+	ng: gettok;
+	end;
+store(colon,&quot;:&quot;);
+comment The preamble of the subroutine has now been scanned and stored;
+loop	begin comment Scanning the body of the subroutine;
+	gettok; case curtype of begin
+	[quote] begin getstring; error(&quot;Titles are ignored inside subroutines&quot;);
+	continue end;
+	[ident] if type(curvalint)=innput then begin inputfile; continue end;
+	[stop] errorstop(&quot;Program ended while defining &quot;&amp;idname(subname));
+	[subroutine] begin error(&quot;Subroutines can't be defined inside subroutines&quot;);
+	continue end;
+	else comment In most cases we do nothing;
+	  end;
+	store(curtype,curchar);
+	if curtype=fullstop then done;
+	end;
+vmemint(subname)←mem[temphead];
+p←link(mem[temphead]);
+while type(p)≠colon do
+	begin comment Make the parameters invisible;
+	idhide(name(p)); p←link(p);
+	end;
+pagewarning←&quot;&quot;; go to beginstmt end;
+
+[cawl] begin comment Calling a subroutine; integer c,p,q;
+string s; label badcall;
+define callerror(st)=⊂begin s←st; go to badcall end⊃;
+getnext; if curtype=char then
+	begin c←curchar; if c&lt;&quot;a&quot; or c&gt;&quot;z&quot; then c←0; getnext;
+	end
+else c←0;
+if curtype≠subroutine then flusherror(&quot;Undefined subroutine&quot;);
+p←curchar # points to token list for the subroutine;
+if trcalls then print(nextline,&quot;Calling &quot;,idname(name(p)));
+DEBUGONLY if trcalls then print(&quot; [&quot;,oneused,&quot;,&quot;,twoused,&quot;]&quot;);
+q←link(p); getnext;
+while type(q)≠colon do
+	begin comment Matching arguments to parameters;
+	integer r # the parameter;
+	if curtype≠lpren then begin s←&quot;Missing &quot;&quot;(&quot;&quot;&quot;; go to badcall end;
+	r←name(q);
+	if type(r)≠param then callerror(&quot;Recursive call not allowed&quot;);
+	if type(q)=varparam then
+		begin vmem[r]←getexp;
+		if trcalls then print(&quot;(&quot;,cvf(vmem[r]),&quot;)&quot;);
+		mem[r]←mem[r]+((known-param)lsh typed);
+		end
+	else	begin comment Now type(q)=indexparam;
+		if (vmemint(r)←scanindex) then
+			begin mem[r]←mem[r]+((index-param)lsh typed);
+			if trcalls then print(&quot;(&quot;,indexname(vmemint(r)),&quot;)&quot;);
+			end
+		else callerror(&quot;Improper index argument&quot;);
+		getnext # scan the token following the index;
+		end;
+	q←link(q);
+	if curtype=rpren then getnext
+	else if curtype=comma then curtype←lpren
+	else callerror(&quot;Missing punctuation&quot;);
+	end;
+comment The arguments have been scanned;
+if curtype≠semi and curtype≠fullstop then callerror(&quot;Improper call&quot;);
+pushinput; loc←link(q); recovery←-p;
+getvavail(q); mem[q]←(areahead lsh typed)+(c lsh named)+curarea;
+vmemint(q)←(q lsh infod)+q # null lists of x- and y-variables;
+curarea←q;
+comment Now we put curtype, control, curpen, and cursize onto an auxiliary
+stack whose pointer is curtop, so that these can be restored properly when
+the subroutine call is concluded;
+getvavail(q); mem[q]←curtop+(curtype lsh infod); vmemint(q)←control;
+getvavail(p); mem[p]←q+(curpen lsh infod); vmem[p]←cursize;
+curtop←p;
+if penreset then resetpens;
+go to beginstmt;
+badcall: q←link(p);
+while type(q)≠colon do
+	begin setfield(type,mem[name(q)],param) # reset parameters;
+	q←link(q);
+	end;
+flusherror(s) end;
+
+[new] begin
+loop	begin label done_with_entry # go here when item is processed;
+	gettok;
+	if curtype≠ident then
+		begin if curtype=wxy
+		then	begin integer c; c←curchar land '37; curchar←scanindex;
+			if curchar then curchar←wxylookup(c,curchar)
+			else	begin error((c+'140)&amp;&quot;-variable not followed by&quot;&amp;
+					&quot; proper subscript&quot;); go to done_with_entry;
+				end;
+			end
+		else 	begin error(&quot;Improper name&quot;); go to done_with_entry;
+			end;
+		end;
+	dsvalue(curchar); setfield(type,mem[curchar],newid);
+	vmemint(curchar)←curchar;
+done_with_entry:
+	getnext; if curtype≠comma then done;
+	end;
+go to endstmt end;
+
+[mfparam] begin integer n; real t; n←curchar; t←getexp;
+if n≤realpars then realparam[n]←t else
+	begin integer oldval; oldval←intparam[n];
+	intparam[n]←t+.5;
+	if n≤penparam and intparam[n]≠oldval then
+		begin clearpens(false) # hpenht or vpenwd change =&gt; pens must too;
+		if intparam[n]&lt;1 then
+			begin error(sympar[n]&amp;&quot; too small, set to 1&quot;);
+			intparam[n]←1;
+			end;
+		end;
+	end;
+go to endstmt end;
+
+[contrl] begin control←control lor curvalint; go to finstmt end;
+
+[no] begin getnext; if curtype≠contrl then flusherror(&quot;Unknown control code&quot;);
+control←control land (lnot curvalint); go to finstmt end;
+
+[iff] begin integer lhs, rhs, t, unbal; boolean b; label badif;
+cond←true; getnext; lhs←scanexp; cond←false;
+if curtype≠rel then
+	begin error(&quot;Missing relation&quot;); go to badif;
+	end;
+t←curchar # t identifies the relation;
+if t&gt;&quot;≠&quot;+2 then t←t-(&quot;&lt;&quot;-(&quot;≠&quot;+3)) # assumes consecutive 7-bit codes ≠≤≥ and &lt;=&gt;;
+getnext; rhs←scanexp;
+if curtype≠colon then
+	begin error(&quot;Missing &quot;&quot;:&quot;&quot;&quot;); dslist(rhs); go to badif;
+	end;
+lhs←add(lhs,-1.0,rhs); dslist(rhs);
+if mem[lhs] then
+	begin print(nextline,&quot;! &quot;); dumpdlist(lhs);
+	error(&quot;Indeterminate relation&quot;); go to badif;
+	end;
+b←case t-&quot;≠&quot; of (vmem[lhs]≠0.0, vmem[lhs]≤0.0, vmem[lhs]≥0.0, vmem[lhs]&lt;0.0,
+	vmem[lhs]=0.0, vmem[lhs]&gt;0.0);
+freeavail(lhs);
+if b then go to beginstmt;
+comment The relation is false, skip over the code;
+unbal←0;
+loop	begin getnext; case curtype of begin
+	[quote] getstring;
+	[iff] unbal←unbal+1;
+	[elsse] if unbal=0 then done;
+	[ffi] if unbal=0 then go to finstmt else unbal←unbal-1;
+	[stop][fullstop] begin error(&quot;Routine ended in skipped conditional text&quot;);
+	go to endstmt end;
+	else comment do nothing;
+	  end;
+	end;
+comment The matching else has been found;
+gettok; if curtype≠colon then
+	begin error(&quot;Missing colon inserted&quot;); go to mainswitch;
+	end;
+go to beginstmt;
+badif: dslist(lhs); go to beginstmt end;
+
+[elsse] begin comment The else branch of a conditional will be skipped;
+integer unbal; unbal←0;
+loop	begin getnext; case curtype of begin
+	[quote] getstring;
+	[stop][fullstop] begin error(&quot;Routine ended in skipped conditional text&quot;);
+	go to endstmt end;
+	[iff] unbal←unbal+1;
+	[ffi] if unbal=0 then done else unbal←unbal-1;
+	else comment do nothing;
+	  end;
+	end;
+go to finstmt end;
+
+[ffi] go to finstmt # fi when encountered normally is a no-op;
+
+[draw] begin if scanpath(false) then drawit(false) else flusherror(&quot;Bad path&quot;);
+go to endstmt end;
+
+[ddraw] begin integer i # temporary variable used to copy point information;
+integer dnpts # number of points on first path;
+if not scanpath(true) then flusherror(&quot;Bad path&quot;);
+if curtype≠comma then flusherror(&quot;Missing &quot;&quot;,&quot;&quot;&quot;);
+for i←0 thru npts+1 do
+	begin dpnti[i]←pointi[i]; dpntx[i]←pointx[i]; dpnty[i]←pointy[i];
+	dtanx[i]←tanx[i]; dtany[i]←tany[i];
+	end;
+dnpts←npts;
+if not scanpath(true) then flusherror(&quot;Bad path&quot;);
+if npts≠dnpts then flusherror(&quot;Paths don't match up&quot;);
+drawit(true); go to endstmt end;
+
+[varchar] begin integer acc; acc←0;
+loop	begin integer i; i←getexp+.5; acc←(acc lsh 7)+i;
+	if curtype≠comma then done;
+	end;
+charic←memory[location(acc),real]; go to endstmt end;
+
+[charlist] if tfxmode then begin integer i; label nogood;
+tfxinit; i←getexp+.5;
+loop	begin integer i1;
+	if i&lt;0 or i&gt;'177 then go to nogood;
+	if tfxdir[i] land (lgmsk lsh lgd) then
+		error(&quot;Duplicate ligature/charlist entry&quot;);
+	if curtype≠comma then done;
+	i1←getexp+.5;
+	if i1=0 then go to endstmt;
+	if i1≤i or i1&gt;i+(lgmsk-1) then go to nogood;
+	tfxdir[i]←tfxdir[i]+((i1-i)lsh lgd);
+	i←i1;
+	end;
+tfxdir[i]←tfxdir[i]+(lgmsk lsh lgd); go to endstmt;
+nogood: flusherror(&quot;Improper charlist entry&quot;) end else go to flush;
+	
+[texinfo] if tfxmode then begin tfxinit;
+loop	begin tfxptr←tfxptr+1;
+	if tfxptr&gt;tfxparsize then flusherror(&quot;Too much texinfo&quot;);
+	tfxpars[tfxptr]←getexp;
+	if curtype≠comma then done;
+	end;
+go to endstmt end else go to flush;
+
+[lig] if tfxmode then begin integer i; label nogood;
+tfxinit;
+loop	begin integer p;
+	getnext; if curtype=semi or curtype=fullstop then go to endstmt;
+	p←scanexp; checkscalar(p,&quot;character code&quot;,0.0); freeavail(p);
+	i←vmem[p]+.5;
+	if i&lt;0 or i&gt;'177 then go to nogood;
+	if curtype=colon then
+		begin if nlg≥lgmsk then flusherror(&quot;Too many ligatures&quot;);
+		if tfxdir[i] land (lgmsk lsh lgd) then
+			error(&quot;Duplicate ligature/charlist entry&quot;);
+		tfxdir[i]←tfxdir[i]+((nlg+1) lsh lgd);
+		end
+	else if curtype=equals then
+		begin integer j;
+		j←getexp+.5;
+		if j&lt;0 or j&gt;'177 then go to nogood;
+		nlg←nlg+1;
+		tfxlg[nlg]←(j lsh hw)+i;
+		if curtype≠comma then done;
+		end
+	else if curtype=kern then
+		begin integer j;
+		tfxkr[nkr+1]←getexp;
+		j←0; while tfxkr[j]≠tfxkr[nkr+1] do j←j+1;
+		if j&gt;nkr then nkr←j;
+		nlg←nlg+1; tfxlg[nlg]←((j+'201) lsh hw)+i;
+		if curtype≠comma then done;
+		end
+	else go to nogood;
+	end;
+tfxlg[nlg]←tfxlg[nlg] lor (1 lsh (bitsperwd-1)); go to endstmt;
+nogood: flusherror(&quot;Improper ligature/kern entry&quot;) end else go to flush;
+
+[invisible] if symbolic then
+	begin integer xco,yco; xco←getexp;
+	if curtype≠comma then flusherror(&quot;Missing &quot;&quot;,&quot;&quot;&quot;);
+	yco←getexp;
+	proofins(xco+.5,yco+.5,&quot;&quot;);
+	go to endstmt;
+	end
+else go to flush;
+
+[stop] begin if pagewarning then print(nextline,&quot;(end occurred within &quot;,
+	pagewarning,&quot;)&quot;);
+return end # this is how the maincontrol procedure should end;
+
+else flusherror(&quot;You can't begin a statement like that&quot;)
+  end;
+
+finstmt: getnext;
+endstmt: if curtype=semi then go to beginstmt;
+if curtype=fullstop then
+	begin comment End of a main routine or subroutine;
+	integer p,q;
+	p←field(info,vmemint(curarea)) # delete x-variables;
+	while type(p)≠areahead do
+		begin dsvalue(p); p←link(p);
+		end;
+	p←field(info,vmemint(curarea)); setfield(info,vmemint(curarea),curarea);
+	while type(p)≠areahead do
+		begin q←link(p); freeavail(p); p←q;
+		end;
+	comment This cumbersome two-pass method for deletion is necessary because
+	dsvalue may call idname, which requires well-formed xy-lists;
+	p←field(link,vmemint(curarea)) # delete y-variables;
+	while type(p)≠areahead do
+		begin dsvalue(p); p←link(p);
+		end;
+	p←field(link,vmemint(curarea)); setfield(link,vmemint(curarea),curarea);
+	while type(p)≠areahead do
+		begin q←link(p); freeavail(p); p←q;
+		end;
+	if curarea≠main then
+		begin comment End of a subroutine;
+		integer p;
+		if trcalls then print(nextline,&quot;Leaving &quot;,idname(name(-recovery)));
+DEBUGONLY	if trcalls then print(&quot; [&quot;,oneused,&quot;,&quot;,twoused,&quot;]&quot;);
+		p←link(-recovery); while type(p)≠colon do
+			begin setfield(type,mem[name(p)],param) # reset params;
+			p←link(p);
+			end;
+		p←curarea; curarea←link(curarea); freeavail(p);
+		p←curtop;
+		cursize←vmem[p]; curpen←info(p); curploc←0; eraser←false;
+		p←link(p);
+		freeavail(curtop);
+		curtype←info(p); control←vmemint(p); curtop←link(p);
+		freeavail(p);
+		popinput; go to endstmt;
+		end;
+	comment End of a main routine;
+	finishchar # output the drawing to a font file if appropriate;
+	charclear # reinitialize the character parameters to default values;
+	pagewarning←&quot;&quot; # no error to encounter file pages now;
+	go to beginstmt;
+	end;
+error(&quot;Extra code at end of command will be flushed&quot;);
+flush: while curtype≠semi and curtype≠fullstop and curtype≠stop do getnext;
+if curtype=fullstop then go to endstmt else go to beginstmt;
+end;
+end
+
+</PRE>
+</BODY>
+</HTML>

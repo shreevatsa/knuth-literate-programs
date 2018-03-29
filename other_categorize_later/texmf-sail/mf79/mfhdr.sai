@@ -1,0 +1,395 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00006 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00002 00002	The following declarations are used in all of METAFONT's modules.
+C00007 00003	Declarations internal to MFSYS
+C00013 00004	Declarations internal to MFNTRP
+C00027 00005	Declarations internal to MFRAST
+C00032 00006	Declarations internal to MFOUT
+C00035 ENDMK
+Cⓧ;
+comment The following declarations are used in all of METAFONT's modules.
+Only brief explanatory comments appear here -- fuller documentation appears
+in each individual module.
+
+This page lists several standard abbreviation conventions.
+The next four pages include declarations of everything external that is
+internal to MFSYS, MFNTRP, MFRAST, MFOUT, respectively;
+
+require &quot;⊂⊃⊂⊃&quot; delimiters; &quot;used for macros&quot;
+define # = ⊂;comment⊃; &quot;used henceforth instead of quoted comments like this&quot;
+
+define SUAI = true, TENEX = false, PARC = false;
+define IFSUAI = ⊂ifc SUAI thenc⊃;
+define IFTENEX = ⊂ifc TENEX thenc⊃;
+define IFPARC = ⊂ifc PARC thenc⊃;
+define ENDSUAI = ⊂endc⊃;
+define ENDTENEX = ⊂endc⊃;
+define ENDPARC = ⊂endc⊃;
+
+define nextline = ⊂('15&amp;'12)⊃ # carriage-return and line-feed in print commands;
+define eps = ⊂10^-5⊃    # a rather small but positive number;
+define thru = ⊂step 1 until⊃ # abbreviation for for clauses;
+define loop = ⊂while true do⊃ # abbreviation for loops exited by &quot;done&quot; or &quot;return&quot;;
+integer floorignore # used for truncation in mid-expression;
+define floor(x) = ⊂(floorignore←x)⊃ # the function $\lfloor x\rfloor$;
+define infty = 100000 # infinity (approximately);
+IFSUAI define DEBUGONLY = ⊂comment⊃ # changed to ⊂⊃ when debugging METAFONT; ENDSUAI
+IFPARC define DEBUGONLY = ⊂⊃ # changed to ⊂⊃ when debugging METAFONT; ENDPARC
+DEBUGONLY external procedure bail # the SAIL debugger in case of need;
+DEBUGONLY require 500 system_pdl # bail seems to need this;
+
+define bitsperwd = 36	     # word size in this implementation;
+comment The METAFONT programs can be adapted for machines with somewhat smaller
+word size (e.g. 32 bits), so all word-size dependent quantities are
+defined symbolically to aid in this conversion;
+
+define internaldef = ⊂comment⊃ #
+	When a quantity is defined below, e.g. &quot;define hashsize=127&quot;, the
+	METAFONT module where it is appropriate to introduce the quantity will
+	include an internal definition for documentation purposes,
+	e.g. &quot;internaldef hashsize = 127&quot;. The internal definitions are
+	not necessarily up-to-date, however... for example, the MFNTRP
+	module might say &quot;internaldef hashsize = 89&quot; but hashsize might
+	really be 127 as defined here;
+
+define FIXTHIS = ⊂comment⊃ # marks things that still need to be done;
+
+FIXTHIS: Make all of the METAFONT documentation crystal clear;
+
+define saf = ⊂safe⊃ # used when an array is believed to require no bounds checks;
+define simp = ⊂simple⊃ # used when SAIL can save time implementing this procedure;
+DEBUGONLY redefine saf = ⊂⊃ # when debugging, belief turns to disbelief;
+DEBUGONLY redefine simp = ⊂⊃ # and simplicity dies too;
+comment Declarations internal to MFSYS;
+external procedure quit # closes output files and terminates METAFONT;
+external boolean pausing_on_errors # should METAFONT wait after error messages?;
+external boolean deletions_allowed # is it safe for error routine to call getnext?;
+external procedure error(string s) # prints an error message;
+external procedure errorstop(string s) # prints message and dies;
+external procedure reportoverflow(string s; integer n)
+	# for fatal errors when a METAFONT table is undersized;
+define overflow(s)=⊂reportoverflow(&quot;s&quot;,s)⊃ # specifies inadequate table size;
+external procedure memoverflow # overflow of the one-word memory;
+external procedure vmemoverflow # overflow of the two-word memory;
+external procedure confusion # METAFONT consistency check failure;
+
+define links = 13 # number of bits per pointer;
+define memsize=5000 # size of dynamic list memory, must be ≤ 2^links;
+define vmemsize=2500 # size of two-word list memory, must be &lt;&lt; memsize;
+define memreal(p)=⊂memory[location(mem[p]),real]⊃ # mem[p] as type real;
+define vmemint(p)=⊂memory[location(vmem[p]),integer]⊃ # vmem[p] as integer;
+DEBUGONLY external integer oneused,twoused # how much memory is in use;
+
+define fs(f) = ⊂f⊃&amp;&quot;s&quot; # field size of f, in bits;
+define fd(f) = ⊂f⊃&amp;&quot;d&quot; # field displacement of f, in bits;
+define field(f,x) = ⊂ifc fd(f)=0 thenc ((x) land (2^fs(f)-1))
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc ((x) lsh -fd(f))
+	elsec (((x) lsh -fd(f)) land (2^fs(f)-1)) endc endc⊃ # field f of x;
+define setfield(f,x,y) = ⊂ifc fd(f)=0 thenc x←(x land(-2^fs(f)))+(y)
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc 
+		x←((x lsh(bitsperwd-fd(f)))+(y))rot fd(f)
+	elsec x←(((x rot -fd(f))land(-2^fs(f)))+(y))rot fd(f) endc endc⊃
+		# sets field f of x equal to y, 0 ≤ y &lt; 2^fs(f);
+define ufield(f,x) = ⊂((x) land((1 lsh(fs(f)+fd(f)))-2^fd(f)))⊃
+		# unshifted field f of x;
+define setufield(f,x,y) = ⊂x←(x land lnot((1 lsh(fs(f)+fd(f)))-2^fd(f)))+(y)⊃
+		# field f of x set to unshifted value y;
+define linkd = 0 # displacement of link field;
+define link(p) = ⊂field(link,mem[p])⊃ # link field of mem[p];
+define setlink(p,y) = ⊂setfield(link,mem[p],y)⊃ # sets link(p)←y;
+define infod = links, infos = bitsperwd-infod # definition of info field;
+define info(p) = ⊂field(info,mem[p])⊃ # info field of mem[p];
+define setinfo(p,y) = ⊂setfield(info,mem[p],y)⊃ # sets info(p)←y;
+
+external integer avail # head of available space list for one-word nodes;
+external integer vavail # head of available space list for two-word nodes;
+define getavail(p) = ⊂begin if(p←avail)then
+	begin avail←mem[avail]; DEBUGONLY oneused←oneused+1; end
+	else if(p←vavail)then
+	begin vavail←mem[vavail]; DEBUGONLY twoused←twoused+1; end
+	else memoverflow; end⊃ # p ← new one-word node;
+define getvavail(p) = ⊂begin if(p←vavail)then vavail←mem[vavail]
+	else vmemoverflow; DEBUGONLY twoused←twoused+1; end⊃ # p ← new two-wd node;
+define freeavail(p) = ⊂if p&lt;vmemsize then
+	begin mem[p]←vavail; vavail←p; DEBUGONLY twoused←twoused-1; end
+	else begin mem[p]←avail; avail←p; DEBUGONLY oneused←oneused-1; end⊃
+		# node p now available;
+external procedure dslist(integer p) # makes list of nodes available;
+
+DEBUGONLY external procedure checkmem(boolean printlocs) # checks links in mem;
+define wvar = memsize-1 # head of list for w-variables;
+define depvar = wvar-1 # head of list for dependent variables;
+define temphead = depvar-1 # temporary list head for created lists;
+define main = ⊂1⊃ # area header for main program;
+define firstvmem = 2, lastmem = temphead-1 # nodes not specially dedicated;
+comment Declarations internal to MFNTRP;
+
+define types=6, typed=bitsperwd-types	# type field in nodes;
+define names=typed-links, named=links 	# name field in nodes;
+define type(p)=⊂field(type,mem[p])⊃	# type field in node p;
+define name(p)=⊂field(name,mem[p])⊃	# name field in node p;
+
+external saf integer array mem[0:memsize-1] # dynamic list memory;
+external saf real array vmem[0:vmemsize-1] # two-word list memory;
+external integer curtype # the current type code appearing in the input;
+external real curval # the current value appearing in the input;
+external real cursize # the current pen size;
+external integer curpen # the current pen type;
+external string pagewarning # most recent quoted string scanned;
+
+define innput=0	# &quot;input&quot;;
+define rel=1	# &quot;&lt;&quot;, &quot;&gt;&quot;, &quot;=&quot;, &quot;≠&quot;, &quot;≤&quot;, or &quot;≥&quot;;
+define ddot=2	# &quot;..&quot;;
+define rpren=3	# &quot;)&quot;;
+define lbrace=4	# &quot;{&quot;;
+define rbrace=5	# &quot;}&quot;;
+define hashmark=6	# &quot;#&quot;;
+define comma=7	# &quot;,&quot;;
+define colon=8	# &quot;:&quot;;
+define varparam=9	# &quot;var&quot;;
+define indexparam=10 # &quot;index&quot;;
+define semi=11	# semicolon;
+define quote=12	# &quot;&quot;&quot;&quot;;
+define stop=13	# &quot;end&quot;;
+define fullstop=14	# period ending a routine or subroutine;
+define iff=15	# &quot;if&quot;;
+define elsse=16	# &quot;else&quot;;
+define ffi=17	# &quot;fi&quot;;
+define ident=18	# identifier;
+define wxy=19	# &quot;w&quot;, &quot;x&quot;, or &quot;y&quot;;
+define rbrack=20	# &quot;]&quot;;
+define lbrack=21	# &quot;[&quot;;
+define digit=22	# &quot;0&quot;, &quot;1&quot;, ..., &quot;9&quot;;
+define pnt=23	# &quot;.&quot;;
+define apost=24	# &quot;'&quot;;
+define letter=25	# &quot;A&quot;, &quot;B&quot;, ..., &quot;Z&quot;, &quot;a&quot;, &quot;b&quot;, ..., &quot;z&quot;;
+define equals=26	# &quot;=&quot;;
+define openq=27	# &quot;`&quot;;
+define space=28	# &quot; &quot; or character ignored by scanner;
+define carret=29	# carriage return or form feed or &quot;%&quot;;
+define abbs=30	# &quot;|&quot;;
+define index=31	# index argument;
+define lpren=32	# &quot;(&quot;;
+define char=33	# single character in constant or subroutine call;
+define constant=34	# (real) constant;
+define plusorminus=35	# &quot;+&quot; or &quot;-&quot;;
+define timesordiv=36	# &quot;.&quot; or &quot;*&quot; or &quot;ⓧ&quot; or &quot;/&quot;;
+define randm=37 # &quot;nrand&quot;;
+define known=38	# variable whose value is known;
+define direction=39	# &quot;lft&quot; or &quot;rt&quot; or &quot;top&quot; or &quot;bot&quot;;
+define dependent=40	# variable whose value is a dependency list;
+define newid=41 # identifier whose type has not yet been assigned;
+define independent=42	# variable whose value is independent;
+define unary=43	# &quot;sqrt&quot; or &quot;round&quot; or &quot;good&quot;;
+define subroutine=44	# identifier corresponding to a stored subroutine;
+define penname=45	# &quot;cpen&quot; or &quot;hpen&quot; or ... or &quot;spen&quot; or &quot;epen&quot;;
+define cawl=46	# &quot;call&quot;;
+define new=47	# &quot;new&quot;;
+define mfparam=48	# &quot;charcode&quot;, &quot;maxvr&quot;, etc.;
+define contrl=49	# &quot;proofmode&quot;, &quot;pause&quot;, &quot;eqtrace&quot;, etc.;
+define no=50	# &quot;no&quot;;
+define draw=51	# &quot;draw&quot;;
+define ddraw=52	# &quot;ddraw&quot;;
+define subrtn=53	# &quot;subroutine&quot;;
+define param=54	# identifier that is a parameter;
+define varchar=55	# &quot;varchar&quot;;
+define charlist=56 # &quot;charlist&quot;;
+define texinfo=57	# &quot;texinfo&quot;;
+define lig=58	# &quot;lig&quot;;
+define invisible=59	# &quot;invisible&quot;;
+define kern=60	# &quot;kern&quot;;
+define areahead=(2^types-1)	# area header node;
+define lft=0	# &quot;lft&quot;;
+define rt=1	# &quot;rt&quot;;
+define top=2	# &quot;top&quot;;
+define bot=3	# &quot;bot&quot;;
+define root=0	# &quot;sqrt&quot;;
+define sine=1	# &quot;sind&quot;;
+define cosine=2	# &quot;cosd&quot;;
+define round=3	# &quot;round&quot;;
+define good=4	# &quot;good&quot;;
+define cpen=0	# &quot;cpen&quot;;
+define hpen=1	# &quot;hpen&quot;;
+define vpen=2	# &quot;vpen&quot;;
+define lpen=3	# &quot;lpen&quot;;
+define rpen=4	# &quot;rpen&quot;;
+define spen=5	# &quot;spen&quot;;
+define epen=6	# &quot;epen&quot;;
+define badpen=7	# illegal pen type (the initial value);
+
+define realpars=19,intpars=9 # number of real and integer parameters;
+define penparam=realpars+2 # distinguish the first two integer parameters;
+define intpar=realpars # offset used for integer parameters;
+external saf real array realparam[1:realpars] # real parameters to METAFONT;
+external saf integer array intparam[intpar+1:intpar+intpars] # integer parameters;
+define xxtr=⊂realparam[1]⊃, xytr=⊂realparam[2]⊃, xtr=⊂realparam[3]⊃,
+	yxtr=⊂realparam[4]⊃, yytr=⊂realparam[5]⊃, ytr=⊂realparam[6]⊃;
+define charwd=⊂realparam[7]⊃ # width of character to be output;
+define charht=⊂realparam[8]⊃ # height of character to be output;
+define chardp=⊂realparam[9]⊃ # depth of character to be output;
+define charic=⊂realparam[10]⊃ # italic correction of character to be output;
+define safetyfactor=⊂realparam[11]⊃ # extra factor for overlap in ddraw;
+define maxvr=⊂realparam[12]⊃, minvr=⊂realparam[13]⊃,
+	maxvs=⊂realparam[14]⊃, minvs=⊂realparam[15]⊃ # velocity thresholds;
+define epenxfactor=⊂realparam[16]⊃, epenyfactor=⊂realparam[17]⊃,
+	excorr=⊂realparam[18]⊃,	eycorr=⊂realparam[19]⊃ # parameters for \&amp;{epen}s;
+define hpenht=⊂intparam[intpar+1]⊃ # hpen height;
+define vpenwd=⊂intparam[intpar+2]⊃ # vpen width;
+define dumplength=⊂intparam[intpar+3]⊃ # length of strings for dumping;
+define charcode=⊂intparam[intpar+4]⊃ # ascii code of character to be output;
+define chardw=⊂intparam[intpar+5]⊃ # device width of character to be output;
+define seed=⊂intparam[intpar+6]⊃ # controls random number generator;
+define dumpwindow=⊂intparam[intpar+7]⊃ # number of characters in error messages;
+define crsbreak=⊂intparam[intpar+8]⊃ # $y$ coordinate for breaking a character;
+define maxht=⊂intparam[intpar+9]⊃ # maximum height above baseline;
+
+external integer control # bits that control various METAFONT functions;
+
+define hashsize = 89 # hashtable size, should be prime;
+define namesize = 300 # maximum number of different identifiers, is &lt;&lt; 2^names;
+comment The difference between 2^names and namesize is the maximum allowable
+	subscript on a w-, x-, or y-variable;
+external saf integer array hashh[0:hashsize-1] # list heads for hashing;
+external saf integer array hname[0:namesize-1] # first characters of identifiers;
+external integer hptr # number of different identifiers currently in memory;
+define bitsrem=bitsperwd mod 5 # extra bits at left of hname entries;
+external boolean forcednew # identifier when looked up will not match any other;
+external integer procedure idlookup(integer firstfew,length) # look for identifier;
+external string procedure indexname(integer i) # symbolic name of an index value;
+external string procedure idname(integer p) # produces name for printouts;
+
+define stacksize=40 # maximum number of simultaneous input sources;
+external saf string array inbufstack[0:stacksize]; external string inbuf
+	# current lines being input from a character file;
+external saf string array curbfstack[0:stacksize]; external string curbuf
+	# the parts of inbuf that haven't yet been input;
+external saf string array filenmstack[0:stacksize]; external string filename
+	# the names of the current character files;
+external saf integer array locstack[0:stacksize]; external integer loc
+	# current scanner locations;
+external saf integer array recvrystack[0:stacksize]; external integer recovery
+	# information about what to do when done on each level;
+external integer inptr # first unused location in input stacks;
+
+external saf string array tokstring[0:1] # output of dumplist;
+external procedure dumplist(integer p,q) # makes strings out of a token list;
+external string procedure dumptokens(integer p) # simple special case of dumplist;
+external simp procedure pushinput # save current input status on the stacks;
+external simp procedure popinput # finish input level, restore the previous;
+external integer brchar # break character stored by system input;
+external integer eof # end-of-file code stored by system input;
+external procedure initin # get TEX input system ready to start;
+external string curfile # current input file name, set by dumpcontext;
+external integer curfpage,curfline # set by dumpcontext;
+external procedure dumpcontext # prints where the scanner is;
+external simp procedure getnext # sends next high-level token to curtype, curval;
+
+external saf string array fname[0:2] # file name, extension, and directory;
+external simp procedure scanfilename # sets up fname[0:2];
+
+define maxpoints=20 # maximum number of points per path;
+external integer npts # number of points in current path;
+external saf integer array pointi[0:maxpoints+1] # index associated with a point;
+external saf real array pointw[0:maxpoints+2] # pen width at a point;
+external saf real array pointx[0:maxpoints+1] # x coordinate at a point;
+external saf real array pointy[0:maxpoints+1] # y coordinate at a point;
+external saf real array tanx,tany[0:maxpoints+1] # tangent direction at a point
+	(or (0,0) if METAFONT is to choose the tangent direction);
+external saf boolean array pointstab[0:maxpoints+1] # pen width should be stable
+	at the current point (i.e., the derivative should be zero);
+external saf integer array dpnti[0:maxpoints+1] # pointi for first path in ddraw;
+external saf real array dpntx,dpnty,dtanx,dtany[0:maxpoints+1] # pointx,pointy,
+	tanx,tany arrays for the first path in ddraw;
+
+external procedure maincontrol # governs all the activities;
+comment Declarations internal to MFRAST;
+
+define all_ones=-1 # full word of one bits;
+define hw=bitsperwd div 2 # number of bits in a halfword;
+
+IFSUAI define xpenmin=-161,xpenmax=126,ypenmax=99,ypenmin=-ypenmax # legal pen range; ENDSUAI
+IFPARC define xpenmin=-125,xpenmax=126,ypenmax=99,ypenmin=-ypenmax # legal pen range; ENDPARC
+comment $\\{xpenmin}-1$ and \\{xpenmax} should be congruent to \\{hw},
+	modulo \\{bitsperwd};
+comment The Alphatype conversion routines assume that xpenmin+xrastmin≥-360
+	and xpenmax+xrastmax≤2047-360;
+define pmemsize=10000 # number of words of pen storage;
+
+external saf real array spenspec[1:7] # specifications for a special pen;
+external procedure makespen # create a new special pen or eraser;
+
+define epensize=ypenmax-ypenmin+1 # maximum length of \&amp;{epen} specs;
+external saf integer array epenlspec,epenrspec[0:epensize] # explicit pen specs;
+external integer epen0,epenptr # zero point and end of explicit pen specs;
+external procedure makeepen # create a new explicit pen or eraser;
+
+external integer curploc # location of the current pen in \\{pmem};
+external boolean eraser # the current &quot;pen&quot; really is an eraser;
+external procedure resetpens # initializes the current pen;
+external procedure clearpens(boolean all) # initializes the pen memory;
+external real procedure penadj(real width; integer dir) # boundary of pen position;
+
+IFSUAI define xrastmin=-144,xrastmax=900,yrastmin=-250,yrastmax=900 # raster bounds; ENDSUAI
+IFPARC define xrastmin=-72,xrastmax=360,yrastmin=-125,yrastmax=300 # raster bounds; ENDPARC
+comment \\{xrastmin} and \\{xrastmax} should be multiples of \\{bitsperwd};
+define rspan=yrastmax+ypenmax+1-yrastmin # words per raster column;
+define rcol(x)=⊂((x-(xrastmin+xpenmin)) div bitsperwd)⊃ # column for bit $x$;
+define rloc(x,y)=⊂rcol(x)*rspan+y⊃ # allocation function for \\{rast};
+define rast0=rloc(xrastmin+xpenmin,yrastmin+ypenmin),
+	rast1=rloc(xrastmax+xpenmax,yrastmax+ypenmax)+rspan;
+external saf integer array rast[rast0:rast1] # the big raster workspace;
+external integer xleft,xright,ylow,yhigh # active part of the raster;
+external procedure clearrast # sets raster to zero;
+
+external procedure drawit(boolean ddrawit) # draw a specified curve;
+
+define ddxmin=-89,ddxmax=414,ddymin=-149,ddymax=330 # datadisk window;
+comment $\\{ddxmin}-1$ and \\{ddymax} should be congruent to 18, modulo 36;
+comment we must have xrastmin+xpenmin≤ddxmin, ddxmax≤xrastmax+xpenmax,
+	yrastmin+ypenmin≤ddymin, ddymax≤yrastmax+ypenmax,
+	ddxmax-ddxmin&lt;504, ddymax-ddymin&lt;480;
+define ddn=5 # printing is confined to this many lines at bottom of screen;
+external procedure ddoutrast # displays the raster on datadisk screen;
+comment Declarations internal to MFOUT;
+
+define tfxmode=⊂(control land '4000)⊃ # make tex information file;
+define symbolic=⊂(control land '1000)⊃ # keep list of &quot;known&quot; xy-variables;
+
+external string maintitle # user's description of the font being generated;
+external string ofilname # output file name, set by first input;
+define numberofmodes=5 # number of output modes supported;
+define tfx=1,xgpfnt=3,proof=2,alf=5,chrs=4 # symbolic names of modes;
+define initblocks=6 # max number of blocks of preamble to font files;
+external saf integer array fntdir[0:'200*initblocks-1] # first blocks of font file;
+
+external procedure initout # get TEXOUT started properly;
+
+define proofmemsize=75 # size of proof mode tables;
+external procedure proofins(integer xco,yco; string s) # inserts into tree;
+
+external integer nkr,nlg # table pointers in tfx mode;
+external saf integer array tfxdir[0:'177] # tfx mode character table;
+define wds=6,hts=4,dps=4,ics=6,dws=6,lgs=9 # sizes of tfx fields;
+define lgmsk=(1 lsh lgs)-1 # maximum ligature field;
+define lgd=wds+hts+dps+ics+dws # ligature displacement;
+external saf integer array tfxlg[1:lgmsk+'177] # tfx ligature-and-kern codes;
+external saf real array tfxkr[1:lgmsk+'177] # tfx kern values;
+define tfxparsize=24 # max number of tfx parameters;
+external saf real array tfxpars[1:tfxparsize] # tfx parameters;
+external integer tfxptr # number of tfx parameters stored;
+external procedure tfxinit # ensures that tfx tables exist;
+
+external procedure charclear # initializes parameters for a new character;
+external procedure closeout # finishes off the output;
+external procedure finishchar # outputs a finished character;
+
+</PRE>
+</BODY>
+</HTML>

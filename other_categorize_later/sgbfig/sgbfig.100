@@ -1,0 +1,190 @@
+%!PS
+%%BoundingBox: 0 0 395 45 
+%%HiResBoundingBox: 0 0 394.5206 44.83177 
+%%Creator: MetaPost 2.000
+%%CreationDate: 2017.09.17:1026
+%%Pages: 1
+%*Font: cmtt10 9.96265 9.96265 2e:b9f01316ee801fffefc
+%%BeginProlog
+%%EndProlog
+%%Page: 1 1
+%%%ExactBoundingBox: 0 0 394.5206 44.83177
+ 0 0 0 setrgbcolor 0 0.5 dtransform truncate idtransform setlinewidth pop [] 0 setdash 1 setlinecap 1 setlinejoin 10 setmiterlimit
+newpath 67.91461 38.83177 moveto
+101.8719 6 lineto stroke
+ 0.5 0 dtransform exch truncate exch idtransform pop setlinewidth
+newpath 101.8719 38.83177 moveto
+101.8719 6 lineto stroke
+ 0 0.5 dtransform truncate idtransform setlinewidth pop
+newpath 101.8719 38.83177 moveto
+130.16965 6 lineto stroke
+newpath 135.82921 38.83177 moveto
+130.16965 6 lineto stroke
+newpath 135.82921 38.83177 moveto
+101.8719 6 lineto stroke
+newpath 135.82921 38.83177 moveto
+158.4674 6 lineto stroke
+newpath 169.78653 38.83177 moveto
+158.4674 6 lineto stroke
+newpath 169.78653 38.83177 moveto
+186.76517 6 lineto stroke
+newpath 203.74382 38.83177 moveto
+186.76517 6 lineto stroke
+newpath 203.74382 38.83177 moveto
+130.16965 6 lineto stroke
+newpath 203.74382 38.83177 moveto
+158.4674 6 lineto stroke
+newpath 203.74382 38.83177 moveto
+215.06294 6 lineto stroke
+newpath 237.70116 38.83177 moveto
+215.06294 6 lineto stroke
+newpath 237.70116 38.83177 moveto
+243.36072 6 lineto stroke
+newpath 237.70116 38.83177 moveto
+271.65846 6 lineto stroke
+ 1 1 1 setrgbcolor
+newpath 230.47081 33.78763 moveto
+244.9315 33.78763 lineto
+244.9315 43.87592 lineto
+230.47081 43.87592 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+232.47081 35.78763 moveto
+(15) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 60.68427 33.78763 moveto
+75.14496 33.78763 lineto
+75.14496 43.87592 lineto
+60.68427 43.87592 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+62.68427 35.78763 moveto
+(16) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 94.64156 33.78763 moveto
+109.10225 33.78763 lineto
+109.10225 43.87592 lineto
+94.64156 43.87592 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+96.64156 35.78763 moveto
+(17) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 128.59886 33.78763 moveto
+143.05956 33.78763 lineto
+143.05956 43.87592 lineto
+128.59886 43.87592 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+130.59886 35.78763 moveto
+(18) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 162.55618 33.78763 moveto
+177.01688 33.78763 lineto
+177.01688 43.87592 lineto
+162.55618 43.87592 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+164.55618 35.78763 moveto
+(19) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 196.51347 33.78763 moveto
+210.97417 33.78763 lineto
+210.97417 43.87592 lineto
+196.51347 43.87592 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+198.51347 35.78763 moveto
+(20) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 26.72696 0.95586 moveto
+41.18765 0.95586 lineto
+41.18765 11.04414 lineto
+26.72696 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+28.72696 2.95586 moveto
+(LE) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 94.64156 0.95586 moveto
+109.10225 0.95586 lineto
+109.10225 11.04414 lineto
+94.64156 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+96.64156 2.95586 moveto
+(VR) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 122.9393 0.95586 moveto
+137.4 0.95586 lineto
+137.4 11.04414 lineto
+122.9393 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+124.9393 2.95586 moveto
+(ST) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 151.23706 0.95586 moveto
+165.69775 0.95586 lineto
+165.69775 11.04414 lineto
+151.23706 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+153.23706 2.95586 moveto
+(AN) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 179.53482 0.95586 moveto
+193.99551 0.95586 lineto
+193.99551 11.04414 lineto
+179.53482 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+181.53482 2.95586 moveto
+(DO) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 207.8326 0.95586 moveto
+222.29329 0.95586 lineto
+222.29329 11.04414 lineto
+207.8326 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+209.8326 2.95586 moveto
+(KI) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 236.13037 0.95586 moveto
+250.59106 0.95586 lineto
+250.59106 11.04414 lineto
+236.13037 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+238.13037 2.95586 moveto
+(PS) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 264.42812 0.95586 moveto
+278.88881 0.95586 lineto
+278.88881 11.04414 lineto
+264.42812 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+266.42812 2.95586 moveto
+(PR) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 319.3756 0.95586 moveto
+333.83629 0.95586 lineto
+333.83629 11.04414 lineto
+319.3756 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+321.3756 2.95586 moveto
+(AL) cmtt10 9.96265 fshow
+ 1 1 1 setrgbcolor
+newpath 353.33295 0.95586 moveto
+367.79364 0.95586 lineto
+367.79364 11.04414 lineto
+353.33295 11.04414 lineto
+ closepath fill
+ 0 0 0 setrgbcolor
+355.33295 2.95586 moveto
+(KO) cmtt10 9.96265 fshow
+showpage
+%%EOF

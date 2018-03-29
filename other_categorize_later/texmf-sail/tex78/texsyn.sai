@@ -1,0 +1,1355 @@
+entry;require &quot;TEXHDR.SAI&quot; source_file;
+internal integer curcmd # the current command code appearing in the input;
+internal integer curchar # the current character code appearing in the input;
+internaldef escape=0	# escape delimiter (\ in TEX manual);
+internaldef lbrace=1	# begin block symbol ( { );
+internaldef rbrace=2	# end block symbol ( } );
+internaldef mathbr=3    # math break ( $ );
+internaldef tabmrk=4	# tab mark ( ⓧ );
+internaldef carret=5	# carriage return and comment mark ( % );
+internaldef macprm=6	# macro parameter ( # );
+internaldef supmrk=7	# superscript ( ^ );
+internaldef submrk=8	# subscript ( ↓ );
+internaldef ignore=9	# chars to ignore;
+internaldef spacer=10	# chars treated as blank space;
+internaldef letter=11	# chars treated as letters;
+internaldef otherchar=12 # none of the above character types;
+internaldef parend=13	# end of paragraph;
+
+internaldef match=14	# macro parameter matching;
+internaldef outpar=ignore # output a macro parameter;
+internaldef endv=15	# end of vlist in halign or valign template;
+internaldef call=16	# call a user-defined macro;
+internaldef xt=17 	# extensions to basic TEX (\x);
+
+internaldef assignglue=18 # user-defined glue;
+internaldef font=19	# user-defined current font;
+
+internaldef assignreal=20 # user-defined length;
+internaldef def=21	# macro definition (\def,\gdef);
+internaldef output=22	# output routine definition (\output);
+internaldef innput=23	# required input file (\input);
+internaldef setpar=24	# set TEX control parameter (\trace,\jpar);
+internaldef stop=25	# end of input (\end);
+internaldef ddt=26	# emergency debugging (\ddt);
+internaldef ascii=27	# code for possibly untypeable character (\char);
+internaldef chcode=28	# change chartype table (\chcode);
+internaldef fntfam=29	# declare font family (\mathrm,etc.);
+internaldef setcount=30 # set current page number (\setcount);
+internaldef advcount=31 # increase current page number (\advcount);
+internaldef count=32	# insert current page number (\count);
+internaldef ifeven=33	# conditional on count even (\ifeven);
+internaldef ifT=34	# conditional on character T (\ifT);
+internaldef elsecode=35	# delimiter for conditionals (\else);
+internaldef box=36	# saved box (\box,\page) or justification(\hjust,\vjust);
+internaldef hmove=37	# horizontal motion of box (\moveleft,\moveright);
+internaldef vmove=38	# vertical motion of box (\raise,\lower);
+internaldef save=39	# save a box (\save);
+internaldef leaders=40	# define leaders (\leaders);
+internaldef halign=41	# horizontal table alignment (\halign);
+internaldef valign=42	# vertical table alignment (\valign);
+internaldef noalign=43	# insertion into halign or valign (\noalign);
+internaldef vskip=44	# vertical glue (\vskip,\vfill);
+internaldef hskip=45	# horizontal glue (\hskip,\hfill);
+internaldef vrule=46	# vertical rule (\vrule);
+internaldef hrule=47	# horizontal rule (\hrule);
+internaldef topbotins=48 # inserted vlist (\topinsert or \botinsert);
+internaldef topbotmark=49 # insert mark (\topmark,\botmark);
+internaldef mark=50	# define a mark (\mark);
+internaldef penalty=51	# specify badness of break (\penalty);
+internaldef noindent=52	# begin nonindented paragraph (\noindent);
+internaldef eject=53	# eject page here (\eject);
+internaldef discr=54	# discretionary hyphen (\-,\*);
+internaldef accent=55	# attach accent to character (\+);
+internaldef newaccent=56 # define nonstandard accent (\accent);
+internaldef eqno=57	# insert equation number (\eqno);
+internaldef mathonly=58	# character or token allowed in mathmode only;
+internaldef exspace=59	# explicit space (\ );
+internaldef nonmathletter=60 # letter except in mmode;
+internaldef leftright=61 # variable delimiter (\left, \right);
+internaldef mathinput=63 # component of math formula (\mathop,\mathbin, etc.);
+internaldef limsw=64	# modify limit conventions (\limitswitch);
+internaldef above=65	# numerator-denominator separator(\above,\atop,\over,\comb);
+internaldef mathstyle=66 # style or space specification (\dispstyle,\,,etc.);
+internaldef italcorr=67 # italic correction (\/);
+internaldef vcenter=68  # vjust centered on axis (\vcenter);
+internaldef hangindent=69 # specifies hanging indentation (\hangindent);
+
+internaldef maxopcode=hangindent # the largest code number;
+internaldef charcodes=otherchar+1 # number of distinct codes allowed in chartype;
+internaldef texpars=9 # number of distinct parameters settable by setpar command;
+internaldef hashsize = 353 # hashtable size, should be prime and &lt; 2^chars-127;
+internal saf integer array hash[0:hashsize-1] # hash table for packed names;
+internaldef eqtbsize=hashsize+128+128+12+texpars # size of table for current values;
+internal saf integer array eqtb[0:eqtbsize-1] # equivalents of symbols &amp; parameters;
+internaldef chartype(c) = ⊂eqtb[c+(hashsize+128)]⊃ # cmds associated with chars;
+internaldef tracing = ⊂eqtb[hashsize+268]⊃ # controls diagnostics, see TEXSEM p.4;
+internaldef jpar = ⊂eqtb[hashsize+269]⊃ # controls justification, see TEXSEM p.13;
+comment eqtb[hashsize+256:hashsize+267] is for the &quot;mathfonttable&quot;, see TEXSEM p.7;
+
+internaldef idlens=3,idlend=links 			# idlen field in eqtb;
+internaldef idlevs=5,idlevd=idlens+idlend		# idlev field in eqtb;
+internaldef idcmdd=idlevs+idlevd,idcmds=bitsperwd-idcmdd # idcmd field in eqtb;
+internal integer curlev # the current level of nesting, times 2^idlevd;
+internaldef savesize = 100 # size of savestack;
+internal integer saveptr # first unused entry on savestack;
+internal saf integer array savestack[0:savesize+1] # place for dormant eqtb entries;
+
+internaldef level1 = 1 lsh idlevd;
+
+internal procedure initsave # initialize the save-restore mechanism;
+begin curlev ← level1;
+saveptr←0;
+end;
+
+simple procedure eqdestroy(integer eqtbval);
+integer p,c;
+p←field(link,eqtbval);
+c←field(idcmd,eqtbval);
+case c of begin
+[call] delrclink(p) # p points to reference count
+		of token list for user-defined macro;
+[xt] eqdestroyext(p) # possible extension to TEX;
+[assignglue] delgluelink(p) # p points to glue node;
+else comment do nothing if redefining other control sequences;
+  end;
+end;
+
+internal simple procedure eqdefine(integer index,cmd,lnk) # change eqtb entry;
+begin comment This procedure defines an eqtb entry having specified idcmd
+and link fields, and saves the former value if appropriate;
+integer t,l;
+l←ufield(idlev,t←eqtb[index]);
+if l=curlev then
+	eqdestroy(t) comment redefinition on same level;
+else if curlev&gt;level1 then
+	begin comment save definition on old level;
+	if saveptr≥savesize-1 then overflow(savesize);
+	savestack[saveptr]←t; savestack[saveptr+1]←index;
+	saveptr←saveptr+2 # store two words on savestack;
+	end;
+eqtb[index]←ufield(idlen,t) + (cmd lsh idcmdd) + curlev + lnk;
+end;
+
+internal procedure chcodedef(integer index,valu) # eqdefine for char codes;
+begin comment This procedure is called with 0≤index&lt;128 by a \chcode operation,
+or with index≥128 by a parameter setting operation like \trace or \mathrm;
+if curlev &gt; level1 then
+	begin if saveptr≥savesize-1 then overflow(savesize);
+	savestack[saveptr]←eqtb[index+(hashsize+128)];
+	savestack[saveptr+1]←index+(hashsize+128);
+	saveptr←saveptr+2 # store two words on savestack;
+	end;
+if index&lt;0 or index≥eqtbsize-(hashsize+128) or (index&lt;128 and valu≥charcodes) then
+	error(&quot;Improper code&quot;)
+else eqtb[index+(hashsize+128)]←valu;
+end;
+
+internal integer procedure unsave # clears off top nesting level of savestack
+	and returns the ending-routine code;
+begin integer t;
+curlev ← curlev - level1;
+if curlev then
+while true do
+	begin saveptr←saveptr-1; t←savestack[saveptr] # get top entry;
+	if t&lt;0 then return(-t);
+	if t≥refct1 then
+		begin comment delete control sequence from hash table;
+		t←t-refct1; eqdestroy(eqtb[t]);
+		eqtb[t] ← 0;
+		if t &lt; hashsize then hash[t]←0;
+		end
+	else	begin comment restore old eqtb entry;
+		eqdestroy(eqtb[t]) # after properly disposing of the present one;
+		saveptr←saveptr-1;
+		eqtb[t]←savestack[saveptr];
+		end;
+	end
+else	begin comment curlev mustn't become zero, preserve definitions at level 1;
+	curlev←level1; return(bottomlevel);
+	end;
+end;
+
+internal simple procedure newsavelevel(integer endcode) # starts new nesting level;
+begin comment The specified ending-routine code is stored on savestack,
+initiating a new level of nesting;
+if saveptr ≥ savesize then overflow(savesize);
+savestack[saveptr] ← -endcode;
+saveptr ← saveptr+1;
+if(curlev←curlev+level1) ≥ 1 lsh(idlevd+idlevs) then overflow(idlevs);
+end;
+
+comment Here is a list of the ending-routine codes used;
+internaldef bottomlevel=1,simpleblock=2,trueend=3,aligncode=4,mathcode=5,
+outputend=6,noalignend=7,botinsend=8,topinsend=botinsend+1,justend=10,
+mathblock=11,mathleft=12,endvcenter=13,endscanmath=14;
+comment Hash table algorithms: idlookup,controlseq,idname,hashentry,eqlink;
+
+internal integer hashentry # the most recent hash table location;
+boolean nonewcontrolseq # do not define undefined control sequences;
+
+internal procedure idlookup(integer id,len) # searches the hashtable;
+begin comment The packed name &quot;id&quot; whose idlen ufield is &quot;len&quot;,
+or (alternatively) the single-character code &quot;id&quot;, is looked up in
+the hash table. If not found, it is entered, and the savestack is adjusted
+so that the entry will be cleared at the close of the current nesting
+level. Upon exit, the appropriate index for this symbol in eqtb will appear
+in the global variable &quot;hashentry&quot;;
+boolean thruonce;
+if id≥0 and id&lt;'200 then
+	begin comment single character id;
+	hashentry ← id+hashsize;
+	if eqtb[hashentry]≠0 then return;
+	end
+else	begin comment multicharacter id; integer t;
+	thruonce←false;
+	hashentry ← (abs(id)+len) mod hashsize;
+	while (t←hash[hashentry])≠0 and(t≠id or ufield(idlen,eqtb[hashentry])≠len)do
+		begin hashentry←hashentry-1 # move to next position;
+		if hashentry&lt;0 then
+			begin if thruonce then overflow(hashsize);
+			thruonce←true; hashentry←hashentry+hashsize # cyclically;
+			end;
+		end;
+	if t≠0 then return;
+	hash[hashentry]←id;
+	end;
+comment new control sequence encountered;
+if nonewcontrolseq then
+	begin if hashentry&lt;hashsize then hash[hashentry]←0;
+	hashentry←hashsize+128 # beware trick: this refers to the first
+		entry of the charcode table, so it will look like a control
+		sequence with cmd=0;
+	end
+else	begin eqtb[hashentry]←len+curlev;
+	if curlev&gt;level1 then
+		begin if saveptr≥savesize then overflow(savesize);
+		savestack[saveptr]←refct1+hashentry # special savestack entry;
+		saveptr←saveptr+1;
+		end;
+	end;
+end;
+
+internal simple procedure controlseq # gets a packed name from the input;
+begin comment This procedure removes a control sequence from the string variable
+curbuf, assuming that the initial escape character \ has already been removed.
+Then this control sequence is found in the hashtable, and hashentry is set;
+integer id,len,d;
+id←lop(curbuf) # remove first character;
+if curbuf=0 then curbuf←'15 # don't remove the '15 at end of curbuf;
+comment Note that in, e.g., \% the % should not be treated as a comment delimiter;
+len←0 # len represents (length-1) lsh idlend;
+if chartype(id)=letter and chartype(curbuf)=letter then
+	begin comment two or more letters in the control sequence;
+	d←bitsperwd-6; id←id lsh d # pack first character;
+	do begin id←id+((lop(curbuf)land '37)lsh(d←d-5)) #
+		if d≤-5 this shifts the character out of sight;
+		len←len+(1 lsh idlend);
+		end until chartype(curbuf)≠letter;
+	end;
+idlookup(id,len land('7 lsh idlend));
+end;
+
+internal string procedure idname(integer h) # the name associated with eqtb[h];
+comment This is sort of an inverse to the controlseq procedure;
+if h≥hashsize then
+	begin integer c; c←h-hashsize;
+	if c then return('177&amp;c) else return(&quot;NULL&quot;);
+	comment '177&amp;c will print something appropriate when c is a control
+		symbol, otherwise it prints just the character c;
+	end
+else if hash[h]=0 then return(&quot;UNDEFINED&quot;)
+else	begin integer t; string s;
+	define lettersperwd = ((bitsperwd-6)div 5)+1 # number of complete letters;
+	define leastsiglet = 2^(bitsperwd-5*lettersperwd+4)-1 # mask for rthand ltr;
+	t←(hash[h] lsh(5*lettersperwd+1-bitsperwd))rot(bitsperwd-5*lettersperwd+5);
+	s←(t land '77)lor '100; t←t land (-'100) # remove first letter;
+	while t land ('37 rot -5) do
+		begin t←t rot 5; s←s&amp;((t land '37)lor '140);
+		end;
+	if hash[h] land leastsiglet then
+		begin t←field(idlen,eqtb[h]);
+		while t≠(lettersperwd-1) do
+			begin t←(t-1) land '7; s←s&amp;&quot;x&quot; # add x's for correct length;
+			end;
+		end;
+	return(s);
+	end;
+
+comment The following global variables are set to positions in the eqtb,
+for reference by the semantic routines;
+internaldef locsize=13 # size of locs array for storing eqtb locations;
+internal saf integer array locs[0:locsize-1];
+internaldef hsizeloc=⊂locs[0]⊃, vsizeloc=⊂locs[1]⊃, parindentloc=⊂locs[2]⊃,
+lineskiploc=⊂locs[3]⊃, baselineskiploc=⊂locs[4]⊃, parskiploc=⊂locs[5]⊃,
+dispskiploc=⊂locs[6]⊃, topskiploc=⊂locs[7]⊃, botskiploc=⊂locs[8]⊃,
+tabskiploc=⊂locs[9]⊃, maxdepthloc=⊂locs[10]⊃, dispaskiploc=⊂locs[11]⊃,
+dispbskiploc=⊂locs[12]⊃ # allocation of the &quot;loc&quot; variables;
+internaldef fontloc = hashsize+&quot;:&quot; # eqtb location for \:;
+internaldef xloc(x) = ⊂x⊃&amp;&quot;loc&quot; # eqtb location for x;
+internaldef eqlink(x) = ⊂field(link,eqtb[xloc(x)])⊃ # stored link field for x;
+
+internal integer escapechar # set to the first character of user input;
+comment This convention ensures that escapechar is a character the user can type;
+comment The input stacks: inbuf,curbuf,state,loc,recovery,filename,parstack;
+
+Comment TEX uses two different conventions for representing stacks.
+	1) A sequential stack in which there is frequent access to the top
+entry, and the stack is essentially never empty. Then the top entry is kept
+in a global variable (even better would be a register), and the other entries
+are in stack[0] thru stack[ptr-1]. Example: The main input stacks.
+	2) A sequential stack with infrequent top access. Then the stack
+contents are in stack[0] thru stack[ptr-1]. Example: The save stack.
+
+The state of the scanning routine appears in the following stacks, maintained
+with convention #1:;
+
+internaldef stacksize=20 # maximum number of simultaneous input sources;
+internal saf string array inbufstack[0:stacksize]; internal string inbuf
+	# current lines being input from a character file;
+internal saf string array curbfstack[0:stacksize]; internal string curbuf
+	# the parts of inbuf that haven't yet been input;
+internal saf string array filenmstack[0:stacksize]; internal string filename
+	# the names of the current character files;
+internal saf integer array statestack[0:stacksize]; internal integer state
+	# current scanner state codes;
+internal saf integer array locstack[0:stacksize]; internal integer loc
+	# current scanner locations;
+internal saf integer array recvrystack[0:stacksize]; internal integer recovery
+	# information about what to do when done on each level;
+comment The upper limit in these declarations is stacksize rather than stacksize-1
+so that the dumpcontext routine doesn't cause embarrassing stack overflow;
+internal integer inptr # first unused location in input stacks;
+
+comment There are just four state codes:;
+internaldef tokenlist=0 # scanning a token list;
+internaldef midline=1 # scanning a line of characters;
+internaldef skipblanks=1+charcodes # like midline but ignoring blanks;
+internaldef newline=1+2*charcodes # beginning a new line of characters;
+
+comment When the state specifies reading from an external character file (i.e.,
+when state ≠ tokenlist), inbuf contains the current line, and curbuf contains
+the remains of the current line as its characters are being lopped off.
+String filename is the name of the file -- this is used only for printing error
+messages and returning to the editor (cf. the error procedure in TEXSYS).
+The loc contains page number and line number of the current line, in its
+respective info and link fields. The channel number appears in recovery.
+A null filename denotes input from the user terminal. (In this case loc and
+recovery are not used, since such input never reaches the end-of-file.)
+
+When the state specifies reading from an internal linked list of tokens
+(i.e., state=tokenlist), inbuf and curbuf and filename are not used.
+The loc points to the next token to be scanned, and recovery contains information
+about what to do when reaching the end of the list. More precisely,
+recovery contains
+	-l, if nothing is to be done when the token list starting at l is exhausted
+	-(1 lsh infod + l), same as -l but denotes vlist of an alignment
+	-(2 lsh infod + l), if alignstate is to be set zero when the token
+		list starting at l is exhausted (ulist of an alignment)
+	+l, if the token list starting at l is to be destroyed upon completion
+	l lsh infod + p, if the token list whose reference count is at l should be
+		dereferenced and the parstack is to be pruned until parptr=p.
+
+Macro parameters are kept on parstack, which grows at a different rate than
+the others. This stack is maintained with convention #2;
+
+internaldef parsize=13 # max number of simultaneous parameters;
+internal saf integer array parstack[0:parsize-1] # token-list ptrs for parameters;
+internal integer parptr # first unused location in parstack;
+saf integer array pstack[0:parsize-1] # temporary storage for parameter pointers;
+
+string pagewarning # when this string is non-null, the user's source file
+	probably shouldn't contain any form-feeds (end-of-page marks);
+integer pagewarnindex # reference to hash table for control sequence used
+	in error message when giving a pagewarning;
+
+internaldef chars=9,chard=0 # definition of char field in packed tokens;
+internaldef cmds=4,cmdd=chars # definition of cmd field in packed tokens;
+comment The cmd field of a token never exceeds 15 (at least the way the codes
+are now), and never equals carret. We must have hashsize+127 &lt; 2^chars;
+
+internal saf string array tokstring[0:1] # output of displaylist;
+internal procedure dumplist(integer p,q) # makes strings out of a token list;
+begin comment This procedure is used for diagnostic messages. It creates two
+strings from the token list pointed to by p, namely tokstring[0] for all
+tokens up to but not including the one pointed to by q, and tokstring[1]
+for the remaining tokens if any.  For example, if p points to the node \mac
+in the above example and if q points to the second &quot;a&quot;, the result will be
+	tokstring[0]=&quot;\mac a#1#2 \b →#1\: &quot;
+	tokstring[1]=&quot;a ##1#2 #2&quot;.
+No reference counters should be in the list pointed to by p. However, this
+routine is intended to be robust in the sense that one can try it while
+debugging just to see whether a particular memory location makes sense
+if regarded as a token list;
+
+integer j # 0 until q is reached, then 1;
+integer cmd,char,t,npars; string s;
+
+tokstring[0]←tokstring[1]←null; j←0; npars←&quot;0&quot;;
+while p do
+	begin if p=q then j←1;
+	if p&lt;0 or p≥memsize then
+		begin tokstring[j]←tokstring[j]&amp;escapechar&amp;&quot;Clobbered&quot;; done;
+		end;
+	t←info(p); cmd←field(cmd,t); char←field(char,t);
+	case cmd of begin
+	[0] begin string t;
+	if char≥hashsize+128 then t←&quot;IMPOSSIBLE&quot; else t←idname(char);
+	if length(t)=1 and chartype(t)≠letter then s←escapechar&amp;t
+	else s←escapechar&amp;t&amp;&quot; &quot; end;
+	[match] if char=0 then s←&quot;#&quot;&amp;(npars←npars+1) else s←&quot;→&quot;;
+	[outpar] s←&quot;#&quot;&amp;cvs(char+1);
+	[macprm] s←&quot;##&quot;;
+	[spacer] s←&quot; &quot;;
+	[parend] s←escapechar&amp;&quot;par &quot;;
+	[endv] s←escapechar&amp;&quot;ENDV&quot;;
+	[lbrace][rbrace][mathbr][tabmrk][supmrk][submrk][letter][otherchar] s←char;
+	else s←escapechar&amp;&quot;BAD&quot;
+	  end;
+	tokstring[j]←tokstring[j]&amp;s;
+	if length(tokstring[j])&gt;500 then
+		begin tokstring[j]←tokstring[j]&amp;escapechar&amp;&quot;ETC&quot;; done;
+		end;
+	p←link(p);
+	end;
+end;
+
+internal string procedure dumptokens(integer p) # simple special case of dumplist;
+begin dumplist(p,0); return(tokstring[0]);
+end;
+comment Maintaining the input stacks: pushinput,popinput,initin,dumpcontext,inslist;
+
+internal simple procedure pushinput # save current input status on the stacks;
+if inptr≥stacksize and pausing_on_errors then overflow(stacksize) else
+begin inbufstack[inptr]←inbuf;
+curbfstack[inptr]←curbuf;
+filenmstack[inptr]←filename;
+statestack[inptr]←state;
+locstack[inptr]←loc;
+recvrystack[inptr]←recovery;
+inptr←inptr+1;
+end;
+
+internaldef inslist(p)=⊂begin pushinput:state←tokenlist:loc←recovery←p end⊃;
+comment The above inserts the tokenlist pointed to by p into the input stream
+and sets things up so the token list is destroyed afterwards;
+
+internal simple procedure insrclist(integer l) # like inslist for lists with
+	reference counts;
+begin pushinput; state←tokenlist;
+recovery←(l lsh infod)+parptr; loc←link(l);
+mem[l]←mem[l]+refct1;
+end;
+
+internal simple procedure popinput # finish input level, restore the previous;
+begin integer t;
+inptr←inptr-1;
+inbuf←inbufstack[inptr];
+curbuf←curbfstack[inptr];
+filename←filenmstack[inptr];
+state←statestack[inptr];
+loc←locstack[inptr];
+recovery←recvrystack[inptr];
+end;
+
+define crffbreak=1,ffbreak=2 # break table codes, see below;
+internal integer brchar # break character stored by system input;
+internal integer eof # end-of-file code stored by system input;
+
+internal procedure initin # get TEX input system ready to start;
+begin setbreak(crffbreak,'15&amp;'14,null,&quot;INA&quot;) # crffbreak will now read the
+	input up to and including a carriage return or page mark,
+	ignoring oldstyle line numbers;
+setbreak(ffbreak,'14,null,&quot;INS&quot;) # ffbreak is used only to read past a
+	file directory page, it goes up to the first page mark;
+inptr←0 # set input stacks empty;
+escapechar←-1 # initially there is no control character defined;
+state←newline;
+inbuf←curbuf←filename←null;
+recovery←0;
+pagewarning←null;
+nonewcontrolseq←false;
+end;
+
+internal string curfile # current input file name, set by dumpcontext;
+internal integer curfpage,curfline # set by dumpcontext;
+
+internal procedure dumpcontext # prints where the scanner is;
+begin comment This procedure shows the top levels of input, omitting
+tokenlists that are about to be flushed (since they were most likely
+inserted with inslist), until coming to a level that is a character file;
+integer ptr,t; string lf; lf←'12 # line-feed symbol;
+ptr←inptr;
+inbufstack[ptr]←inbuf;
+curbfstack[ptr]←curbuf;
+filenmstack[ptr]←filename;
+statestack[ptr]←state;
+locstack[ptr]←loc;
+recvrystack[ptr]←recovery;
+while statestack[ptr]=tokenlist do
+	begin label advance;
+	if(t←recvrystack[ptr])&lt;0 then
+		begin print(nextline,
+		case((-t) lsh -infod) of (&quot;&lt;argument&gt; &quot;,&quot;&lt;vlist&gt; &quot;,&quot;&lt;ulist&gt; &quot;));
+		t←(-t)land((1 lsh infod)-1);
+		end
+	else if(t←field(info,t))then
+		begin comment macrocall or output routine or mark;
+		t←link(t) # bypass reference count;
+		print(nextline);
+		end
+	else if locstack[ptr] then
+		begin print(nextline,&quot;&lt;to be read again&gt; &quot;);
+		t←recvrystack[ptr];
+		end
+	else go to advance # tokenlist to be flushed, won't be dumped;
+	dumplist(t,locstack[ptr]);
+	if length(tokstring[0])&gt;32 then print(&quot;...&quot;);
+	print(tokstring[0][∞-31 to ∞],lf,tokstring[1][1 to 32]);
+	if length(tokstring[1])&gt;32 then print(&quot;...&quot;);
+advance: ptr←ptr-1;
+	end;
+curfile←filenmstack[ptr];
+curfpage←field(info,locstack[ptr]);
+curfline←field(link,locstack[ptr]);
+if curfile then print(nextline,&quot;p.&quot;,curfpage,&quot;,l.&quot;,curfline,&quot; &quot;)
+else print(nextline,&quot;(*) &quot;);
+if inbufstack[ptr] = '12 then t←2 else t←1 # ignore initial linefeed;
+print(inbufstack[ptr][t to (∞-length(curbfstack[ptr]))],lf,
+	curbfstack[ptr],nextline);
+end;
+comment The basic input procedure getnext and its cousins gettok,getncnext,getnctok;
+
+integer q # pointer to current node in macrocall procedure, used in error message;
+
+internal simple procedure getnext # sends next input token to curcmd,curchar;
+begin comment This procedure changes the value of hashentry if and only if the
+next input token is a control sequence (and, if so, hashentry is the eqtb
+location.) Although this procedure has to handle a lot of cases, note that
+its inner loop is reasonably short and fast;
+label switch; integer t,p;
+switch: if state≠tokenlist then
+	begin comment reading an external file;
+	label innerswitch;
+innerswitch:if(curchar←lop(curbuf))then
+	case state+(curcmd←chartype(curchar)) of begin
+	comment Now curcmd and curchar are set, but we may have to do special
+		actions. This case statement tells what to do for each
+		combination of state and curcmd, except when there's nothing to do;
+	[midline+spacer] begin state←skipblanks; curchar←'40 end;
+	[midline+carret] begin state←newline;curbuf←null;curcmd←spacer;
+	curchar←'40 end;
+
+	[midline+ignore][skipblanks+ignore][skipblanks+spacer][newline+ignore]
+	[newline+spacer] go to innerswitch # ignore the character;
+
+	[midline+escape][skipblanks+escape][newline+escape] begin controlseq;
+	t←eqtb[hashentry];curcmd←field(idcmd,t);curchar←field(link,t);
+	state←skipblanks end;
+
+	[skipblanks+mathbr][skipblanks+tabmrk]
+	[skipblanks+macprm][skipblanks+supmrk][skipblanks+submrk][skipblanks+letter]
+	[skipblanks+otherchar][newline+mathbr]
+	[newline+tabmrk][newline+macprm][newline+supmrk][newline+submrk]
+	[newline+letter][newline+otherchar] state←midline;
+
+	[skipblanks+lbrace][newline+lbrace] begin alignstate←alignstate+1;
+	state←midline end;
+
+	[skipblanks+rbrace][newline+rbrace] begin alignstate←alignstate-1;
+	state←midline end;
+
+	[midline+lbrace] alignstate←alignstate+1;
+	[midline+rbrace] alignstate←alignstate-1;
+
+	[skipblanks+carret] begin state←newline;curbuf←null;go to innerswitch end;
+	[newline+carret] begin curbuf←null; curcmd←parend end;
+	else comment do nothing;
+	  end
+	else	begin comment curbuf is empty, must go to next line of file;
+		if inptr and filename then
+			begin comment reading a character file;
+			inbuf←input(recovery,crffbreak) #
+				read file up to carriage return or form feed;
+			if eof then
+				begin comment done with reading a file;
+				comment The contents of inbuf can be ignored;
+				print(&quot;)&quot;);
+				release(recovery) # deactivate the channel;
+				popinput # restore previous status;
+				curcmd←parend;return # end-of-file ends a paragraph;
+				end;
+			if tracing land '20 then
+				begin if inbuf='12 then p←lop(inbuf);
+				if length(inbuf)=1 then inbuf←&quot; &quot;&amp;inbuf;
+				print(nextline);
+				ptostr(0,inbuf[1 to ∞-1]) # show inbuf on screen;
+				inbuf←inchwl&amp;inbuf[∞ to ∞];
+				end;
+			if brchar='14 then
+				begin comment page mark,inbuf can be ignored;
+				p←field(info,loc)+1 # advance page number;
+				print(&quot; &quot;,p) # print progress report for user;
+				loc ← p lsh infod # reset line number to zero;
+				if pagewarning then
+					begin deletions_allowed←false
+						# prevents possible recursion;
+					if pagewarning=&quot;u&quot; then
+						begin comment &quot;use of&quot;;
+						mem[q]←0;
+						print(nextline,&quot;Runaway argument?&quot;);
+						dumptokens(mem[temphead]);
+						end;
+					curbuf←inbuf;
+					error(&quot;Input page ended while scanning &quot;&amp;
+					pagewarning&amp;&quot; &quot;&amp;
+					idname(pagewarnindex));
+					deletions_allowed←true;
+					end;
+				end
+			else loc←loc+1 # advance line number;
+			comment No attempt is made here to remember the line
+				numbers on old style editing systems;
+			end
+		else if inptr then
+			begin comment done with line inserted during error routine;
+			popinput; go to switch;
+			end
+		else	begin comment reading online from terminal;
+			print(nextline,&quot;*&quot;) # prompt user for input;
+			inbuf←inchwl&amp;'15 # append carriage-return deleted by system;
+			setprint(null,&quot;F&quot;);print(inbuf);setprint(null,&quot;B&quot;) #
+				echo the input on ERRORS.TMP file for the record;
+			if escapechar&lt;0 and (inbuf≠'15) then
+				begin escapechar←inbuf # first char input is the \;
+				chartype(escapechar)←escape;
+				end;
+			end;
+		curbuf ← inbuf;
+		go to innerswitch;
+		end
+	end
+else	begin comment traversing a tokenlist;
+	if loc then
+		begin t←info(loc) # get token to emit;
+		loc←link(loc) # advance to next element of token list;
+		curchar←field(char,t);
+
+		case (curcmd←field(cmd,t)) of begin
+		[0] begin comment control sequence in token list;
+		hashentry←curchar; t←eqtb[curchar];
+		curcmd←field(idcmd,t);curchar←field(link,t) end;
+		[outpar] begin comment insert a macro parameter;
+		pushinput;
+		loc←parstack[field(link,recovery)+curchar];
+		recovery←-loc;
+		comment The state remains at tokenlist;
+		go to switch end;
+		[lbrace] alignstate←alignstate+1;
+		[rbrace] alignstate←alignstate-1;
+		else comment do nothing;
+		  end
+
+		end
+	else	begin comment end of tokenlist;
+		if recovery&gt;0 then
+			begin if recovery &lt; (1 lsh infod) then dslist(recovery)
+			else	begin t←field(info,recovery);
+				comment end of macro body, t points to its refcount;
+				delrclink(t);
+				t←field(link,recovery) # now t is desired parptr;
+				while parptr&gt;t do
+					begin parptr←parptr-1;
+					dslist(parstack[parptr]);
+					end;
+				end;
+			end
+		else if recovery≤-(2 lsh infod) then alignstate←0;
+		popinput; go to switch;
+		end;
+	end;
+if alignstate=0 and (curcmd=tabmrk or curcmd=carret) then
+	begin aligndelim; hashentry←-1; go to switch;
+	end;
+end;
+
+comment Three other routines are often used instead of getnext, namely:
+	gettok, which not only sets curcmd and curchar but also &quot;curtok&quot;,
+		a packed version of the corresponding input token.
+	getncnext, meaning get non-call, which is like getnext but
+		if the current token is a user-defined control sequence
+		(i.e., a macro call) it is eliminated from the input.
+	getnctok, like getncnext but also sets curtok.
+
+The gettok routine has a special test built in to make sure that the token
+found is not &quot;endv&quot;, since this would be a bad case of misalignment (we
+wouldn't want this endv to infiltrate another token list, and gettok is
+used only when building token lists);
+
+internal integer curtok # current token set by gettok and getnctok;
+
+internal simple procedure gettok # set curcmd, curchar, and curtok;
+begin hashentry←-1;
+getnext;
+if hashentry&lt;0 then curtok←(curcmd lsh cmdd)+curchar else curtok←hashentry;
+if curcmd=endv then
+	begin backerror(&quot;Missing } inserted&quot;); curcmd←rbrace;
+	end;
+end;
+
+internal simple procedure getncnext # get next non-call input token;
+while true do
+	begin nonewcontrolseq←true; getnext; nonewcontrolseq←false;
+	if curcmd=0 then error(&quot;Undefined control sequence&quot;)
+	else if curcmd≠call then return
+	else macrocall;
+	end;
+
+internal simple procedure getnctok # get next non-call token and set curtok;
+while true do
+	begin hashentry←-1;
+	nonewcontrolseq←true; getnext; nonewcontrolseq←false;
+	if hashentry&lt;0 then
+		begin curtok←(curcmd lsh cmdd)+curchar; return;
+		end
+	else	begin curtok←hashentry;
+		if curcmd=0 then error(&quot;Undefined control sequence&quot;)
+		else if curcmd≠call then return
+		else macrocall;
+		end;
+	end;
+comment Defining user control sequences and output routines: macrodef,scantoks;
+
+internal procedure macrodef(integer gdef);
+begin comment &quot;\def&quot; or &quot;\gdef&quot; has just been scanned. This procedure scans the
+macro definition and constructs the corresponding token list as described earlier;
+integer npars # number of parameters (as ascii character);
+integer p # pointer to previous node in linked list;
+integer q # pointer to current node in linked list;
+integer itm # current entry to be appended to linked list;
+define storeitem=⊂begin p←q; getavail(q);mem[p]←(itm lsh infod)+q;end⊃ #
+	stores the previous item and makes it point to the current node;
+integer unbal # count of {'s minus }'s in right-hand side of definition;
+integer defplace # eqtb entry to define;
+integer listhead # pointer to reference counter at the beginning of the list;
+label finishup # the definition has been scanned;
+
+gettok;
+if (defplace←hashentry)&lt;0 then
+	begin backerror(&quot;You can only define a control sequence&quot;); return;
+	end;
+if curcmd≥assignglue and curcmd≤font then
+	begin error(&quot;You can't redefine this control sequence&quot;); return;
+	end;
+getavail(listhead); p←listhead;
+getavail(q); mem[listhead]←q # initialize reference counter;
+itm ← defplace # first entry on list will point back to the eqtb;
+npars←&quot;0&quot; # number of parameters seen so far;
+while true do
+	begin gettok # set curcmd, curchar, curtok;
+	storeitem # store previous item and make room for a new one;
+	if curcmd=lbrace or curcmd=rbrace then done;
+	if curcmd≠macprm then itm←curtok
+	else	begin comment a new parameter to be matched when this macro called;
+		gettok; if curchar≠(npars←npars+1) or curcmd≠otherchar then
+			backerror(&quot;Parameters must be numbered consecutively&quot;);
+		if npars&gt;(&quot;0&quot;+parsize) then overflow(parsize);
+		comment The previous statement guarantees that pstack, in
+			the macrocall procedure, will never overflow;
+		itm←match lsh cmdd # store a match0 command;
+		end;
+	end;
+itm←(match lsh cmdd)+1 # store a match1 command;
+if curcmd=rbrace then
+	begin alignstate←alignstate+1; error(&quot;Missing { has been inserted&quot;);
+	go to finishup;
+	end;
+
+comment Now curcmd=lbrace, scan the right-hand side;
+unbal←1;
+pagewarning←&quot;def of&quot;; pagewarnindex←defplace;
+while true do
+	begin gettok;
+	if curcmd=rbrace then
+		begin unbal←unbal-1;
+		if unbal=0 then done;
+		end
+	else if curcmd=lbrace then unbal←unbal+1;
+	storeitem;
+	if curcmd≠macprm then itm←curtok
+	else	begin comment &quot;#&quot; sensed, look for two in a row;
+		gettok;
+		if curcmd≠macprm then
+			begin comment not two in a row, means parameter output;
+			if curchar&gt;npars or curchar&lt;&quot;1&quot; then
+				begin backerror(&quot;Illegal parameter number in &quot;&amp;
+				&quot;definition of &quot;&amp;escapechar&amp;idname(defplace));
+				itm←curtok # treat as ##;
+				end
+			else itm←((outpar lsh cmdd)-&quot;1&quot;)+curchar;
+			end
+		else itm←curtok;
+		end;
+	end;
+
+finishup: comment Now the definition has been scanned, and itm contains
+the final token to be stored;
+mem[q]←itm lsh infod;
+pagewarning←null;
+if gdef then
+	begin setufield(idlev,eqtb[defplace],level1);
+	q←curlev; curlev←level1 # temporarily switch to level 1;
+	end;
+eqdefine(defplace,call,listhead) # set eqtb entry;
+if gdef then curlev←q;
+getnctok; if curcmd≠spacer then backinput # optional space after the definition;
+end;
+
+internal integer procedure scantoks # build tokenlist for output and mark;
+begin comment &quot;\output&quot; or &quot;\mark&quot; has just been scanned. This procedure
+builds a token list somewhat like the token list of a macro definition,
+but without parameters, and including the final } but not the initial {
+of the token group, then it returns a pointer to the reference count
+heading this list. Macros are expanded in \mark;
+integer p # pointer to previous node in linked list;
+integer q # pointer to current node in linked list;
+integer itm # current entry to be appended to linked list;
+define storeitem=⊂begin p←q; getavail(q);mem[p]←(itm lsh infod)+q;end⊃ #
+	stores the previous item and makes it point to the current node;
+integer unbal # count of {'s minus }'s in right-hand side of definition;
+integer listhead # pointer to reference counter at the beginning of the list;
+boolean expand # it is \mark not \output;
+
+if curcmd=mark then expand←true else expand←false;
+pagewarning←&quot;def of&quot;; pagewarnindex←hashentry;
+scanlb # check for the left brace;
+getavail(listhead); q←listhead; itm←0 # initialize reference counter;
+unbal←1;
+while true do
+	begin if expand then getnctok else gettok;
+	storeitem; itm←curtok;
+	if curcmd=rbrace then
+		begin unbal←unbal-1;
+		if unbal≤0 then done;
+		end
+	else if curcmd=lbrace then unbal←unbal+1;
+	end;
+mem[q]←itm lsh infod # store final rbrace;
+pagewarning←null;
+getnctok; if curcmd≠spacer then backinput # allow optional space after definition;
+return(listhead);
+end;
+comment Calling user macros: macrocall;
+
+internal procedure macrocall # invoke a user-defined control sequence;
+begin comment &quot;\mac&quot; has just been scanned, where \mac is a control sequence
+previously defined with \def. The body of its definition is a tokenlist
+beginning with the reference counter in location curchar,
+and it has the form described above in the discussion of token lists.
+This procedure first scans to find the parameters, placing them in the
+auxiliary stack pstack (since the parstack may be losing entries during
+this matching process). Then the parameters are placed on parstack and
+the right-hand side of the macro body is fed to the scanner;
+
+integer refcount # points to the reference count;
+integer defplace # points to the index of \mac in eqtb;
+integer npars # number of parameters scanned;
+integer p # pointer to previous node in linked list;
+comment integer q # pointer to current node in linked list (used also in getnext);
+integer itm # current entry to be appended to linked list;
+define storeitem=⊂begin p←q; getavail(q);mem[p]←(itm lsh infod)+q;end⊃ #
+	stores the previous item and makes it point to the current node;
+integer unbal # count of {'s minus }'s in parameter being matched;
+integer ngrps # number of tokens or {} groups in parameter being matched;
+integer prevcmd # final cmd of parameter;
+integer r # pointer to current node in macro body;
+integer t # current token of interest;
+boolean firsterror # no errors noticed yet in this macro call;
+
+firsterror←true;
+defplace←hashentry;
+r←link(link(refcount←curchar)) # point to first itm after \mac token;
+comment defplace should equal info(link(refcount));
+npars←0;
+pagewarning←&quot;use of&quot;;pagewarnindex←defplace;
+if tracing land '10 then print(nextline,dumptokens(link(refcount))) # tracing calls;
+
+while (t←info(r))≠((match lsh cmdd)+1) do
+	begin q←temphead # mem[temphead] will point to tokenlist created;
+	r←link(r);
+	if t ≠ match lsh cmdd then
+		begin comment input must match token t;
+		gettok;
+		if curtok≠t and firsterror then
+			begin firsterror←false;
+			error(&quot;Use of &quot;&amp;escapechar&amp;idname(defplace)&amp;
+				&quot; doesn't match its definition&quot;);
+			end;
+		end
+	else	begin &quot;findparameter&quot;;
+		if ufield(cmd,t←info(r)) = match lsh cmdd then
+			begin comment undelimited parameter;
+			t←-1;
+			end
+		else	begin comment parameter delimited by t;
+			r←link(r);
+			end;
+		itm←0;
+		ngrps←0;
+		gettok # set curtok to next input token;
+		while curtok≠t do
+			begin storeitem; itm←curtok;
+			if curcmd=lbrace then
+				begin comment scan a {} group;
+				unbal←1;
+				while true do
+					begin gettok;
+					storeitem; itm←curtok;
+					if curcmd=rbrace then
+						begin unbal←unbal-1;
+						if unbal=0 then done;
+						end
+					else if curcmd=lbrace then unbal←unbal+1;
+					end;
+				end;
+			ngrps←ngrps+1;
+			prevcmd←curcmd;
+			if t&lt;0 then done else gettok;
+			end;
+		if ngrps=1 and prevcmd=rbrace then
+			begin comment strip off enclosing braces;
+			mem[p]←mem[p] land (-1 lsh infod) # zero the link field;
+			freeavail(q);
+			pstack[npars]←link(mem[temphead]);
+			freeavail(mem[temphead]);
+			end
+		else	begin comment attach final symbol to list;
+			mem[q]←itm lsh infod;
+			pstack[npars]←mem[temphead];
+			end;
+		if tracing land '10 then print(nextline,&quot;#&quot;&amp;(npars+&quot;1&quot;),&quot;←&quot;,
+			dumptokens(pstack[npars])) # tracing macro calls;
+		npars←npars+1;
+		end &quot;findparameter&quot;;
+	end;
+
+comment Now matching and parameter building are complete, and link(r) points
+to the right-hand side of the macro definition;
+pagewarning←null;
+if parptr+npars&gt;parsize then overflow(parsize);
+for q←0 thru npars-1 do parstack[parptr+q]←pstack[q];
+pushinput # prepare to insert macrobody in input;
+loc←link(r);
+state←tokenlist;
+recovery←(refcount lsh infod)+parptr;
+parptr←parptr+npars;
+mem[refcount]←mem[refcount]+refct1 # increase reference count;
+end;
+comment Accessing user's files: scanfilename, inputfile, definefont;
+
+comment This page contains the most operating-system dependent aspects
+of the TEX input system;
+
+saf string array fname[0:2] # file name, extension, and directory;
+simple procedure scanfilename # sets up fname[0:2];
+begin integer j;
+fname[0]←fname[1]←fname[2]←null;
+j←0;
+while true do
+	begin getnctok;
+	if curcmd = spacer then done;
+	if curcmd≥charcodes then
+		begin backerror(&quot;Blank space should follow file name&quot;); done;
+		end;
+	if curchar = &quot;.&quot; then j←1
+	else if curchar = &quot;[&quot; then j←2;
+	fname[j]←fname[j]&amp;curchar;
+	end;
+end;
+
+internal procedure inputfile;
+begin comment &quot;\input&quot; has just been scanned. This procedure scans
+the user's file name, employing the SAIL naming conventions, then reads
+in the first line and feeds it to the input system;
+integer chan;
+label abort # if something goes wrong trying to read the file;
+label retry # go here to try again;
+boolean firsttry # first attempt to read the file;
+string flname;
+define checkeof=⊂if eof then begin print(&quot;)&quot;);go to abort end⊃;
+firsttry←true; retry:
+scanfilename;
+if fname[1]=0 then fname[1]←&quot;.TEX&quot;;
+flname←fname[0]&amp;fname[1]&amp;fname[2];
+
+open(chan←getchan,&quot;DSK&quot;,0,if inptr=0 then 19 else 2, 0,
+	100,brchar,eof);
+comment On the SAIL system, 19 buffers is the most efficient for disk files;
+lookup(chan,flname,eof);
+if eof then lookup(chan,fname[0]&amp;fname[1]&amp;&quot;[1,3]&quot;,eof);
+if eof then
+	begin error(&quot;Lookup failed on file &quot;&amp;flname);
+	if firsttry then
+		begin firsttry←false; release(chan); go to retry;
+		end;
+	go to abort;
+	end;
+print(&quot; (&quot;,flname);
+pushinput # save present file status;
+state←newline; recovery←chan; filename←flname;
+inbuf←input(chan,crffbreak) # get first line of file;
+checkeof; print(&quot; 1&quot;);
+if equ(inbuf[1 to 9],&quot;COMMENT ⓧ&quot;) then
+	begin comment Skip TVedit directory page;
+	while brchar≠'14 and not eof do inbuf←input(chan,ffbreak);
+	checkeof;
+	inbuf←input(chan,crffbreak) # get first line of second page;
+	checkeof; print(&quot; 2&quot;);
+	loc ← (2 lsh infod) + 1 # page 2 line 1;
+	end
+else	loc ← (1 lsh infod) + 1 # page 1 line 1;
+if tracing land '20 then
+	begin integer p # garbage bin;
+	if inbuf='12 then p←lop(inbuf);
+	if length(inbuf)=1 then inbuf←&quot; &quot;&amp;inbuf;
+	print(nextline);
+	ptostr(0,inbuf[1 to ∞-1]) # show inbuf on screen;
+	inbuf←inchwl&amp;inbuf[∞ to ∞];
+	end;
+curbuf←inbuf;
+
+comment Now define the output file name if it hasn't yet been defined;
+if ofilname=0 then declareofil(fname[0]&amp;ofilext&amp;fname[2]);
+return;
+
+abort: release(chan);
+popinput;
+end;
+
+internal saf string array fontname[0:31] # user name for each font code;
+
+internal procedure definefont(integer f) # Do this after seeing &quot;=&quot; of font def;
+begin integer n,p,chan; string s;
+label retry # go here to try again;
+boolean firsttry # first attempt to read the file;
+firsttry←true; retry:
+scanfilename;
+if fname[2]=0 then fname[2]←libraryarea;
+fontname[f]←fname[0]&amp;fname[2];
+if parbase[f]=0 then
+	begin comment font information not preloaded;
+	open(chan←getchan,&quot;DSK&quot;,8,2,0,0,0,eof);
+	lookup(chan,s←fname[0]&amp;deviceext&amp;fname[2],eof);
+	if eof then
+		begin error(&quot;Lookup failed on file &quot;&amp;s);
+		if firsttry then
+			begin firsttry←false; release(chan); go to retry;
+			end;
+		quit;
+		end;
+	readfontinfo(chan,f) # input font info for use by TEXSEM and TEXOUT;
+	release(chan);
+	end;
+p←fontglue+f*gluespecsize # location of &quot;font glue&quot;;
+mem[p]←1000000 lsh infod # &quot;infinite&quot; reference count;
+gluespace(p)←fontpar(f,spacewd);
+gluestretch(p)←fontpar(f,spacestr);
+glueshrink(p)←fontpar(f,spaceshr);
+end;
+comment Basic scanning routines: backinput,scandigit,scanlb,scanstring,scannumber;
+
+internal simple procedure backinput # puts curtok back into the input;
+begin comment When using this procedure, be sure to have called gettok or getnctok
+instead of getnext or getncnext;
+integer p;
+getavail(p);
+mem[p]←curtok lsh infod # create a tokenlist of length 1;
+if curcmd=lbrace then alignstate←alignstate-1
+else if curcmd=rbrace then alignstate←alignstate+1;
+inslist(p);
+end;
+
+internal integer simple procedure scandigit # scans &quot;0&quot;...&quot;9&quot;;
+begin comment If the next input token is a digit, this procedure returns that
+digit (in ascii code). Otherwise this procedure gives an error message and
+returns &quot;0&quot;;
+getnctok;
+if curtok&lt;(otherchar lsh cmdd)+&quot;0&quot; or curtok&gt;(otherchar lsh cmdd)+&quot;9&quot; then
+	begin backerror(&quot;Missing digit (0 to 9), 0 inserted&quot;);
+	curchar←&quot;0&quot;;
+	end;
+return(curchar);
+end;
+
+internal simple procedure scanlb # scans {;
+begin comment If the next input token is not a left brace delimiter,
+this procedure gives an error message. Routines using this procedure
+assume that a left brace is present;
+getnctok;
+if curcmd≠lbrace then
+	begin alignstate←alignstate+1; backerror(&quot;Missing { inserted&quot;);
+	end;
+end;
+
+internal boolean procedure scanstring(string s) # scans a given letter string;
+begin comment Here s is a string of letters. This procedure returns
+true and removes s if the next characters of the input agree with s,
+otherwise it returns false and effectively leaves the input unchanged;
+string ss; integer c,q,p,head;
+ss←s;
+while c←lop(ss) do
+	begin getnctok;
+	if curtok≠(letter lsh cmdd)+c then
+		begin comment match failed, we construct a token string to insert;
+		getavail(q); head←q;
+		while length(s)≠length(ss)+1 do
+			begin p←q; getavail(q);
+			mem[p]←((lop(s)+(letter lsh cmdd))lsh infod)+q;
+			end;
+		mem[q]←curtok lsh infod;
+		if curcmd=lbrace then alignstate←alignstate-1
+		else if curcmd=rbrace then alignstate←alignstate+1;
+		inslist(head);
+		return(false);
+		end;
+	end;
+return(true);
+end;
+
+internal integer nbrlength # length of scanned number;
+internal integer nbrsign # sign, if any, preceding scanned number;
+
+internal simple integer procedure scannumber # scans a decimal or octal number;
+begin comment This procedure removes from the input a string of the form
+	space* [+ space* | - space*] ['] digit* [space]
+where ' denotes octal radix, and returns the corresponding decimal or octal
+value of the digit string. Global variable nbrlength is set to the
+number of digits, and nbrsign is set to &quot;+&quot; or &quot;-&quot; if a sign appeared;
+integer n,radix;
+n←nbrsign←nbrlength←0;
+do getnctok until curcmd≠spacer;
+if curcmd=count then
+	begin n←kount[scandigit]; getnctok;
+	end
+else	begin
+	if curtok=(otherchar lsh cmdd)+&quot;+&quot; or curtok=(otherchar lsh cmdd)+&quot;-&quot; then
+		begin nbrsign←curchar;
+		do getnctok until curcmd≠spacer;
+		end;
+	if curtok≠(otherchar lsh cmdd)+&quot;'&quot; then radix←10
+	else	begin radix←8; getnctok;
+		end;
+	while curtok≥(otherchar lsh cmdd)+&quot;0&quot; and curtok≤(otherchar lsh cmdd)+&quot;9&quot; do
+		begin n←radix*n+curchar-&quot;0&quot;;
+		nbrlength←nbrlength+1;
+		getnctok;
+		end;
+	end;
+if curcmd≠spacer then backinput;
+return(n);
+end;
+comment Further scanning routines: scanlength,scanposlength,scanglue,scanspec;
+
+internal real procedure scanlength # scans a length specification;
+begin comment This procedure scans the input for
+	&lt;number&gt; [. &lt;number&gt;] &lt;units&gt; [space]
+and returns the corresponding value in points;
+comment If the number after the decimal point is octal or signed,
+no error is detected but the result may be unusual;
+integer n; real x,sign;
+x←scannumber;
+if nbrsign=&quot;-&quot; then sign←-1.0 else sign←+1.0;
+getnctok;
+if curtok=(otherchar lsh cmdd)+&quot;.&quot; then
+	begin n←scannumber;
+	x←x+n/10.0^nbrlength;
+	end
+else backinput;
+if scanstring(&quot;xgp&quot;) then x←x*(200.0*0.013837/3.6) # for Stanford XGP only;
+if scanstring(&quot;pt&quot;) then comment already in points;
+else if scanstring(&quot;in&quot;) then x←x/0.013837
+else if scanstring(&quot;pc&quot;) then x←x*12.0
+else if scanstring(&quot;cm&quot;) then x←x/(0.013837*2.54)
+else if scanstring(&quot;mm&quot;) then x←x/(0.013837*25.4)
+else if scanstring(&quot;dd&quot;) then x←x*(0.0148/0.013837)
+else error(&quot;Illegal units of measure&quot;);
+getnctok; if curcmd≠spacer then backinput;
+return(x*sign);
+end;
+
+real procedure scanposlength # scans a length, gives error if negative;
+begin real r; r←scanlength;
+if r&gt;0 then return(r);
+if r&lt;0 then error(&quot;This length shouldn't be negative&quot;); return(epsilon);
+end;
+
+internal integer procedure scanglue # scans a glue specification;
+begin comment This procedure scans the input for
+	&lt;length&gt; [plus &lt;length&gt;] [minus &lt;length&gt;]
+and returns a pointer to a new glue node having these parameters;
+integer p;
+p←getnode(gluespecsize);
+gluespace(p)←scanlength;
+if scanstring(&quot;plus&quot;) then gluestretch(p)←scanlength;
+if scanstring(&quot;minus&quot;) then glueshrink(p)←scanlength;
+return(p);
+end;
+
+internal procedure scanspec # scans a justification specification and a {;
+begin comment
+	If the input is			then this procedure puts on savestack
+	to [space] size space* {	hsize or vsize (acc. to current mode)
+	to &lt;length&gt; space* {			value(&lt;length&gt;)
+ 	expand &lt;length&gt; space* {		- value(&lt;length&gt;)
+	space* {				- epsilon;
+real v;
+if scanstring(&quot;to&quot;) then
+	begin getnctok; if curcmd≠spacer then backinput;
+	if scanstring(&quot;size&quot;) then
+		if mode=-vmode then v←pagemem[vsizemem]
+		else v←pagemem[hsizemem]
+	else v←scanlength;
+	end
+else if scanstring(&quot;expand&quot;) then
+	begin v← -scanposlength;
+	end
+else v←-epsilon;
+do getnctok until curcmd≠spacer;
+if curcmd≠lbrace then
+	begin alignstate←alignstate+1; backerror(&quot;Missing { inserted&quot;);
+	end;
+savestack[saveptr]←memory[location(v),integer];
+saveptr←saveptr+1 # It's not necessary to check for stack overflow here;
+end;
+comment Additional scanning routines: scanfont,scandelim,scanrulespec;
+
+internal simple integer procedure scanfont # scan a font code;
+begin comment This procedure scans a font letter code, having the
+following syntax:
+	&lt;char&gt; [&lt;space&gt;]
+if this font character has already been defined,
+	&lt;char&gt; &lt; ← | = &gt; &lt;font file name&gt;
+otherwise;
+integer f;
+while true do
+	begin getnctok; f←curtok land '37;
+	if curcmd&lt;charcodes then done;
+	backerror(&quot;Illegal font code&quot;);
+	end;
+getnctok;
+if fontname[f] then
+	begin if curcmd≠spacer then backinput # ignore space after font codename;
+	end
+else	begin comment new font code;
+	while curchar≠&quot;=&quot; and curchar≠&quot;←&quot; do
+		begin backerror(&quot;First use of font must define it&quot;); getnctok;
+		end;
+	definefont(f);
+	end;
+return(f);
+end;
+
+internal saf integer array delimtable[0:127] # contains 18-bit delimiter codes
+	for all known delimiters, or -1 for nondelimiters;
+
+internal integer procedure scandelim # scans a math delimiter;
+begin comment This procedure scans a delimiter and returns the 18-bit
+delimiter code according to the math mode conventions described in TEXSEM;
+label unknown;
+getnctok;
+if curcmd=otherchar then
+	if delimtable[curchar]≥0 then return(delimtable[curchar])
+	else go to unknown;
+if curcmd=mathonly then
+	begin curchar←curchar land '777;
+	if curchar≥'542 and curchar≤'553 then return(curchar*'1001+('604-'542))
+	else go to unknown;
+	end;
+if curcmd=ascii then return(scannumber land '777777);
+unknown: backerror(&quot;Unknown delimiter&quot;); return(0);
+end;
+
+internal integer procedure scanrulespec # scans rule dimensions;
+begin comment This procedure is called just after \hrule or \vrule was sensed,
+it returns a pointer to corresponding rule node;
+integer p; label loop;
+p←getnode(rulenodesize);
+mem[p]←rulenode lsh typed;
+if curcmd=hrule then begin width(p)←-1.0; height(p)←0.4 end
+else begin width(p)←0.4; height(p)←depth(p)←-1.0 end;
+loop: if scanstring(&quot;width&quot;) then width(p)←scanposlength;
+if scanstring(&quot;height&quot;) then begin height(p)←scanposlength; go to loop end;
+if scanstring(&quot;depth&quot;) then begin depth(p)←scanposlength; go to loop end;
+return(p);
+end;
+comment Still more scanning routines: passblock,insnum,scancond;
+
+internal procedure passblock # scans past an entire {} block and optional space;
+begin integer unbal;
+unbal←0;
+while true do
+	begin gettok;
+	if curcmd=rbrace then
+		begin unbal←unbal-1;
+		if unbal≤0 then done;
+		end
+	else if curcmd=lbrace then unbal←unbal+1;
+	end;
+if unbal&lt;0 then
+	begin alignstate←alignstate+1; error(&quot;Missing { inserted&quot;);
+	end;
+getnctok; if curcmd≠spacer then backinput;
+end;
+
+preload_with 1000,500,100,50,10,5,1; saf integer array romval[1:7];
+define lt(x)=⊂((letter lsh cmdd)+&quot;x&quot;)lsh infod⊃;
+preload_with lt(m),lt(d),lt(c),lt(l),lt(x),lt(v),lt(i);
+saf integer array romtok[1:7];
+
+internal procedure insnum(integer n) # puts string version of n into input;
+begin comment if n is negative, the Roman numeral value of n is placed
+into the input stream, otherwise the decimal value of n is placed there;
+integer p,q;
+if n≥0 then
+	begin comment decimal number, build tokenlist from right to left;
+	p←0;
+	do	begin getavail(q);
+		mem[q]←(((n mod 10)+(&quot;0&quot;+(otherchar lsh cmdd)))lsh infod)+p;
+		p←q; n←n div 10;
+		end until n=0;
+	end
+else	begin comment roman numeral, build tokenlist from left to right;
+	integer itm,j,k;
+	p←temphead; itm←0;
+	j←1; n←-n;
+	while true do
+		begin while n≥romval[j] do
+			begin getavail(q); mem[p]←itm+q;
+			p←q; itm←romtok[j];
+			n←n-romval[j];
+			end;
+		if n=0 then done;
+		k←j+1+(j land 1) # m,d → c	c,l → x		x,v → i;
+		if n+romval[k]≥romval[j] then
+			begin getavail(q); mem[p]←itm+q;
+			p←q; itm←romtok[k];
+			n←n+romval[k];
+			end
+		else j←j+1;
+		end;
+	mem[p]←itm;
+	p←mem[temphead] # p points to the tokenlist;
+	end;
+inslist(p);
+end;
+
+internal procedure scancond(boolean b) # scanning for if-then-else constructs;
+if b then
+	begin scanlb # must find {;
+	newsavelevel(trueend);
+	end
+else 	begin passblock # skip the true part;
+	getnctok;
+	if curcmd≠elsecode then backerror(escapechar&amp;&quot;else required here&quot;);
+	end;
+end

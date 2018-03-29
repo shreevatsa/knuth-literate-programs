@@ -1,0 +1,1050 @@
+require &quot;TEXSYN.REL&quot; load_module;
+require &quot;TEXSEM.REL&quot; load_module;
+require &quot;TEXOUT.REL&quot; load_module;
+require &quot;TEXEXT.REL&quot; load_module;
+require &quot;TEXHDR.SAI&quot; source_file;
+label end_of_texpre;
+internal procedure quit # closes output files and terminates TEX;
+begin DEBUGONLY bail # when debugging, here's a last chance to see the memory;
+go to end_of_texpre;
+end;
+internal boolean pausing_on_errors # should TEX wait after error messages?;
+internal boolean deletions_allowed # is it safe for error routine to call getnext?;
+internal procedure error(string s) # prints an error message;
+print(nextline,&quot;! &quot;,s,&quot;.&quot;);
+dumpcontext # prints indication of where the scanner is now;
+if pausing_on_errors then while true do
+	begin integer c;
+	print(&quot;^&quot;); c←inchrw;
+	if c='15 then begin c←inchrw # ignore the line-feed; return end;
+	if c='12 then begin pausing_on_errors←false; return end;
+	if c=&quot;T&quot; or c=&quot;t&quot; then edfile(curfile,curfline,curfpage);
+	if c=&quot;X&quot; or c=&quot;x&quot; then quit;
+	print(nextline,&quot;Type &lt;cr&gt; to continue, &lt;lf&gt; to flash error messages,
+	t or T to edit, x or X to quit.&quot;);
+	end;
+end;
+internal procedure backerror(string s) # error followed by backinput;
+begin error(s);
+backinput;
+end;
+internal procedure reportoverflow(string s; integer n)
+	# for fatal errors when a TEX table is undersized;
+begin pausing_on_errors←false;
+error(&quot;TEX capacity exceeded, sorry [&quot;&amp;s&amp;&quot;=&quot;&amp;cvs(n)&amp;&quot;]&quot;);
+quit;
+end;
+internaldef overflow(s)=⊂reportoverflow(&quot;s&quot;,s)⊃ # specifies inadequate table size;
+internal procedure memoverflow; overflow(memsize);
+internal procedure confusion # TEX consistency check failure;
+begin pausing_on_errors←false;
+error(&quot;This can't happen&quot;);
+DEBUGONLY bail;
+quit;
+end;
+internal procedure mustquit; confusion;
+internaldef links = 14 # number of bits per pointer;
+internaldef memsize=8000 # size of dynamic list memory, must be ≤ 2^links;
+internaldef varsize=2500 # size of variable node memory, must be &lt;&lt; memsize;
+internaldef memreal(p)=⊂memory[location(mem[p]),real]⊃ # mem[p] as type real;
+DEBUGONLY internal integer dynused,varused # how much memory is in use;
+internaldef fs(f) = ⊂f⊃&amp;&quot;s&quot; # field size of f, in bits;
+internaldef fd(f) = ⊂f⊃&amp;&quot;d&quot; # field displacement of f, in bits;
+internaldef field(f,x) = ⊂ifc fd(f)=0 thenc ((x) land (2^fs(f)-1))
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc ((x) lsh -fd(f))
+	elsec (((x) lsh -fd(f)) land (2^fs(f)-1)) endc endc⊃ # field f of x;
+internaldef setfield(f,x,y) = ⊂ifc fd(f)=0 thenc x←(x land(-2^fs(f)))+(y)
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc
+		x←((x lsh(bitsperwd-fd(f)))+(y))rot fd(f)
+	elsec x←(((x rot -fd(f))land(-2^fs(f)))+(y))rot fd(f) endc endc⊃
+internaldef ufield(f,x) = ⊂((x) land((1 lsh(fs(f)+fd(f)))-2^fd(f)))⊃
+internaldef setufield(f,x,y) = ⊂x←(x land lnot((1 lsh(fs(f)+fd(f)))-2^fd(f)))+(y)⊃
+internaldef linkd = 0 # displacement of link field;
+internaldef link(p) = ⊂field(link,mem[p])⊃ # link field of mem[p];
+internaldef setlink(p,y) = ⊂setfield(link,mem[p],y)⊃ # sets link(p)←y;
+internaldef infod = links, infos = bitsperwd-infod # definition of info field;
+internaldef info(p) = ⊂field(info,mem[p])⊃ # info field of mem[p];
+internaldef setinfo(p,y) = ⊂setfield(info,mem[p],y)⊃ # sets info(p)←y;
+DEBUGONLY integer procedure lk(integer x);
+DEBUGONLY return(x land(2^links-1)) # link field of packed word;
+DEBUGONLY integer procedure fo(integer x);
+DEBUGONLY return(x lsh -infod) # info field of packed word;
+internal integer avail # head of available space list for one-word nodes;
+internaldef getavail(p) = ⊂begin if(p←avail)then avail←mem[avail]
+	else memoverflow: DEBUGONLY dynused←dynused+1: end⊃ # p ← new node;
+internaldef freeavail(p) = ⊂begin mem[p]←avail: avail←p:
+	DEBUGONLY dynused←dynused-1: end⊃ # node p now available;
+integer rover # pointer into double-avail list;
+define nodesize(p) = ⊂mem[p+1]⊃;
+define llinks = links, llinkd = infod # definition of llink field;
+integer p,q,s,t,u;
+label ovfl, found;
+define removenode(p)=
+	⊂begin if p=rover then
+		begin rover←link(p);
+		if p=rover then go to ovfl # list musn't become empty;
+		end;
+	u←((p lsh llinkd) + p) xor mem[p] # bits to change;
+	t←field(llink,mem[p]) # llink(p);
+	mem[t]←field(link,u) xor mem[t];
+	t←link(p) # rlink(p);
+	mem[t]←ufield(llink,u) xor mem[t];
+	end⊃;
+p←rover;
+do	begin q←p+nodesize(p) # q points past the end of node(p);
+	while mem[q]&lt;0 do
+		removenode(q); q←q+nodesize(q);
+		end;
+	if (s←q-p) ≥ size+2 then
+		begin q←q-size # allocate from top end;
+		nodesize(p)←q-p # remaining free area size;
+		rover ← p # let rover rove around;
+		go to found;
+		end;
+	if s = size then
+		begin removenode(p) # exact fit, now t = rlink(p);
+		rover ← t # let rover rove;
+		q ← p; go to found;
+		end;
+	nodesize(p)←s # reset the node size in case it grew;
+	p←link(p);
+	end until p=rover # repeat until whole list traversed;
+ovfl: overflow(varsize) # no large enough space was found;
+found: for p ← q thru q+size-1 do mem[p]←0 # clear out the node found;
+DEBUGONLY varused←varused+size;
+return(q) # deliver the goods;
+end;
+DEBUGONLY internal procedure checkmem(boolean printlocs) # checks links in mem;;
+internal procedure freenode(integer p,size) # variable-size node liberation;
+integer q;
+q←field(llink,mem[rover]) # llink(rover);
+setlink(q,p); setfield(llink,mem[rover],p);
+mem[p]←(q lsh llinkd)+rover+(1 lsh(bitsperwd-1)) # now p is linked into the circle;
+DEBUGONLY varused←varused-size;
+nodesize(p)←size;
+end;
+internal procedure dslist(integer p) # makes list of 1-word nodes available;
+integer q;
+while p do
+	begin q←link(p); freeavail(p); p←q;
+	end;
+end;
+internaldef refct1 = 1 lsh infod # 1 in the information (reference count) field;
+internal simple procedure delrclink(integer p) # remove ptr to list with ref ct;
+if(mem[p]←mem[p]-refct1)&lt;0 then dslist(p);
+end;
+internal simple procedure delgluelink(integer p) # remove pointer to glue node;
+if(mem[p]←mem[p]-refct1)&lt;0 then freenode(p,gluespecsize);
+end;
+procedure showmem # checks and displays the free areas of mem when debugging;
+boolean array free[0:memsize-1];
+integer p,i; label printout;
+p←avail;
+while p do
+	begin if free[p] or mem[p]≥memsize or (mem[p]≠0 and mem[p]≤varsize) then
+		begin print(nextline,&quot;avail list clobbered at &quot;,p); done;
+		end;
+	free[p]←true;
+	p←mem[p];
+	end;
+p←rover;
+do	begin
+	if p≥varsize or p≤0 or mem[p]≥0 or p+nodesize(p)&gt;varsize or
+	nodesize(p)&lt;2 or field(llink,mem[link(p)])≠p then
+		begin print(nextline,&quot;double-avail list clobbered at &quot;,p); done;
+		end;
+	for i←p thru p+nodesize(p)-1 do
+		begin if free[i] then
+			begin print(nextline,&quot;doubly free location at &quot;,i);
+			go to printout;
+			end;
+		free[i]←true;
+		end;
+	p←link(p);
+	end until p=rover;
+printout: for i←0 thru memsize-1 do
+	begin if i mod 64 = 0 then print(nextline);
+	if free[i] then print(&quot;X&quot;) else print(&quot;.&quot;);
+	end;
+end;
+internaldef fillglue=0 # location of glue specification 0pt plus 10^10 pt;
+internaldef lowerfillglue=gluespecsize # loc of glue specification
+		0pt plus 10^6pt minus 10^6 pt;
+internaldef zeroglue=lowerfillglue+gluespecsize # loc of glue specification 0pt;
+internaldef firstmem=zeroglue+gluespecsize # location of
+		first usable mem word, must be &gt;0.
+internaldef waitinghead=varsize # head of list of inserts too big for current page;
+internaldef contribhead=waitinghead+1 # head of contribution vlist for current page;
+internaldef pagehead=pagecontrib+1 # head of vlist for current page;
+internaldef temphead=pagehead+1 # temporary head of a miscellaneous list;
+internaldef holdhead=temphead+1 # temporary head of another miscellaneous list;
+internaldef alignhead=holdhead+1 # alignhead+j is head of jth alignrecordlist;
+internaldef inserts=alignhead+alignsize # head of insert list returned by packager;
+internaldef hsizemem=inserts+1 # location where current hsize is stored;
+internaldef vsizemem=hsizemem+1 # location where current vsize is stored;
+internaldef parindentmem=vsizemem+1 # location where current parindent is stored;
+internaldef secondmem=parindentmem+1 # first usable mem word in 1-word area;
+internal procedure initmem # initializes the memory system;
+begin integer i;
+for i←secondmem thru memsize-2 do mem[i+1]←i;
+mem[secondmem]←0; avail←memsize-1 # now the avail stack is initialized;
+mem[firstmem]←(firstmem lsh llinkd)+firstmem+(1 lsh(bitsperwd-1));
+nodesize(firstmem)←varsize-firstmem # one node in the circle;
+rover←firstmem # rover points to it, now the double-avail list is initialized;
+for i←0 thru firstmem-1 do mem[i]←0;
+for i←varsize thru secondmem-1 do mem[i]←0;
+end;
+procedure identer(string s; integer cmd,lnk);
+inbuf←curbuf←s; controlseq # pretend s was in the input;
+eqtb[hashentry]←ufield(idlen,eqtb[hashentry])+level1+(cmd lsh idcmdd)+lnk;
+end;
+procedure inithash # initialize hash and eqtb;
+integer i;
+for i←0 thru 127 do chartype(i)←otherchar;
+for i←&quot;A&quot; thru &quot;Z&quot; do chartype(i)←letter;
+for i←&quot;a&quot; thru &quot;z&quot; do chartype(i)←letter;
+for i←'00,'12,'13,'175,'177 do chartype(i)←ignore # null,linefeed,vtab,alt,delete;
+for i←'11,'40 do chartype(i)←spacer # tab and blankspace;
+for i←'14,'15 do chartype(i)←carret # formfeed and carriagereturn;
+identer(&quot;cr&quot;,carret,0);
+identer(&quot;par&quot;,parend,0);
+identer(&quot;x&quot;,xt,0);
+	memreal(hsizemem)←4.5*72.0 # default hsize is about 4.5 inches;
+	memreal(vsizemem)←7.0*72.0 # default vsize is about 7.0 inches;
+	memreal(maxdepthmem)←3.0  # default maxdepth is 3.0 points;
+	memreal(topbaselinemem)←10.0 # default topbaseline is 10.0 points;
+identer(&quot;hsize&quot;,assignreal,hsizemem); pagemem[hsizemem]←4.5*72.0;
+identer(&quot;vsize&quot;,assignreal,vsizemem); pagemem[vsizemem]←7.0*72.0;
+identer(&quot;maxdepth&quot;,assignreal,maxdepthmem); pagemem[maxdepthmem]←3.0;
+identer(&quot;parindent&quot;,assignreal,parindentmem); pagemem[parindentmem]←0;
+identer(&quot;topbaseline&quot;,assignreal,topbaselinemem); pagemem[topbaselinemem]←10.0;
+identer(&quot;lineskip&quot;,assignglue,zeroglue); lineskiploc←hashentry;
+identer(&quot;baselineskip&quot;,assignglue,zeroglue); baselineskiploc←hashentry;
+identer(&quot;parskip&quot;,assignglue,zeroglue); parskiploc←hashentry;
+identer(&quot;dispskip&quot;,assignglue,zeroglue); dispskiploc←hashentry;
+identer(&quot;dispaskip&quot;,assignglue,zeroglue); dispaskiploc←hashentry;
+identer(&quot;dispbskip&quot;,assignglue,zeroglue); dispbskiploc←hashentry;
+identer(&quot;topskip&quot;,assignglue,zeroglue); topskiploc←hashentry;
+identer(&quot;botskip&quot;,assignglue,zeroglue); botskiploc←hashentry;
+identer(&quot;tabskip&quot;,assignglue,zeroglue); tabskiploc←hashentry;
+identer(&quot;:&quot;,font,(1 lsh links)-1) # fontloc is hashsize+&quot;:&quot;;
+identer(&quot;def&quot;,def,0);
+identer(&quot;gdef&quot;,def,1);
+identer(&quot;output&quot;,output,0);
+identer(&quot;input&quot;,innput,0);
+identer(&quot;end&quot;,stop,0);
+identer(&quot;ddt&quot;,ddt,0);
+identer(&quot;char&quot;,ascii,0);
+identer(&quot;chcode&quot;,chcode,0);
+identer(&quot;chpar&quot;,chcode,140);
+identer(&quot;mathrm&quot;,fntfam,0);
+identer(&quot;mathit&quot;,fntfam,1);
+identer(&quot;mathsy&quot;,fntfam,2);
+identer(&quot;mathex&quot;,fntfam,3);
+identer(&quot;setcount&quot;,setcount,0);
+identer(&quot;advcount&quot;,advcount,0);
+identer(&quot;count&quot;,count,0);
+identer(&quot;ifeven&quot;,ifeven,0);
+identer(&quot;if&quot;,ifT,0);
+identer(&quot;else&quot;,elsecode,0);
+identer(&quot;box&quot;,box,1);
+identer(&quot;page&quot;,box,0);
+identer(&quot;vjust&quot;,box,1+vmode);
+identer(&quot;hjust&quot;,box,1+hmode);
+identer(&quot;moveleft&quot;,hmove,1);
+identer(&quot;moveright&quot;,hmove,0);
+identer(&quot;raise&quot;,vmove,1);
+identer(&quot;lower&quot;,vmove,0);
+identer(&quot;save&quot;,save,0);
+identer(&quot;leaders&quot;,leaders,0);
+identer(&quot;halign&quot;,halign,0);
+identer(&quot;valign&quot;,valign,0);
+identer(&quot;noalign&quot;,noalign,0);
+identer(&quot;vskip&quot;,vskip,1);
+identer(&quot;vfill&quot;,vskip,0);
+identer(&quot;hskip&quot;,hskip,1);
+identer(&quot;hfill&quot;,hskip,0);
+identer(&quot;vrule&quot;,vrule,0);
+identer(&quot;hrule&quot;,hrule,0);
+identer(&quot;topinsert&quot;,topbotins,1);
+identer(&quot;botinsert&quot;,topbotins,0);
+identer(&quot;topmark&quot;,topbotmark,1);
+identer(&quot;botmark&quot;,topbotmark,0);
+identer(&quot;mark&quot;,mark,0);
+identer(&quot;penalty&quot;,penlty,0);
+identer(&quot;noindent&quot;,noindent,0);
+identer(&quot;eject&quot;,eject,0);
+identer(&quot;-&quot;,discr,&quot;-&quot;);
+identer(&quot;*&quot;,discr,'402);
+identer(&quot;accent&quot;,newaccent,0);
+identer(&quot;eqno&quot;,eqno,0);
+identer(&quot; &quot;,exspace,userspace);
+identer('11&amp;null,exspace,userspace) # \&lt;tab&gt; is like \&lt;space&gt;;
+identer('12&amp;null,exspace,userspace) # \&lt;lf&gt; is like \&lt;space&gt;;
+identer('13&amp;null,exspace,userspace) # \&lt;vt&gt; is like \&lt;space&gt;;
+identer('14&amp;null,exspace,userspace) # \&lt;ff&gt; is like \&lt;space&gt;;
+identer('15&amp;null,exspace,userspace) # \&lt;cr&gt; is like \&lt;space&gt;;
+identer(&quot;left&quot;,leftright,leftnoad);
+identer(&quot;right&quot;,leftright,rightnoad);
+identer(&quot;mathop&quot;,mathinput,opnoad);
+identer(&quot;mathbin&quot;,mathinput,binnoad);
+identer(&quot;mathrel&quot;,mathinput,relnoad);
+identer(&quot;mathopen&quot;,mathinput,opennoad);
+identer(&quot;mathclose&quot;,mathinput,closenoad);
+identer(&quot;mathpunct&quot;,mathinput,punctnoad);
+identer(&quot;sqrt&quot;,mathinput,sqrtnoad);
+identer(&quot;overline&quot;,mathinput,overnoad);
+identer(&quot;underline&quot;,mathinput,undernoad);
+identer(&quot;limitswitch&quot;,limsw,0);
+identer(&quot;above&quot;,above,0);
+identer(&quot;atop&quot;,above,1);
+identer(&quot;over&quot;,above,2);
+identer(&quot;comb&quot;,above,3);
+identer(&quot;,&quot;,mathstyle,thinspace);
+identer(&quot;;&quot;,mathstyle,thickspace);
+identer(&quot;≥&quot;,mathstyle,thspace);
+identer(&quot;&gt;&quot;,mathstyle,opspace);
+identer(&quot;≤&quot;,mathstyle,negthspace);
+identer(&quot;&lt;&quot;,mathstyle,negopspace);
+identer(&quot;!&quot;,mathstyle,negthinspace);
+identer(&quot;?&quot;,mathstyle,negthickspace);
+identer(&quot;quad&quot;,mathstyle,quadspace);
+identer(&quot;dispstyle&quot;,mathstyle,dispstyle);
+identer(&quot;textstyle&quot;,mathstyle,textstyle);
+identer(&quot;scriptstyle&quot;,mathstyle,scriptstyle);
+identer(&quot;scriptscriptstyle&quot;,mathstyle,scriptscriptstyle);
+identer(&quot;/&quot;,italcorr,0);
+identer(&quot;vcenter&quot;,vcenter,0);
+identer(&quot;hangindent&quot;,hangindent,0);
+identer(&quot;Gamma&quot;,mathonly,'00) # u.c. gamma;
+identer(&quot;Delta&quot;,mathonly,'01) # u.c. delta;
+identer(&quot;Theta&quot;,mathonly,'02) # u.c. theta;
+identer(&quot;Lambda&quot;,mathonly,'03) # u.c. lambda;
+identer(&quot;Xi&quot;,mathonly,'04) # u.c. xi;
+identer(&quot;Pi&quot;,mathonly,'05) # u.c. pi;
+identer(&quot;Sigma&quot;,mathonly,'06) # u.c. sigma;
+identer(&quot;Upsilon&quot;,mathonly,'07) # u.c. upsilon;
+identer(&quot;Phi&quot;,mathonly,'10) # u.c. phi;
+identer(&quot;Psi&quot;,mathonly,'11) # u.c. psi;
+identer(&quot;Omega&quot;,mathonly,'12) # u.c. omega;
+identer(&quot;i&quot;,nonmathletter,'13) # dotless i;
+identer(&quot;j&quot;,nonmathletter,'14) # dotless j;
+identer(&quot;`&quot;,accent,'15) # grave accent;
+identer(&quot;'&quot;,accent,'16) # acute accent;
+identer(&quot;A&quot;,accent,'17) # circumflex (hat) accent;
+identer(&quot;v&quot;,accent,'20) # inverted circumflex accent (Slavic);
+identer(&quot;u&quot;,accent,'21) # breve;
+identer(&quot;=&quot;,accent,'22) # macron (bar) accent;
+identer(&quot;&quot;&quot;&quot;,accent,'23) # umlaut or dieresis;
+identer(&quot;s&quot;,accent,'24) # tilde;
+identer(&quot;b&quot;,accent,'25) # vector accent;
+identer(&quot;H&quot;,accent,'26) # long Hungarian umlaut;
+identer(&quot;a&quot;,accent,'27) # small circle accent (Scandinavian);
+identer(&quot;c&quot;,accent,'30) # cedilla (French, Polish, Navajo, etc.);
+identer(&quot;l&quot;,accent,'31) # cross for lower case l (Polish);
+identer(&quot;t&quot;,accent,'32) # tie for Russian ligatures;
+identer(&quot;ss&quot;,nonmathletter,'33) # German ligature ss;
+identer(&quot;ae&quot;,nonmathletter,'34) # Latin or Scandinavian ligature ae;
+identer(&quot;oe&quot;,nonmathletter,'35) # French ligature oe;
+identer(&quot;AE&quot;,nonmathletter,'36) # Latin or Scandinavian ligature AE;
+identer(&quot;OE&quot;,nonmathletter,'37) # French ligature OE;
+identer(&quot;o&quot;,nonmathletter,'40) # o with slash (Scandinavian);
+identer(&quot;O&quot;,nonmathletter,'100) # O with slash (Scandinavian);
+identer(&quot;Gammait&quot;,mathonly,'200) # u.c. italic gamma;
+identer(&quot;Deltait&quot;,mathonly,'201) # u.c. italic delta;
+identer(&quot;Thetait&quot;,mathonly,'202) # u.c. italic theta;
+identer(&quot;Lambdait&quot;,mathonly,'203) # u.c. italic lambda;
+identer(&quot;Xiit&quot;,mathonly,'204) # u.c. italic xi;
+identer(&quot;Piit&quot;,mathonly,'205) # u.c. italic pi;
+identer(&quot;Sigmait&quot;,mathonly,'206) # u.c. italic sigma;
+identer(&quot;Upsilonit&quot;,mathonly,'207) # u.c. italic upsilon;
+identer(&quot;Phiit&quot;,mathonly,'210) # u.c. italic phi;
+identer(&quot;Psiit&quot;,mathonly,'211) # u.c. italic psi;
+identer(&quot;Omegait&quot;,mathonly,'212) # u.c. italic omega;
+identer(&quot;alpha&quot;,mathonly,'213) # l.c. alpha;
+identer(&quot;beta&quot;,mathonly,'214) # l.c. beta;
+identer(&quot;gamma&quot;,mathonly,'215) # l.c. gamma;
+identer(&quot;delta&quot;,mathonly,'216) # l.c. delta;
+identer(&quot;epsilon&quot;,mathonly,'217) # l.c. epsilon;
+identer(&quot;zeta&quot;,mathonly,'220) # l.c. zeta;
+identer(&quot;eta&quot;,mathonly,'221) # l.c. eta;
+identer(&quot;theta&quot;,mathonly,'222) # l.c. theta;
+identer(&quot;iota&quot;,mathonly,'223) # l.c. iota;
+identer(&quot;kappa&quot;,mathonly,'224) # l.c. kappa;
+identer(&quot;lambda&quot;,mathonly,'225) # l.c. lambda;
+identer(&quot;mu&quot;,mathonly,'226) # l.c. mu;
+identer(&quot;nu&quot;,mathonly,'227) # l.c. nu;
+identer(&quot;xi&quot;,mathonly,'230) # l.c. xi;
+identer(&quot;pi&quot;,mathonly,'231) # l.c. pi;
+identer(&quot;rho&quot;,mathonly,'232) # l.c. rho;
+identer(&quot;sigma&quot;,mathonly,'233) # l.c. sigma;
+identer(&quot;tau&quot;,mathonly,'234) # l.c. tau;
+identer(&quot;upsilon&quot;,mathonly,'235) # l.c. upsilon;
+identer(&quot;phi&quot;,mathonly,'236) # l.c. phi;
+identer(&quot;chi&quot;,mathonly,'237) # l.c. chi;
+identer(&quot;iit&quot;,mathonly,'240) # dotless italic i;
+identer(&quot;lscr&quot;,mathonly,'243) # l.c. script ell;
+identer(&quot;wp&quot;,mathonly,'244) # Weierstrass p;
+identer(&quot;partial&quot;,mathonly,'245) # partial derivative sign;
+identer(&quot;jit&quot;,mathonly,'300) # dotless italic j;
+identer(&quot;psi&quot;,mathonly,'373) # l.c. psi;
+identer(&quot;omega&quot;,mathonly,'374) # l.c. omega;
+identer(&quot;varphi&quot;,mathonly,'375) # variant l.c. phi (not pointed at top);
+identer(&quot;vartheta&quot;,mathonly,'376) # variant l.c. theta (not closed at left);
+identer(&quot;varomega&quot;,mathonly,'377) # variant l.c. omega (closed with bar at top);
+identer(&quot;cdot&quot;,mathonly,bin('401)) # centered dot;
+identer(&quot;times&quot;,mathonly,bin('402)) # cross product;
+identer(&quot;ast&quot;,mathonly,bin('403)) # asterisk resting on baseline;
+identer(&quot;rslash&quot;,mathonly,bin('404)) # reverse slash (\);
+identer(&quot;circ&quot;,mathonly,bin('405)) # small circle operator;
+identer(&quot;pm&quot;,mathonly,bin('406)) # plus-or-minus;
+identer(&quot;mp&quot;,mathonly,bin('407)) # minus-or-plus;
+identer(&quot;oplus&quot;,mathonly,bin('410)) # circle plus;
+identer(&quot;ominus&quot;,mathonly,bin('411)) # circle minus;
+identer(&quot;otimes&quot;,mathonly,bin('412)) # circle times (ⓧ);
+identer(&quot;odiv&quot;,mathonly,bin('413)) # circle divide;
+identer(&quot;odot&quot;,mathonly,bin('414)) # circle dot;
+identer(&quot;div&quot;,mathonly,bin('415)) # elementary division (-:-);
+identer(&quot;interc&quot;,mathonly,bin('416)) # intercalation product;
+identer(&quot;bullet&quot;,mathonly,bin('417)) # filled-in circle operator;
+identer(&quot;perp&quot;,mathonly,rel('420)) # perpendicular (_|_);
+identer(&quot;bot&quot;,mathonly,'420) # Scott bottom (_|_);
+identer(&quot;subset&quot;,mathonly,rel('422)) # ⊂_;
+identer(&quot;supset&quot;,mathonly,rel('423)) # ⊃_;
+identer(&quot;preceq&quot;,mathonly,rel('426)) # precedes or equals;
+identer(&quot;succeq&quot;,mathonly,rel('427)) # succeeds or equals;
+identer(&quot;approx&quot;,mathonly,rel('431)) # approximate equality;
+identer(&quot;doteq&quot;,mathonly,rel('435)) # dot over equals;
+identer(&quot;prec&quot;,mathonly,rel('436)) # precedes (curly version of &lt;);
+identer(&quot;succ&quot;,mathonly,rel('437)) # succeeds (curly version of &gt;);
+identer(&quot;up&quot;,mathonly,rel('442)) # ^;
+identer(&quot;down&quot;,mathonly,rel('443)) # ↓;
+identer(&quot;lsls&quot;,mathonly,rel('445)) # &lt;&lt;;
+identer(&quot;grgr&quot;,mathonly,rel('446)) # &gt;&gt;;
+identer(&quot;simeq&quot;,mathonly,rel('447)) # ~-;
+identer(&quot;←&quot;,mathonly,rel('450)) # &lt;=;
+identer(&quot;→&quot;,mathonly,rel('451)) # =&gt;;
+identer(&quot;^&quot;,mathonly,rel('452)) # ∧||;
+identer(&quot;↓&quot;,mathonly,rel('453)) # ∨||;
+identer(&quot;↔&quot;,mathonly,rel('454)) # &lt;=&gt;;
+identer(&quot;lsh&quot;,mathonly,bin('455)) # left shift symbol;
+identer(&quot;rsh&quot;,mathonly,bin('456)) # right shift symbol;
+identer(&quot;mapsto&quot;,mathonly,rel('457)) # |→;
+identer(&quot;prime&quot;,mathonly,'460) # prime (intended to appear in script size only);
+identer(&quot;infty&quot;,mathonly,'461) # infinity;
+identer(&quot;in&quot;,mathonly,rel('462)) # ε meaning set element;
+identer(&quot;notin&quot;,mathonly,rel('463)) # /ε;
+identer(&quot;emptyset&quot;,mathonly,'464) # /0;
+identer(&quot;angle&quot;,mathonly,'466) # /_;
+identer(&quot;aleph&quot;,mathonly,'473) # u.c. aleph;
+identer(&quot;real&quot;,mathonly,'474) # u.c. Fraktur R;
+identer(&quot;imag&quot;,mathonly,'475) # u.c. Fraktur I;
+identer(&quot;top&quot;,mathonly,'476) # Scott top (upside down perpendicular);
+identer(&quot;not&quot;,mathonly,rel('500)) # zero-width character negates a relation symbol;
+identer(&quot;Ascr&quot;,mathonly,'501) # u.c. script A;
+identer(&quot;Bscr&quot;,mathonly,'502) # u.c. script B;
+identer(&quot;Cscr&quot;,mathonly,'503) # u.c. script C;
+identer(&quot;Dscr&quot;,mathonly,'504) # u.c. script D;
+identer(&quot;Escr&quot;,mathonly,'505) # u.c. script E;
+identer(&quot;Fscr&quot;,mathonly,'506) # u.c. script F;
+identer(&quot;Gscr&quot;,mathonly,'507) # u.c. script G;
+identer(&quot;Hscr&quot;,mathonly,'510) # u.c. script H;
+identer(&quot;Iscr&quot;,mathonly,'511) # u.c. script I;
+identer(&quot;Jscr&quot;,mathonly,'512) # u.c. script J;
+identer(&quot;Kscr&quot;,mathonly,'513) # u.c. script K;
+identer(&quot;Lscr&quot;,mathonly,'514) # u.c. script L;
+identer(&quot;Mscr&quot;,mathonly,'515) # u.c. script M;
+identer(&quot;Nscr&quot;,mathonly,'516) # u.c. script N;
+identer(&quot;Oscr&quot;,mathonly,'517) # u.c. script O;
+identer(&quot;Pscr&quot;,mathonly,'520) # u.c. script P;
+identer(&quot;Qscr&quot;,mathonly,'521) # u.c. script Q;
+identer(&quot;Rscr&quot;,mathonly,'522) # u.c. script R;
+identer(&quot;Sscr&quot;,mathonly,'523) # u.c. script S;
+identer(&quot;Tscr&quot;,mathonly,'524) # u.c. script T;
+identer(&quot;Uscr&quot;,mathonly,'525) # u.c. script U;
+identer(&quot;Vscr&quot;,mathonly,'526) # u.c. script V;
+identer(&quot;Wscr&quot;,mathonly,'527) # u.c. script W;
+identer(&quot;Xscr&quot;,mathonly,'530) # u.c. script X;
+identer(&quot;Yscr&quot;,mathonly,'531) # u.c. script Y;
+identer(&quot;Zscr&quot;,mathonly,'532) # u.c. script Z;
+identer(&quot;uplus&quot;,mathonly,bin('535)) # multiset union +∪;
+identer(&quot;vdash&quot;,mathonly,opn('540)) # |- (left turnstile);
+identer(&quot;dashv&quot;,mathonly,cls('541)) # -| (right turnstile);
+identer(&quot;lfloor&quot;,mathonly,opn('542)) # left floor bracket;
+identer(&quot;rfloor&quot;,mathonly,cls('543)) # right floor bracket;
+identer(&quot;lceil&quot;,mathonly,opn('544)) # left ceiling bracket;
+identer(&quot;rceil&quot;,mathonly,cls('545)) # right ceiling bracket;
+identer(&quot;{&quot;,mathonly,opn('546)) # left brace;
+identer(&quot;}&quot;,mathonly,cls('547)) # right brace;
+identer(&quot;langle&quot;,mathonly,opn('550)) # left angle bracket;
+identer(&quot;rangle&quot;,mathonly,cls('551)) # right angle bracket;
+identer(&quot;leftv&quot;,mathonly,opn('552)) # | treated as left bracket;
+identer(&quot;rightv&quot;,mathonly,cls('552)) # | treated as right bracket;
+identer(&quot;relv&quot;,mathonly,rel('552)) # | treated as relation (divides, or set def'n);
+identer(&quot;|&quot;,mathonly,'553) # ||;
+identer(&quot;leftvv&quot;,mathonly,opn('553)) # || treated as left bracket;
+identer(&quot;rightvv&quot;,mathonly,cls('553)) # || treated as right bracket;
+identer(&quot;relvv&quot;,mathonly,rel('553)) # || treated as relation (disjointness);
+identer(&quot;dleft&quot;,mathonly,opn('554)) # double left bracket;
+identer(&quot;dright&quot;,mathonly,cls('555)) # double right bracket;
+identer(&quot;surd&quot;,mathonly,'560) # radical (square root) sign;
+identer(&quot;#&quot;,mathonly,'561) # sharp sign (hash mark or American pound);
+identer(&quot;nabla&quot;,mathonly,'562) # inverted u.c. delta;
+identer(&quot;smallint&quot;,mathonly,op('563)) # small integral sign;
+identer(&quot;lub&quot;,mathonly,bin('564)) # square union sign in Scott semantics;
+identer(&quot;glb&quot;,mathonly,bin('565)) # square intersection sign in Scott semantics;
+identer(&quot;sqsub&quot;,mathonly,rel('566)) # square inclusion sign in Scott semantics;
+identer(&quot;section&quot;,mathonly,'570) # section symbol;
+identer(&quot;dag&quot;,mathonly,'571) # dagger;
+identer(&quot;ddag&quot;,mathonly,'572) # double dagger;
+identer(&quot;P&quot;,mathonly,'573) # paragraph symbol;
+identer(&quot;@&quot;,mathonly,'574) # at sign;
+identer(&quot;copyright&quot;,mathonly,'575) # c in circle;
+identer(&quot;sterling&quot;,mathonly,'576) # British pound sign;
+identer(&quot;$&quot;,mathonly,'577) # dollar sign;
+identer(&quot;squnion&quot;,mathonly,op('706)) # large square union sign;
+identer(&quot;oint&quot;,mathonly,op('710)) # large contour integral sign;
+identer(&quot;odotprod&quot;,mathonly,op('712)) # large circle-dot sign;
+identer(&quot;osum&quot;,mathonly,op('714)) # large circle-plus sign;
+identer(&quot;oprod&quot;,mathonly,op('716)) # large circle-times sign;
+identer(&quot;sum&quot;,mathonly,op('720)) # large Sigma sign for summation;
+identer(&quot;prod&quot;,mathonly,op('721)) # large Pi sign for product;
+identer(&quot;int&quot;,mathonly,op('722)) # large integral sign;
+identer(&quot;union&quot;,mathonly,op('723)) # large set union sign;
+identer(&quot;inter&quot;,mathonly,op('724)) # large set intersection sign;
+identer(&quot;munion&quot;,mathonly,op('725)) # large multiset union sign (U with +);
+identer(&quot;meet&quot;,mathonly,op('726)) # large logical or (lattice meet) sign;
+identer(&quot;join&quot;,mathonly,op('727)) # large logical and (lattice join) sign;
+mathfonttable(0)←mathfonttable(1)←mathfonttable(2)←mathfonttable(3)←-1;
+tracing←'345 # trace control;
+jpar←2 # justification control;
+hpen←50 # hyphenation penalty;
+penpen←3000 # penultimate hyphenation penalty (squared);
+wpen←80 # widow line penalty;
+bpen←50 # page break after hyphenated line penalty;
+mbpen←95 # penalty for line break after binary operator in math formula;
+mrpen←50 # penalty for line break after relation in math formula;
+ragged←0 # degree of raggedness;
+integer n;
+n←0;for i←0 thru hashsize-1 do if hash[i] then n←n+1;
+print(nextline,&quot;Hash table of size &quot;,hashsize,&quot; preloaded with &quot;,n,
+	&quot; control sequences.&quot;);
+n←0;for i←0 thru 127 do if eqtb[hashsize+i] then n←n+1;
+print(nextline,&quot;Furthermore &quot;,n,&quot; single-character control sequences are&quot;,
+	&quot; predefined.&quot;);
+end;
+end;
+procedure xent(string s) # enter an exception s;
+begin integer n,m,c,w,t,i,j,h; string ss;
+ss←s; n←0; w←0; m←0;
+while c←lop(s) do
+	if c=&quot;-&quot; then w←w lor 1 else
+	if c=&quot;*&quot; then m←m+1 else
+	begin n←n+1; w←w lsh 1;
+	mem[n] ← c land '37;
+	end;
+w←w rot(1-n);
+j←7 min n;
+while m do begin w←w+(mem[j+m]lsh(5*(m-1))); m←m-1 end;
+t←mem[1];
+for i←2 thru j do t←(t lsh 5)+mem[i];
+h←t mod excepsize;
+while t do
+	begin while exceptable[h]&gt;t do h←h-1;
+	if h=0 then h←excepsize-1
+	else if exceptable[h]=t then
+		begin print(nextline,&quot;Whoops: double entry &quot;,ss);
+		return;
+		end
+	else	begin j←exceptable[h]; c←excephyph[h];
+		exceptable[h]←t; excephyph[h]←w;
+		t←j; w←c;
+		end;
+	end;
+end;
+preload_with
+&quot;con-trol-lable&quot;,&quot;un-con-trollable&quot;,
+&quot;eq-uable&quot;,&quot;in-sa-tiable&quot;,&quot;ne-go-tiable&quot;,&quot;so-ciable&quot;,&quot;turn-table&quot;,&quot;un-so-ciable&quot;,
+&quot;sub-sequence&quot;,
+&quot;de-pend-ent&quot;,&quot;in-de-pend-ent&quot;,
+&quot;any-thing&quot;,&quot;bal-ding&quot;,&quot;dar-ling&quot;,&quot;dump-ling&quot;,&quot;err-ing&quot;,&quot;eve-ning&quot;,&quot;every-thing&quot;,
+&quot;far-thing&quot;,&quot;found-ling&quot;,&quot;ink-ling&quot;,&quot;main-spring&quot;,&quot;nest-ling&quot;,&quot;off-spring&quot;,
+&quot;play-thing&quot;,&quot;sap-ling&quot;,&quot;shoe-string&quot;,&quot;sib-ling&quot;,&quot;some-thing&quot;,&quot;star-ling&quot;,
+&quot;ster-ling&quot;,&quot;un-err-ing&quot;,&quot;up-swing&quot;,&quot;weak-ling&quot;,&quot;year-ling&quot;,
+&quot;civ-i-lize&quot;,&quot;crys-tal-lize&quot;,&quot;im-mo-bi-lize&quot;,&quot;me-ta-bo-lize&quot;,&quot;mo-bi-lize&quot;,
+&quot;mo-nop-o-lize&quot;,&quot;sta-bi-li*ze&quot;,&quot;tan-ta-lize&quot;,&quot;un-civ-i-lized&quot;,
+&quot;pal-ate&quot;,
+&quot;in-clem-ent&quot;,
+&quot;bar-on-ess&quot;,&quot;li-on-ess&quot;,
+&quot;eu-logy&quot;,&quot;ped-a-gogy&quot;,
+&quot;lus-cious&quot;,
+&quot;at-mos-phere&quot;,
+&quot;met-al&quot;,&quot;non-metal&quot;,&quot;pet-al&quot;,&quot;postal&quot;,&quot;rent-al&quot;,
+&quot;cat-ion&quot;,
+&quot;com-bat-ive&quot;,
+&quot;stat-ure&quot;,
+&quot;beck-on&quot;,&quot;bes-tial&quot;,
+&quot;com-a-tose&quot;,&quot;come-back&quot;,&quot;co-me-dian&quot;,&quot;comp-troller&quot;,
+&quot;cone-flower&quot;,&quot;co-nun-drum&quot;,
+&quot;equipped&quot;,
+&quot;handle-bar&quot;,
+&quot;inch-worm&quot;,&quot;ink-blot&quot;,&quot;inn-keeper&quot;,
+&quot;in-te-rior&quot;,
+&quot;min-is-ter&quot;,&quot;min-is-try&quot;,
+&quot;none-the-less&quot;,
+&quot;qua-drille&quot;,
+&quot;som-er-sault&quot;,
+&quot;su-pe-rior&quot;,
+&quot;una-nim-ity&quot;,&quot;unan-i-mous&quot;,&quot;unc-tuous&quot;,
+&quot;debt-or&quot;,
+&quot;ac-knowl-edge&quot;,
+&quot;de-duct-i*ble&quot;,&quot;ex-act-i-tude&quot;,&quot;in-ex-act-i-tude&quot;,
+&quot;pre-dict-*able&quot;,&quot;re-spect-*able&quot;,&quot;un-pre-dict-able&quot;,&quot;vict-ual&quot;,
+&quot;nee-dle-work&quot;,&quot;idler&quot;,
+&quot;buff-er&quot;,&quot;off-beat&quot;,&quot;off-hand&quot;,&quot;off-print&quot;,&quot;off-shoot&quot;,&quot;off-shore&quot;,
+&quot;stiff-en&quot;,
+&quot;left-ist&quot;,&quot;left-over&quot;,&quot;lift-off&quot;,
+&quot;soft-hearted&quot;,
+&quot;egg-nog&quot;,&quot;egg-head&quot;,
+&quot;cognac&quot;,&quot;for-eign-er&quot;,&quot;vignette&quot;,
+&quot;hogs-head&quot;,
+&quot;child-ish&quot;,&quot;eld-est&quot;,&quot;hold-out&quot;,&quot;hold-over&quot;,&quot;hold-up&quot;,
+&quot;self-ish&quot;,
+&quot;bull-ish&quot;,&quot;crest-fallen&quot;,&quot;dis-till-*ery&quot;,&quot;fall-out&quot;,&quot;lull-aby&quot;,&quot;roll-away&quot;,
+&quot;sell-out&quot;,&quot;wall-eye&quot;,
+&quot;psalm-ist&quot;,
+&quot;else-where&quot;,&quot;false-hood&quot;,
+&quot;con-sult-ant&quot;,&quot;volt-age&quot;,
+&quot;re-solv-able&quot;,&quot;re-volv-er&quot;,&quot;solv-able&quot;,&quot;un-solv-able&quot;,
+&quot;beach-comb-er&quot;,&quot;bomb-er&quot;,&quot;climb-er&quot;,&quot;plumb-er&quot;,
+&quot;damp-en&quot;,&quot;damp-est&quot;,
+&quot;clinch-er&quot;,&quot;launch-er&quot;,&quot;lunch-eon&quot;,&quot;ranch-er&quot;,&quot;trench-ant&quot;,
+&quot;an-nouncer&quot;,&quot;bouncer&quot;,&quot;fencer&quot;,&quot;hence-forth&quot;,&quot;mince-meat&quot;,&quot;si-lencer&quot;,
+&quot;bind-ery&quot;,&quot;bound-ary&quot;,&quot;com-mend-*a-*t*ory&quot;,&quot;de-pend-able&quot;,&quot;ex-pend-able&quot;,
+&quot;fiend-ish&quot;,&quot;land-owner&quot;,&quot;out-land-ish&quot;,&quot;round-about&quot;,&quot;send-off&quot;,&quot;stand-out&quot;,
+&quot;change-over&quot;,&quot;hang-out&quot;,&quot;hang-over&quot;,&quot;ha-rangue&quot;,&quot;me-ringue&quot;,&quot;orange-ade&quot;,
+&quot;tongue&quot;,&quot;venge-ance&quot;,
+&quot;sense-less&quot;,
+&quot;ac-count-ant&quot;,&quot;ant-acid&quot;,&quot;ant-eater&quot;,&quot;count-ess&quot;,&quot;rep-re-sentative&quot;,
+&quot;ant-hill&quot;,&quot;pent-house&quot;,&quot;per-cent-*age&quot;,
+&quot;ac-cept-able&quot;,&quot;ac-cept-or&quot;,&quot;adapt-able&quot;,&quot;adapt-er&quot;,&quot;crypt-analysis&quot;,
+&quot;in-ter-ru*p*t-*i*ble&quot;,
+&quot;an-tiq-uity&quot;,&quot;in-eq-uity&quot;,&quot;in-iq-uity&quot;,&quot;liq-uefy&quot;,&quot;liq-uid&quot;,
+&quot;liq-ui-date&quot;,&quot;liq-uor&quot;,&quot;pre-req-ui-site&quot;,&quot;req-ui-sition&quot;,
+&quot;ubiq-ui-tous&quot;,
+&quot;ab-sorb-ent&quot;,&quot;carb-on&quot;,&quot;herbal&quot;,&quot;im-per-turb-able&quot;,
+&quot;arch-ery&quot;,&quot;arch-angel&quot;,&quot;re-search-ers&quot;,&quot;un-search-able&quot;,
+&quot;ac-cord-ance&quot;,&quot;board-er&quot;,&quot;chordal&quot;,&quot;hard-en&quot;,&quot;hard-est&quot;,&quot;haz-ard-ous&quot;,
+&quot;jeop-ard-ize&quot;,&quot;re-cord-er&quot;,&quot;stand-ard-ize&quot;,&quot;stew-ard-ess&quot;,&quot;yard-age&quot;,
+&quot;surf-er&quot;,
+&quot;morgue&quot;,
+&quot;curl-i-que&quot;,
+&quot;af-firm-a*t*i*ve&quot;,&quot;con-form-*ity&quot;,&quot;de-form-ity&quot;,&quot;in-form-a*nt&quot;,&quot;non-con-form-ist&quot;,
+&quot;cav-ern-ous&quot;,&quot;dis-cern-ible&quot;,&quot;mod-ern-ize&quot;,&quot;turn-about&quot;,&quot;turn-over&quot;,
+&quot;un-gov-ern-able&quot;,&quot;west-ern-ize&quot;,
+&quot;harp-ist&quot;,&quot;sharp-en&quot;,
+&quot;torque&quot;,
+&quot;coars-en&quot;,&quot;ir-re-vers-ible&quot;,&quot;nurse-maid&quot;,&quot;nurs-ery&quot;,&quot;re-hears-al&quot;,
+&quot;re-vers-ible&quot;,&quot;wors-en&quot;,
+&quot;art-ist&quot;,&quot;con-vert-ible&quot;,&quot;court-yard&quot;,&quot;fore-short-en&quot;,&quot;heart-ache&quot;,&quot;heart-ily&quot;,
+&quot;short-en&quot;,
+&quot;apart-heid&quot;,&quot;court-house&quot;,&quot;earth-en-ware&quot;,&quot;north-east&quot;,&quot;north-ern&quot;,&quot;port-hole&quot;,
+&quot;nerv-ous&quot;,&quot;ob-serv-a*ble&quot;,&quot;ob-serv-er&quot;,&quot;pre-serv-*a*t*i*ve&quot;,&quot;serv-er&quot;,
+&quot;serv-ice-able&quot;,
+&quot;pre-school&quot;,
+&quot;con-de-scend&quot;,&quot;cre-scendo&quot;,&quot;de-cre-scendo&quot;,&quot;de-scend-ent&quot;,&quot;de-scent&quot;,
+&quot;pleb-i-scite&quot;,&quot;re-scind&quot;,&quot;sea-scape&quot;,
+&quot;askance&quot;,&quot;snake-skin&quot;,&quot;whisk-er&quot;,
+&quot;cole-slaw&quot;,
+&quot;rattle-snake&quot;,
+&quot;class-room&quot;,&quot;class-ify&quot;,&quot;cross-over&quot;,&quot;dis-miss-al&quot;,&quot;ex-press-ible&quot;,
+&quot;im-pass-able&quot;,&quot;less-en&quot;,&quot;pass-able&quot;,&quot;toss-up&quot;,&quot;un-class-i-fied&quot;,
+&quot;ar-mi-stice&quot;,&quot;astig-ma-tism&quot;,&quot;astir&quot;,&quot;aston-ish-ment&quot;,&quot;blast-off&quot;,&quot;by-stand-er&quot;,
+&quot;candle-stick&quot;,&quot;cast-away&quot;,&quot;cast-off&quot;,&quot;con-test-ant&quot;,&quot;co-star&quot;,
+&quot;de-test-able&quot;,&quot;di-gest-ible&quot;,&quot;east-ern&quot;,&quot;ex-ist-ence&quot;,&quot;fore-stall&quot;,
+&quot;in-con-test-able&quot;,&quot;in-di-ges*t-*i*ble&quot;,&quot;in-ex-haust-ible&quot;,&quot;life-style&quot;,
+&quot;lime-stone&quot;,&quot;live-stock&quot;,&quot;mile-stone&quot;,&quot;non-ex-ist-ent&quot;,&quot;per-sist-ent&quot;,
+&quot;pho-to-stat&quot;,&quot;re-start-ed&quot;,&quot;re-state-ment&quot;,&quot;re-store&quot;,&quot;shy-ster&quot;,
+&quot;side-step&quot;,&quot;smoke-stack&quot;,&quot;sug-gest-*i*ble&quot;,&quot;thermo-stat&quot;,&quot;waste-bas-ket&quot;,
+&quot;waste-land&quot;,
+&quot;mast-head&quot;,&quot;post-hu-mous&quot;,&quot;priest-hood&quot;,
+&quot;side-swipe&quot;,
+&quot;watt-meter&quot;,
+&quot;be-tween&quot;,
+&quot;kib-itzer&quot;,
+&quot;buzz-er&quot;,
+&quot;al-go-rithm&quot;,&quot;bib-li-og-raphy&quot;,&quot;bi-no-mial&quot;,&quot;cen-ter&quot;,&quot;com-put-a-*bil-ity&quot;,
+&quot;dec-la-ra-tion&quot;,&quot;de-gree&quot;,&quot;es-tab-lish&quot;,&quot;hap-hazard&quot;,&quot;neg-li-gible&quot;,&quot;pe-ri-odic&quot;,
+&quot;poly-no-mial&quot;,&quot;pre-vious&quot;,&quot;pro-ce-dure&quot;,&quot;prob-able&quot;,&quot;prob-a-bil-ity&quot;,
+&quot;pub-li-ca-tion&quot;,&quot;pub-lish&quot;,&quot;re-place-ment&quot;,&quot;when-ever&quot;,
+&quot;gen-er-ator&quot;,
+&quot;&quot;; string array exceptions[0:excepsize-1];
+procedure initex;
+begin integer i; string s;
+arrclr(exceptable); arrclr(excephyph);
+i←0;
+while s←exceptions[i] do
+	begin xent(s); i←i+1;
+	end;
+print(nextline,&quot;Exception table contains &quot;,i,&quot; entries in ordered hash table&quot;,
+	&quot; of size &quot;,excepsize,&quot;.&quot;);
+end;
+procedure initsuf;
+begin
+define opcodes=9,opcoded=27,truexs=9,truexd=18,falsexs=9,falsexd=9,oprands=9,
+	oprandd=0 # fields in interpreted instructions;
+define scan=0,double=1,table=2,check=3,success=4,fail=5,repeat=6,again=7,
+	mark=8,efail=9 # numeric equivalents of symbolic opcodes;
+define s(n,a,b,c,d)=⊂suffix[n]←(a lsh opcoded)+(b lsh oprandd)+
+	(c lsh truexd)+(d lsh falsexd)⊃;
+define t(c)=⊂(flag lsh -(&quot;c&quot; land '37))⊃;
+suffix[0]←flag+t(a)+t(e)+t(i)+t(o)+t(u)+t(y);
+s(1,fail,0,0,0)	# a;
+s(2,fail,0,0,0) # b;
+s(3,scan,&quot;i&quot;,34,1) # c;
+s(4,again,0,1,0) # d;
+s(5,mark,0,38,0) # e;
+s(6,fail,0,0,0) # f;
+s(7,scan,&quot;n&quot;,60,1) # g;
+s(8,fail,0,0,0) # h;
+s(9,fail,0,0,0) # i;
+s(10,fail,0,0,0) # j;
+s(11,fail,0,0,0) # k;
+s(12,scan,&quot;a&quot;,71,72) # l;
+s(13,fail,0,0,0) # m;
+s(14,scan,&quot;o&quot;,77,1) # n;
+s(15,fail,0,0,0) # o;
+s(16,fail,0,0,0) # p;
+s(17,fail,0,0,0) # q;
+s(18,scan,&quot;e&quot;,81,1) # r;
+s(19,mark,0,85,0) # s;
+s(20,scan,&quot;n&quot;,94,1) # t;
+s(21,fail,0,0,0) # u;
+s(22,fail,0,0,0) # v;
+s(23,fail,0,0,0) # w;
+s(24,fail,0,0,0) # x;
+s(25,scan,&quot;l&quot;,31,98) # y;
+s(26,efail,0,0,0) # z;
+s(27,success,0,0,0);
+s(28,success,1,0,0);
+s(29,success,2,0,0);
+s(30,success,3,0,0);
+s(31,repeat,0,0,0);
+s(32,repeat,1,0,0);
+s(33,repeat,2,0,0);
+s(34,scan,&quot;p&quot;,35,26) # e/ic;
+s(35,scan,&quot;o&quot;,36,26) # pe/pic;
+s(36,scan,&quot;c&quot;,37,26) # ope/opic;
+s(37,scan,&quot;s&quot;,27,26) # cope/copic;
+s(38,scan,&quot;l&quot;,39,40) # e;
+s(39,scan,&quot;b&quot;,41,26) # le;
+s(40,scan,&quot;t&quot;,42,43) # e;
+s(41,scan,&quot;a&quot;,44,26) # ble;
+s(42,scan,&quot;a&quot;,45,26) # te;
+s(43,scan,&quot;z&quot;,46,47) # e;
+s(44,scan,&quot;t&quot;,48,49) # able;
+s(45,table,50,108,26) # ate;
+s(46,scan,&quot;i&quot;,51,26) # ze;
+s(47,scan,&quot;v&quot;,52,53) # e;
+s(48,table,54,33,26) # table;
+s(49,table,107,32,26) # able;
+suffix[50]←t(c)+t(l);
+s(51,scan,&quot;l&quot;,32,26) # ize;
+s(52,scan,&quot;i&quot;,55,26) # ve;
+s(53,scan,&quot;r&quot;,56,34) # e;
+suffix[54]←t(n)+t(r);
+s(55,scan,&quot;t&quot;,27,26) # ive/ure;
+s(56,scan,&quot;u&quot;,55,57) # re;
+s(57,scan,&quot;e&quot;,58,26) # re;
+s(58,scan,&quot;h&quot;,59,26) # ere;
+s(59,scan,&quot;p&quot;,37,26) # here;
+s(60,scan,&quot;i&quot;,61,1) # ng;
+s(61,check,0,62,1) # ing;
+s(62,scan,&quot;l&quot;,63,64) # ing;
+s(63,table,65,27,66) # ling;
+s(64,table,67,28,68) # ing;
+suffix[65]←t(b)+t(c)+t(d)+t(f)+t(g)+t(p)+t(t)+t(z);
+s(66,scan,&quot;k&quot;,69,28) # ling;
+suffix[67]←t(f)+t(s)+t(z);
+s(68,table,0,28,70) # ing;
+s(69,scan,&quot;c&quot;,29,27) # kling;
+s(70,double,0,27,27) # ing;
+s(71,scan,&quot;i&quot;,73,74) # al;
+s(72,scan,&quot;u&quot;,75,1) # l;
+s(73,scan,&quot;t&quot;,27,76) # al/ial;
+s(74,scan,&quot;n&quot;,14,73) # al;
+s(75,scan,&quot;f&quot;,31,1) # ul;
+s(76,scan,&quot;c&quot;,27,1) # al/ial/ient;
+s(77,scan,&quot;i&quot;,78,1) # on/onal;
+s(78,table,79,80,1) # ion/ional;
+suffix[79]←t(s)+t(t);
+s(80,mark,4,27,0) # sion/sional/tion/tional;
+s(81,scan,&quot;h&quot;,82,1) # er/y;
+s(82,scan,&quot;p&quot;,83,1) # her/hy;
+s(83,scan,&quot;a&quot;,84,1) # pher/phy;
+s(84,scan,&quot;r&quot;,27,1) # apher/aphy;
+s(85,scan,&quot;u&quot;,86,87) # s;
+s(86,scan,&quot;o&quot;,88,4) # us;
+s(87,scan,&quot;s&quot;,89,4) # s;
+s(88,scan,&quot;i&quot;,90,4) # ous;
+s(89,scan,&quot;e&quot;,91,4) # ss;
+s(90,scan,&quot;c&quot;,92,4) # ious;
+s(91,table,93,31,4) # ess;
+s(92,scan,&quot;s&quot;,27,27) # cious;
+suffix[93]←t(l)+t(n);
+s(94,scan,&quot;e&quot;,95,1) # nt;
+s(95,scan,&quot;m&quot;,31,96) # ent;
+s(96,scan,&quot;d&quot;,27,97) # ent;
+s(97,scan,&quot;i&quot;,76,1) # ent;
+s(98,scan,&quot;g&quot;,99,100) # y;
+s(99,scan,&quot;o&quot;,27,1) # gy;
+s(100,scan,&quot;r&quot;,101,81) # y;
+s(101,scan,&quot;a&quot;,102,1) # ry;
+s(102,scan,&quot;n&quot;,103,1) # ary;
+s(103,scan,&quot;o&quot;,104,105) # nary;
+s(104,scan,&quot;i&quot;,106,28) # onary;
+s(105,scan,&quot;e&quot;,29,27) # nary;
+s(106,repeat,3,0,0) # ionary;
+suffix[107]←t(e)+t(h)+t(i)+t(k)+t(l)+t(o)+t(u)+t(v)+t(w)+t(x)+t(y);
+s(108,table,0,28,26) # cate/late;
+end;
+procedure initpref;
+begin
+define opcodes=9,opcoded=27,truexs=9,truexd=18,falsexs=9,falsexd=9,oprands=9,
+	oprandd=0 # fields in interpreted instructions;
+define scan(n,c,t,f)=⊂prefix[n]←&quot;c&quot;+(t lsh truexd)+(f lsh falsexd)⊃;
+define repeat(n,t)=⊂prefix[n]←(6 lsh opcoded)+t⊃;
+define mark(n,t)=⊂prefix[n]←(8 lsh opcoded)+t⊃;
+define table(n)=⊂prefix[n]←(2 lsh opcoded)⊃;
+require &quot;.&quot; message;
+define fayl(n)=⊂prefix[n]←5 lsh opcoded⊃;
+require &quot;.&quot; message;
+define vow(n)=⊂prefix[n]←4 lsh opcoded⊃;
+define cons(n)=⊂prefix[n]←7 lsh opcoded⊃;
+define t(c)=⊂(flag lsh -((&quot;c&quot; land '37)+opcodes))⊃;
+define vs=1,cs=6,ts=7 # locations where there is a &quot;vow&quot;,&quot;cons&quot;,&quot;table0&quot; inst;
+fayl(0) # in case mem[u+1] gets set to zero by the suffix routine;
+vow(1) # a;
+scan(2,e,34,cs) # b;
+scan(3,o,36,cs) # c;
+scan(4,i,38,cs) # d;
+scan(5,q,41,44) # e;
+cons(6) # f;
+table(7) # g;
+scan(8,a,45,47) # h;
+scan(9,m,27,55) # i;
+cons(10) # j;
+cons(11) # k;
+scan(12,e,61,cs) # l;
+scan(13,a,63,70) # m;
+scan(14,o,76,cs) # n;
+scan(15,u,77,78) # o;
+scan(16,s,81,cs) # p;
+scan(17,u,85,cs) # q;
+cons(18) # r;
+scan(19,e,87,89) # s;
+scan(20,h,97,99) # t;
+scan(21,n,106,vs) # u;
+cons(22) # v;
+cons(23) # w;
+cons(24) # x;
+vow(25) # y;
+cons(26) # z;
+repeat(27,0);
+repeat(28,1);
+repeat(29,2);
+mark(30,0);
+mark(31,1);
+mark(32,2);
+mark(33,3);
+table(34)+t(c)+t(h)+t(s)+t(w) # be;
+scan(35,i,vs,27) # un;
+scan(36,m,30,37) # co;
+scan(37,n,30,vs) # co;
+scan(38,s,39,vs) # di;
+scan(39,h,ts,40) # dis;
+scan(40,y,vs,27) # dis;
+scan(41,u,42,cs) # eq;
+scan(42,i,43,cs) # equ;
+scan(43,v,30,30) # equi;
+scan(44,x,30,vs) # e;
+scan(45,n,46,vs) # ha;
+scan(46,d,30,ts) # han;
+scan(47,o,48,51) # h;
+scan(48,r,49,vs) # ho;
+scan(49,s,50,ts) # hor;
+scan(50,e,30,ts) # hors;
+scan(51,y,52,cs) # h;
+scan(52,p,53,vs) # hy;
+scan(53,e,54,ts) # hyp;
+scan(54,r,33,vs) # hype;
+scan(55,n,56,vs) # i;
+scan(56,t,57,27) # in;
+scan(57,e,58,59) # int;
+scan(58,r,33,29) # inte;
+scan(59,r,60,28) # int;
+scan(60,o,33,29) # intr;
+scan(61,x,62,vs) # le;
+scan(62,i,31,ts) # lex/max/min;
+scan(63,c,64,66) # ma;
+scan(64,r,65,ts) # mac;
+scan(65,o,32,ts) # macr;
+scan(66,t,67,69) # ma;
+scan(67,h,68,ts) # mat;
+scan(68,e,31,ts) # math;
+scan(69,x,62,vs) # ma;
+scan(70,i,71,72) # m;
+scan(71,n,62,vs) # mi;
+scan(72,u,73,cs) # m;
+scan(73,l,74,vs) # mu;
+scan(74,t,75,ts) # mul;
+scan(75,i,32,ts) # mult;
+scan(76,n,27,vs) # no;
+scan(77,t,30,vs) # ou;
+scan(78,v,79,vs) # o;
+scan(79,e,80,ts) # ov;
+scan(80,r,27,vs) # ove;
+scan(81,e,82,cs) # ps;
+scan(82,u,83,vs) # pse;
+scan(83,d,84,vs) # pseu;
+scan(84,o,32,ts) # pseud;
+scan(85,a,86,cs) # qu;
+scan(86,d,30,vs) # qua;
+scan(87,m,88,vs) # se;
+scan(88,i,30,ts) # sem;
+scan(89,o,90,92) # s;
+scan(90,m,91,vs) # so;
+scan(91,e,30,ts) # som/ther;
+scan(92,u,93,cs) # s;
+scan(93,b,30,94) # su;
+scan(94,p,95,vs) # su;
+scan(95,e,96,ts) # sup;
+scan(96,r,33,vs) # supe;
+scan(97,e,98,cs) # th;
+scan(98,r,91,vs) # the;
+scan(99,r,100,cs) # t;
+scan(100,a,101,104) # tr;
+scan(101,n,102,vs) # tra;
+scan(102,s,103,ts) # tran;
+table(103)+t(a)+t(f)+t(g)+t(l)+t(m) # trans;
+scan(104,i,105,cs) # tr;
+table(105)+t(a)+t(f)+t(u) # tri;
+scan(106,d,107,35) # un;
+scan(107,e,108,28) # und;
+scan(108,r,33,29) # unde;
+end;
+procedure initb # sets btable;
+begin
+define hchars=3,hchard=0,weaks=3,weakd=3 # definition of btable fields;
+define t(c)=⊂(flag lsh -((&quot;c&quot; land '37)-1))⊃;
+define weak(n)=⊂(n lsh weakd)+btable[26+n]⊃;
+define b(n)=⊂btable[n]←0⊃;
+b(26) # weak(0) and z;
+b(27)+t(t) # weak(1), for f and s;
+b(28)+t(d) # weak(2), for l;
+b(29)+t(p) # weak(3), for m;
+b(30)+t(d)+t(g)+t(s)+t(t) # weak(4), for n;
+b(31)+t(g)+t(m)+t(n)+t(t) # weak(5), for r;
+b(2)+t(l)+t(r) # b;
+b(3)+t(l)+t(r)+4 # c;
+b(4)+t(g)+t(r) # d;
+b(5)+t(l)+t(r) # ch;
+b(6)+t(l)+t(r)+weak(1) # f;
+b(7)+t(l)+t(r)+4 # g;
+b(8) # h;
+b(9)+t(t) # gh;
+b(10) # j;
+b(11)+t(n) # k;
+b(12)+t(k)+t(q)+weak(2) # l;
+b(13)+weak(3) # m;
+b(14)+t(e)+t(k)+t(x)+weak(4) # n;
+b(15)+t(r) # ph;
+b(16)+t(l)+t(r)+1 # p;
+b(17) # q;
+b(18)+t(k)+weak(5) # r;
+b(19)+t(p)+t(q)+weak(1)+4 # s;
+b(20)+t(e)+t(r)+7 # t;
+b(21) # sh;
+b(22) # v;
+b(23)+t(h)+t(l)+t(n)+t(r) # w;
+b(24) # x;
+b(25)+t(r) # th;
+end;
+procedure initd # sets delimtable;
+begin arrclr(delimtable,-1);
+delimtable[&quot;.&quot;] ← 0;
+delimtable[&quot;(&quot;] ← '050600;
+delimtable[&quot;)&quot;] ← '051601;
+delimtable[&quot;[&quot;] ← '133602;
+delimtable[&quot;]&quot;] ← '135603;
+delimtable[&quot;&lt;&quot;] ← '550612;
+delimtable[&quot;&gt;&quot;] ← '551613;
+delimtable[&quot;|&quot;] ← '552614;
+delimtable[&quot;/&quot;] ← '057616;
+delimtable[&quot;{&quot;] ← '546610;
+delimtable[&quot;}&quot;] ← '547611;
+end;
+procedure initfnt # sets fmem, wdbase, ..., parbase;
+begin integer f,unbal;
+for f←0 thru 31 do parbase[f]←0;
+fmemptr←0;
+initmem;
+initin;initsave;initout;
+print(nextline,nextline,&quot;Now type &lt; \input &lt;filename&gt; &gt;* \end to preload fonts:&quot;);
+unbal←0;
+while true do
+	begin getnext;
+	case curcmd of
+	[stop] return;
+	[innput] inputfile;
+	[chcode] if unbal=0 then begin integer j; j←curchar;
+	j←scannumber+j # j now identifies the parameter or character code location;
+	getnctok # this token is ignored, it might be space or = or ←, etc.;
+	chcodedef(j,scannumber) end;
+	[lbrace] unbal←unbal+1;
+	[rbrace] unbal←unbal-1;
+	[font] if unbal=0 then f←scanfont;
+	else
+	  end;
+	end;
+end;
+integer chan;
+setprint(&quot;errors.tmp&quot;,&quot;B&quot;);
+initin;initsave;inithash;
+initex;initsuf;initpref;initb;
+initd;initfnt;
+open(chan←getchan,&quot;DSK&quot;,'10,0,2,0,0,eof);
+enter(chan,&quot;TEXINI.TBL&quot;,eof);
+wordout(chan,hashsize);
+wordout(chan,eqtbsize);
+wordout(chan,locsize);
+wordout(chan,excepsize);
+wordout(chan,sufsize);
+wordout(chan,prefsize);
+wordout(chan,btabsize);
+wordout(chan,pagememsize);
+wordout(chan,fmemsize);
+arryout(chan,hash[0],hashsize);
+arryout(chan,eqtb[0],eqtbsize);
+arryout(chan,locs[0],locsize);
+arryout(chan,exceptable[0],excepsize);
+arryout(chan,excephyph[1],excepsize-1);
+arryout(chan,suffix[0],sufsize);
+arryout(chan,prefix[0],prefsize);
+arryout(chan,btable[2],btabsize);
+arryout(chan,pagemem[0],pagememsize);
+arryout(chan,delimtable[0],128);
+arryout(chan,fmem[0],fmemsize);
+arryout(chan,wdbase[0],32);
+arryout(chan,htbase[0],32);
+arryout(chan,dpbase[0],32);
+arryout(chan,lgbase[0],32);
+arryout(chan,msbase[0],32);
+arryout(chan,dwbase[0],32);
+arryout(chan,parbase[0],32);
+arryout(chan,fontinfo[0],'10000);
+wordout(chan,fmemptr);
+release(chan);
+print(nextline,&quot;TEX tables written on TEXINI.TBL.&quot;);
+end_of_texpre:
+end

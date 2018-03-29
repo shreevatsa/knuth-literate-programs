@@ -1,0 +1,295 @@
+require &quot;TEXHDR.SAI&quot; source_file;
+internal string ofilext # filename extension for output;
+internal string deviceext # extension to use in font information files;
+internal string ofilname # output file name, set by first \input;
+internal string libraryarea # default system area for fonts;
+integer ochan # output channel number;
+boolean no_output_yet # no pages shipped out yet;
+internal procedure initout # get TEXOUT started properly;
+begin ofilname←null; ofilext←&quot;.XGP&quot;; deviceext←&quot;.TFX&quot;; libraryarea←&quot;[XGP,SYS]&quot;;
+ochan←-1; no_output_yet←true;
+arrclr(strings);
+end;
+internal procedure declareofil(string s) # initializes the output on file s;
+begin comment This procedure is called when the name of the output file is
+first known. It opens the file and gets things started;
+integer i;
+ofilname←s;
+open(ochan←getchan,&quot;DSK&quot;,0,0,19,0,0,eof);
+while true do
+	begin enter(ochan,ofilname,eof);
+	if eof then
+		begin print(nextline,&quot;I can't write on file &quot;,ofilname,
+		nextline,&quot;Output file = &quot;);
+		ofilname←inchwl;
+		end
+	else done;
+	end;
+for i←1 thru '200 do out(ochan,&quot;TRASH&quot;) # preamble block will overwrite this later;
+end;
+simple string procedure twobytes(integer x) # changes x into x1&amp;x2, a 14-bit code;
+return((x lsh -7)&amp;x);
+preload_with true,[8]false,[2]true,false,[2]true,[113]false,true;
+	saf integer array quotedchar[0:127] # characters harder to output;
+define outchar(c)=⊂if quotedchar[c land '177] then strings[nstrs]←strings[nstrs]&amp;
+'177; strings[nstrs]←strings[nstrs]&amp;c⊃ # macro for output of a single character;
+define outrule(x0,y0,h,w)=⊂strings[nstrs]←strings[nstrs]&amp;('177&amp;'004)&amp;twobytes(y0)&amp;
+	twobytes(x0)&amp;('000&amp;'000&amp;'000)&amp;twobytes(h)&amp;twobytes(w)⊃;
+define tocol(x)=⊂('177&amp;'001&amp;'040)&amp;twobytes(x land '7777)⊃;
+define movetocol(x)=⊂if abs(xgpcol-x)&lt;'100 then strings[nstrs]←strings[nstrs]&amp;
+	('177&amp;'002)&amp;(x-xgpcol) else strings[nstrs]←strings[nstrs]&amp;tocol(x)⊃;
+define torow(y)=⊂('012&amp;'177&amp;'003)&amp;twobytes(y)⊃;
+define cutit=⊂('015&amp;'014)⊃;
+define newfont(f)=⊂strings[nstrs]←strings[nstrs]&amp;('177&amp;'006)&amp;((f)+1)⊃;
+define conv=⊂3.6⊃ # assumed number of pixels per point;
+define roundup(x)=⊂conv*(x)+.999999⊃ # integer←roundup(x) gives ceiling(x);
+internaldef stringsize=1024;
+internal saf integer array strinfo[0:stringsize-1];
+internal saf string array strings[0:stringsize-1];
+define srefs=11 # size of sref field, stringsize ≤ 2^srefs;
+define srefd=0  # displacement of sref field;
+define x0s=11,x0d=srefs # size and displacement of x0 field;
+define y0d=x0s+x0d,y0s=bitsperwd-y0d # size and displacement of y0 field;
+internal integer nstrs # pointers to the current string being generated;
+define newstring(x0,y0)=⊂begin if (nstrs←nstrs+1)≥stringsize then
+overflow(stringsize); strinfo[nstrs]←(((((y0)land((1 lsh(y0s-1))-1)) lsh x0s)
+lor ((x0)land((1 lsh x0s)-1))) lsh (srefs)) lor nstrs;
+define xgpheight(f)=⊂fmem[parbase[f]+device1]⊃ # the device1 parameter associated
+forward recursive procedure hlistout(integer p; real x,y) # see below;
+recursive procedure vlistout(integer p; real x,y);
+integer q # runs through the vlist;
+integer m # mem[q];
+real g # the glueset parameter for this box;
+short integer x0,y0,h,w # units rounded to pixels;
+q←value(p); g←glueset(p); x0←conv*x;
+while q do
+	begin case field(type,m←mem[q]) of begin
+	[charnode] begin integer c,f,w;
+	c←field(info,m); f←c lsh -7; w←fontinfo[c] # get character and font;
+	fontinfo[c]←w lor flag # mark character &quot;used&quot;;
+	y←y+charht(f,w); y0←conv*y;
+	comment Now (x0,y0) is reference point (in pixels) where c should go;
+	newstring(x0,y0-xgpheight(f)); newfont(f); outchar(c);
+	y←y+chardp(f,w); end;
+	[gluenode] begin integer r; r←field(value,m) # pointer to glue spec;
+	if g=0 then y←y+gluespace(r)
+	else if g&gt;0 then y←y+gluespace(r)+gluestretch(r)*g
+	else y←y+gluespace(r)+glueshrink(r)*g; end;
+	[kernnode] y←y+gluespace(q);
+	[rulenode] begin comment horizontal rule;
+	y0←conv*y; h←roundup(height(q)+depth(q));
+	if width(q)&lt;0 then w←roundup(width(p)) else w←roundup(width(q));
+	newstring(x0,y0); outrule(x0,y0,h,w); y←y+height(q)+depth(q) end;
+	[whatsitnode] voutext(q,x,y) # for extensions to TEX;
+	[vlistnode] begin vlistout(q,x+shiftamt(q),y);
+	y←y+height(q)+depth(q); end;
+	[hlistnode] begin hlistout(q,x+shiftamt(q),y←y+height(q));
+	y←y+depth(q); end;
+	[leadernode] begin integer b; real hh;
+	b←field(value,m) # pointer to box used for vertical leaders;
+	if type(b)≠rulenode or(height(b)≥0 and depth(b)≥0) then
+		begin hh←height(b)+depth(b); if hh&lt;0 then hh←0;
+		end
+	else hh←-1.0;
+	if hh≠0 and type(link(q))=gluenode then
+		begin integer r; real s;
+		q←link(q); r←value(q) # pointer to glue spec;
+		if g=0 then s←gluespace(r)
+		else if g&gt;0 then s←gluespace(r)+gluestretch(r)*g
+		else s←gluespace(r)+glueshrink(r)*g;
+		if hh&gt;0 then
+			begin integer q # quotient; real yy # y surrogate;
+			q←y/hh-epsilon;
+			yy←hh*(q+1) # the smallest suitable multiple of hh;
+			while yy+hh≤y+s do
+				begin if type(b)=vlistnode then vlistout(b,x,yy)
+				else hlistout(b,x,yy+height(b));
+				yy←yy+hh;
+				end;
+			end
+		else	begin comment variable vertical rule;
+			w←roundup(width(b));y0←conv*y;h←roundup(s);
+			newstring(x0,y0);outrule(x0,y0,h,w);
+			end;
+		y←y+s;
+		end;
+	end;
+	else end # ignore all other types of nodes;
+	q←link(q);
+	end;
+end;
+recursive procedure hlistout(integer p; real x,y);
+integer q # runs through the hlist;
+integer m # mem[q];
+real g # the glueset parameter for this box;
+short integer x0,y0,h,w # coordinates rounded to pixels;
+q←value(p); g←glueset(p); y0←conv*y;
+while q do
+	begin case field(type,m←mem[q]) of begin
+	[charnode] begin comment This is a first character of a possibly long
+	list, a common case which is &quot;optimized&quot; to keep the number of
+	instruction strings reasonably small;
+	integer xgpcol # column where the xgpserver is positioned;
+	integer c,f,w,h;
+	c←field(info,m) # the extended character code;
+	f←c lsh -7 # the font code;
+	h←xgpheight(f) # no. of pixels above baseline for tallest character in f;
+	w←fontinfo[c] # the font information fields;
+	fontinfo[c]←w lor flag # mark this character &quot;used&quot;;
+	x0←conv*x # round to correct starting position;
+	newstring(x0,y0-h); newfont(f); outchar(c) # output c;
+	x←x+charwd(f,w); xgpcol←x0+fmem[dwbase[f]+field(dw,w)];
+	while true do
+		begin comment continue with same instruction stream
+		as long as the nodes can be handled easily;
+		q←link(q);
+		if q=0 then done;
+		case field(type,m←mem[q]) of begin
+		[hlistnode][vlistnode][rulenode][whatsitnode][leadernode] done;
+		[charnode] begin integer f1 # font of new character;
+		c←field(info,m) # the extended character code;
+		f1←c lsh -7 # the font code;
+		if f1≠f then if xgpheight(f1)≠h then done else newfont(f←f1);
+		w←fontinfo[c] # the font information fields;
+		fontinfo[c]←w lor flag # mark this character &quot;used&quot;;
+		x0←conv*x # round to correct starting position;
+		if xgpcol≠x0 then movetocol(x0);
+		outchar(c) # output the character;
+		x←x+charwd(f,w); xgpcol←x0+fmem[dwbase[f]+field(dw,w)]; end;
+		[gluenode] begin integer r; r←field(value,m) # pointer to glue spec;
+		if g=0 then x←x+gluespace(r)
+		else if g&gt;0 then x←x+gluespace(r)+gluestretch(r)*g
+		else x←x+gluespace(r)+glueshrink(r)*g; end;
+		[kernnode] x←x+gluespace(q);
+		else end # ignore other node types;
+		end;
+	continue end # resume &quot;while q&quot; loop;
+	[gluenode] begin integer r; r←field(value,m) # pointer to glue spec;
+	if g=0 then x←x+gluespace(r)
+	else if g&gt;0 then x←x+gluespace(r)+gluestretch(r)*g
+	else x←x+gluespace(r)+glueshrink(r)*g; end;
+	[kernnode] x←x+gluespace(q);
+	[rulenode] begin comment vertical rule; integer y00;
+	if height(q)&lt;0 then height(q)←height(p); h←roundup(height(q));y00←y0-h+1;
+	comment this way of calculating y00 means that the rule will stop at the
+		baseline if the depth is zero;
+	if depth(q)&lt;0 then depth(q)←depth(p); h←roundup(height(q)+depth(q));
+	x0←conv*x; x←x+width(q); w←roundup(width(q));
+	newstring(x0,y00); outrule(x0,y00,h,w); end;
+	[whatsitnode] houtext(q,x,y) # for extensions to TEX;
+	[vlistnode] begin vlistout(q,x,y-height(q)+shiftamt(q)); x←x+width(q); end;
+	[hlistnode] begin hlistout(q,x,y+shiftamt(q)); x←x+width(q); end;
+	[leadernode] begin integer b; real ww;
+	b←field(value,m) # pointer to box used for horizontal leaders;
+	ww←width(b); if ww&lt;0 and type(b)≠rulenode then ww←0;
+	if ww≠0 and type(link(q))=gluenode then
+		begin integer r; real s;
+		q←link(q); r←value(q) # pointer to glue spec;
+		if g=0 then s←gluespace(r)
+		else if g&gt;0 then s←gluespace(r)+gluestretch(r)*g
+		else s←gluespace(r)+glueshrink(r)*g;
+		if ww&gt;0 then
+			begin integer q # quotient; real xx # x surrogate;
+			q←x/ww-epsilon;
+			xx←ww*(q+1) # the smallest suitable multiple of ww;
+			while xx+ww≤x+s do
+				begin if type(b)=hlistnode then hlistout(b,xx,y)
+				else vlistout(b,xx,y-height(b));
+				xx←xx+ww;
+				end;
+			end
+		else	begin comment variable horizontal rule; short integer y00;
+			h←roundup(height(b));y00←y0-h+1;
+			h←roundup(height(b)+depth(b));
+			w←roundup(s);x0←conv*x;
+			newstring(x0,y00);outrule(x0,y00,h,w);
+			end;
+		x←x+s;
+		end;
+	end;
+	else end # ignore other node types;
+	q←link(q);
+	end;
+end;
+simple procedure shellsort;
+integer delta,i;
+delta←1; while 9*delta+3&lt;nstrs do delta←3*delta+1;
+while delta&gt;0 do
+	begin for i←delta thru nstrs do if strinfo[i-delta]&gt;strinfo[i] then
+		begin integer j,k,t;
+		j←i-delta; t←strinfo[i]; k←i;
+		do	begin strinfo[k]←strinfo[j];
+			k←j; j←j-delta;
+			end until j&lt;0 or strinfo[j]≤t;
+		strinfo[k]←t;
+		end;
+	delta←delta div 3;
+	end;
+end;
+internal procedure shipout(integer p) # the main output procedure,produces one page;
+short integer y0prev,i,cutplace;
+if ochan&lt;0 then declareofil(&quot;TEXOUT.XGP&quot;) # make sure output file is open;
+nstrs←-1 # no strings;
+vlistout(p,200.14159/conv,200.14159/conv) # prepare table of command strings;
+if nstrs≥0 then
+	begin out(ochan,cutit) # cut paper and begin new page;
+DEBUGONLY print(&quot;[&quot;,nstrs,&quot; strings]&quot;);
+	no_output_yet←false;
+	shellsort # sort the strinfo's;
+	y0prev←-1;
+	for i←0 thru nstrs do
+		begin integer j,w,y0;
+		j←field(sref,w←strinfo[i]);
+		if (y0←field(y0,w))≠y0prev then
+			begin out(ochan,torow(y0)); y0prev←y0 # move to row y0;
+			end;
+		out(ochan,tocol(field(x0,w))) # move to column x0;
+		out(ochan,strings[j]) # output the command string;
+		end;
+	cutplace←200.14159+conv*(height(p)+depth(p))+199 # bottom edge plus 1 inch;
+	if cutplace&lt;y0prev then print(nextline,&quot;Warning: page limits exceeded!&quot;);
+	out(ochan,torow(cutplace)) # move to bottom edge with 1-inch margin;
+	arrclr(strings) # set all strings null, in preparation for next page
+		(and to make SAIL's garbage collector happy);
+	end;
+end;
+internal procedure closeout # just before TEX stops, do this;
+begin integer n,f;
+if no_output_yet then
+	begin print(nextline,&quot;No output file.&quot;); return;
+	end;
+	begin label loc;
+	comment This is very machine-dependent code;
+	useto(ochan,1) # write out last block before postamble;
+	dpb(ochan,point(4,memory[location(loc)],12)) #
+		store &quot;ochan&quot; into machine-language instruction;
+	start_code loc: ugetf n end # this is the machine-language instruction;
+	comment now n has the block address of the postamble, and
+		the file is positioned ready to write the postamble;
+	useto(ochan,n) # gets around a bug in SAIL, pointer off by one;
+	end;
+for f←0 thru 31 do if fontname[f] then
+	begin integer c,prevc;
+	prevc←-1;
+	for c←(f lsh 7) thru (f lsh 7)+'177 do if fontinfo[c]&lt;0 then
+		begin comment c is a &quot;used&quot; character;
+		if prevc&lt;0 then
+			begin out(ochan,&quot;/FONT#&quot;);
+			out(ochan,cvs(f+1));
+			out(ochan,&quot;=&quot;);
+			out(ochan,fontname[f]);
+			out(ochan,&quot;=&quot;);
+			end;
+		out(ochan,c&amp;null); prevc←c;
+		end;
+	if prevc≥0 then out(ochan,prevc&amp;null) # repeat last character;
+	end;
+useto(ochan,1) # reposition the file at its beginning (block 1);
+out(ochan,&quot;/LMAR=50/TMAR=50/RMAR=4095/BMAR=1/PMAR=0/XLINE=0/FONT#0=NGR13/USETI=00&quot;);
+setformat(-5,5) # cvs will return a string of length 5, including leading zeroes;
+out(ochan,cvs(n)) # output &quot;nnnnn&quot;;
+for f←1 thru 113 do out(ochan,&quot;*TEX*&quot;) # that ends the preamble;
+release(ochan);
+ptostr(0,&quot;xspool &quot;&amp;ofilname&amp;&quot;/head/q/xgp/ntn=33&quot;) # suggest file spooling to user;
+end;
+end

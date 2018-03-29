@@ -1,0 +1,39 @@
+On this directory I've copied typical source files from the early days
+of TeX and METAFONT. All programs were written in the SAIL language.
+
+tex78 (the way it worked when I wrote the first TeX user manual)
+  TEXHDR.SAI 1978.08.07  header file included by independently compiled modules
+  TEXSYN.SAI 1978.08.07  syntax module
+  TEXSEM.SAI 1978.08.07  semantics module
+  TEXOUT.SAI 1978.08.01  output module
+  TEXEXT.SAI 1978.03.10  extension module
+  TEXSYS.SAI 1978.08.05  main program
+  TEXPRE.SAI 1978.08.07  preprocessor to make hyphenation tables, basic macros
+
+tex82 (the final forms of those programs for TeX78)
+  TEXHDR.SAI 1982.07.32
+  TEXSYN.SAI 1982.04.03
+  TEXSEM.SAI 1981.08.09
+  TEXOUT.SAI 1980.06.17
+  TEXEXT.SAI 1981.03.05
+  TEXSYS.SAI 1982.05.20
+  TEXPRE.SAI 1982.04.12
+
+mf79 (from the time of the first METAFONT manual)
+  ROMAN.SAI 1978.05.27  example of how I made fonts before METAFONT
+  MFHDR.SAI 1979.10.15  header file included by independently compiled modules
+  MFNTRP.SAI 1979.10.15 interpreter module
+  MFRAST.SAI 1979.10.18 semantics module
+  MFOUT.SAI 1979.10.21  output module
+  MFSYS.SAI 1979.10.15  main program
+  MFPRE.SAI 1979.10.15  preprocessor to make basic macros
+
+mf84 (the final forms of those programs for MF79)
+  MFHDR.SAI 1983.11.12
+  MFNTRP.SAI 1982.04.18
+  MFRAST.SAI 1983.11.28
+  MFOUT.SAI 1983.11.09
+  MFSYS.SAI 1982.08.03
+  MFPRE.SAI 1982.04.06
+
+

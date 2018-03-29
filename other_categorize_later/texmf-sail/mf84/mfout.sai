@@ -1,0 +1,2288 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00014 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00003 00002	entry begin comment The output module of METAFONT.
+C00010 00003	Routines for time of day and file information (highly system-dependent)
+C00016 00004	openofil
+C00031 00005	special stuff for byte-oriented output
+C00035 00006	Routines for proof mode.
+C00072 00007	Routines for chr mode.
+C00078 00008	Routines for vnt/fnt mode
+C00090 00009	Routines for rst mode.
+C00097 00010	Routines for .oc files and .wd files
+C00098 00011	Routines for tfm mode.
+C00111 00012	Routines for Alphatype fonts
+C00120 00013	internal procedure initout # get MFOUT started properly
+C00131 00014	Stuff for extended memory
+C00137 ENDMK
+Cⓧ;
+entry; begin comment The output module of METAFONT.
+
+(It is wise to read MFSYS and the raster formats explained in MFRAST
+before going very deeply into the following code.)
+
+Each output module is intended to handle a set of output devices and modes at some
+particular installation. The following procedures are required:
+
+	initout			gets the output module started initially
+	finishchar		called when a character has been fully specified
+	closeout		finishes the output
+	entersym		when a symbol has become &quot;known&quot; in proof mode
+	clearchar		initialize for a new character
+
+The module MFOUT can handle output of various forms, depending upon the
+settings of compile-time switches.  Proof output goes either to a Press
+file (PRESS) or the the Xerox Graphics Printer (XGP).  If DOVERMODES
+is true, then two additional output modes are enabled: ocmode and
+dotwdmode  (not wdmode since this looks like a w-variable!);
+
+comment Certain bits of the &quot;control&quot; variable govern output modes supported:
+	'1000	proof mode
+	'2000	chr file mode
+	'4000	make TEX font metric (.tfm) file
+	'10000	make xgp font (.fnt) or varian/versatec font (.vnt)
+	'20000	make Alphatype CRS font
+	'40000  make Canon RST font
+	'400000 label the points in proof mode (any flavor)
+	'4000000   make arrow for illustration file in PRESS proof mode
+	'10000000  illustration file in PRESS proof mode to be color separated
+IFDOVERMODES
+	'20000000	make Dover .OC font
+	'40000000	make PrePress-style widths (.WD) file
+	'100000000	use charwx and charwy to get vector style widths
+ENDDOVERMODES;
+
+comment Certain bits of the &quot;control&quot; variable govern the on-line output:
+	'1000000	display each character after it has been fully drawn
+;
+
+require &quot;MFHDR.SAI&quot; source_file;
+internaldef symbolic=⊂(control land '1000)⊃ # keep list of &quot;known&quot; xy-variables;
+internaldef tfmmode=⊂(control land '4000)⊃, crsmode=⊂(control land '20000)⊃;
+internaldef needchecksum=⊂(control land '24000)⊃;
+define proofmode=⊂(control land '1000)⊃, chrmode=⊂(control land '2000)⊃,
+	vntmode=⊂(control land '10000)⊃, rstmode=⊂(control land '40000)⊃;
+IFFNT
+define fntmode=vntmode;
+ENDFNT
+IFDOVERMODES
+  define ocmode=⊂(control land '20000000)⊃, wdmode=⊂(control land '40000000)⊃;
+  define vectorwidths=⊂(control land '100000000)⊃;
+ENDDOVERMODES
+define points=⊂(control land '400000)⊃;
+define chardisplay=⊂(control land '1000000)⊃;
+IFPRESS
+define arrow=⊂(control land '4000000)⊃,
+	color=⊂(control land '10000000)⊃;
+ENDPRESS
+
+internaldef brksize=10 # the number of distinct breaks per character;
+internal saf integer array brktab[0:1,0:brksize+1] # breaks in increasing order;
+internal saf integer array brkptr[0:1] # current number of entries in brktab;
+
+preload_with 0,1,2,27,3,24,28,33,4,17,25,31,29,12,34,14,5,8,18,36,26,23,32,16,
+	30,11,13,7,35,22,15,10,6,21,9,20,19;
+	internal saf integer array bit_id[0:36] # used to identify bits;
+comment The following proc uses the bit_id array to compute the index of the
+	rightmost one-bit in a word, where the bit indices run from 
+	zero to (bitsperwd-1), left to right.  (If x=0 on input, then
+	bitsperwd is returned).  The if test is needed to
+	prevent an arithmetic overflow in the case that x is the most
+	negative reresentable number (in which case -x is not representable); 
+simp integer procedure rightmostbitindex(integer x);
+	begin integer signbit,z;
+	signbit←1 lsh (bitsperwd-1);
+	if x=signbit then return(0);
+	z←x land (lnot signbit) # avoid negative dividend; 
+	return(bitsperwd - bit_id[(z land (-z)) mod 37]);
+	end;
+
+comment Convert reals to FIXes, scaling out designsize if desired;
+simp integer procedure tfmfix(real r; boolean scaleflg);
+	begin
+	integer int;
+	if scaleflg then r←r/designsize;
+	int←r*(2^20)+0.5;
+	return(int);
+	end;
+
+comment This procedure added by whoever made RST mode routines;
+simp integer procedure leftmostbitindex(integer x);
+	begin integer cnt;
+	if x&lt;0 then return(0);	# extraneous, but won't hurt;
+	cnt←bitsperwd;
+	while x&gt;0 do begin x←x lsh -1; cnt←cnt-1 end;
+	return(cnt)
+	end;
+comment Routines for time of day and file information (highly system-dependent);
+integer octaltime # the machine's one word date/time stamp, in whatever
+	format the OS specifies (set by initout);
+
+IFWAITS
+comment These routines are due to Hans Moravec;
+
+string procedure daytime;
+begin comment returns octaltime down to the second, as a string;
+integer d,t,sw,sd; string s;
+	string procedure cvs2(integer i);
+	return((((i div 10) mod 10)+&quot;0&quot;)&amp;((i mod 10)+&quot;0&quot;));
+t←octaltime land '777777; d←octaltime lsh -18;
+getformat(sw,sd); setformat(0,7);
+s←cvs((d mod 31)+1)&amp;&quot;, &quot;&amp;cvs((d div 31)div 12 + 1964);
+setformat(sw,sd);
+return((case ((d div 31) mod 12) of
+	(&quot;January&quot;,&quot;February&quot;,&quot;March&quot;,&quot;April&quot;,&quot;May&quot;,&quot;June&quot;,
+	&quot;July&quot;,&quot;August&quot;,&quot;September&quot;,&quot;October&quot;,&quot;November&quot;,&quot;December&quot;))&amp;&quot; &quot;&amp;
+	s&amp;&quot;    &quot;&amp;cvs2(t div (60*60))&amp;&quot;:&quot;&amp;
+	cvs2((t div 60) mod 60)&amp;&quot;:&quot;&amp;cvs2(t mod 60));
+end;
+
+string procedure filinf(integer channel);
+begin comment returns file name, extension, and area of the file open on channel;
+define POPJ(A,B)=⊂'263000000000 lor (A lsh 23) lor B⊃;
+define MTAPE(A,B)=⊂'072000000000 lor (A lsh 23) lor B⊃;
+saf integer array mtp[0:3], ret[0:6], cod[0:2];
+string fn,ext,ppn,t; integer i;
+mtp[0]←cvsix(&quot;GODMOD&quot;); mtp[1]←'14; mtp[2]←(-5 lsh 18) lor location(ret[0]);
+cod[0]←MTAPE(channel,location(mtp[0])); cod[1]←cod[2]←POPJ('17,0);
+START_CODE PUSHJ '17,ACCESS(COD[0]); END;
+fn←cvxstr(ret[1]); while length(fn)&gt;0 ∧ fn[∞ to ∞]=&quot; &quot; DO fn←fn[1 to ∞-1];
+ext←cvxstr(ret[2] land '777777000000);
+while length(ext)&gt;0 ∧ ext[∞ to ∞]=&quot; &quot; do ext←ext[1 to ∞-1];
+ppn←cvxstr(ret[4]); t←ppn[1 to 3]&amp;&quot;,&quot;&amp;ppn[4 to 6];
+ppn←&quot;&quot;; for i←1 thru 7 do if t[i to i]≠&quot; &quot; then ppn←ppn&amp;t[i to i];
+return(fn&amp;&quot;.&quot;&amp;ext&amp;&quot;[&quot;&amp;ppn&amp;&quot;]&quot;);
+end;
+
+IFPRESS
+integer procedure altotime;
+comment Returns the number of seconds since midnight, Jan. 1, 1901 GMT;
+begin integer stdtime # seconds since midnight, Pacific standard time;
+integer days # days since Jan. 1, 1964;
+stdtime←call(0,&quot;STDTIM&quot;) land '777777;
+days←call(0,&quot;DAYCNT&quot;);
+return(((23010+days)*24+8)*3600+stdtime);
+end;
+
+string procedure username;
+comment Returns the name of the logged-in user as a SAIL string;
+begin string prg, uname, nxtprg, nxtnam;
+integer namfil, brchar, eof, lftabbreak, ppn, i, j;
+ppn←call(0,&quot;GETPPN&quot;) # ppn is in 6-bit format;
+prg←&quot;&quot; # null characters in prg would hurt, so can't use CVXSTR;
+for i←-12 step 6 until 0 do if (j←(ppn lsh i) land '77) then prg←prg&amp;(j+'40);
+setbreak(lftabbreak←getbreak,'12&amp;'11,'15&amp;'15,&quot;ISN&quot;);
+open(namfil←getchan,&quot;DSK&quot;,0,2,0,150,brchar,eof);
+lookup(namfil,&quot;FACT.TXT[SPL,SYS]&quot;, eof);
+uname←&quot;(&quot;&amp;prg&amp;&quot; @ SAIL)&quot; # this is used for new accounts not yet in the FACT file;
+brchar←'12; comment we don't need to check brchar below if FACT is good;
+while not eof do
+	begin if brchar='12 then nxtprg←input(namfil,lftabbreak);
+	if brchar='11 then nxtnam←input(namfil,lftabbreak);
+	if equ(prg,nxtprg) then
+		begin uname←nxtnam&amp;&quot; &quot;&amp;uname; done;
+		end;
+	end;
+release(namfil);
+relbreak(lftabbreak);
+return(uname);
+end;
+ENDPRESS
+ENDWAITS
+
+IFC TENEX OR TOPS20 THENC
+string procedure daytime # translate octaltime into a string;
+begin return(odtim(octaltime,'036000000000)) end;
+
+string procedure filinf(integer channel);
+begin return(jfns(channel,0)) end;
+
+IFPRESS
+integer procedure altotime # translate octaltime into a Alto-format time;
+begin
+ return(((octaltime lsh -18)-15385)*(3600*24)+(octaltime land '777777));
+end;
+
+string procedure username;
+begin  integer logdir,condir,ttyno;
+	gjinf(logdir,condir,ttyno);
+	return(dirst(logdir));
+end;
+ENDPRESS
+ENDC
+
+comment openofil;
+internal boolean rstdebug; internal integer rstfntptr;
+forward simp procedure bout(integer mode, byte);
+
+internal string maintitle # symbolic description of the font being generated;
+internal string ofilname # output file name, set by first input;
+string timeofday # time to be used on output;
+integer checksum # unique ID computed from .tfm data, put into output fonts;
+internaldef numberofmodes=6;
+internaldef tfm=1,proof=2,vnt=3,chrs=4,alf=5,rstfnt=6 # symbolic names of modes;
+IFFNT
+internaldef xgpfnt=vnt;
+ENDFNT
+IFDOVERMODES
+internaldef numberofmodes=8;
+internaldef doveroc=7,presswd=8;
+ENDDOVERMODES
+saf integer array ochan[1:numberofmodes] # channels for output;
+saf string array ofilext[1:numberofmodes] # file name extensions;
+saf string array flname[1:numberofmodes] # actual file names opened;
+integer prfpno # page number in proof mode;
+string prfheader # time of day and filename for proof mode;
+IFDVI
+integer lastpageptr # for BOP's;
+integer xmaxmax, ymaxmax;
+ENDDVI
+IFPRESS
+integer greyhue, edgehue, dothue, curhue # hues in color mode;
+integer recnum # number of current Press record;
+integer partdirbufptr # addr of Press part directory buffer (wherever it is);
+integer pdptr # byte pointer into Press part directory buffer;
+integer nparts # number of Press parts;
+ENDPRESS
+internal integer fntptr # words output in fntmode or subglyphs output in crsmode;
+IFVNT
+internaldef FNTDIRLEN='1000;
+ELSEC
+internaldef FNTDIRLEN='400;
+ENDC
+internal saf integer array fntdir[0:FNTDIRLEN-1] # font file directory blocks;
+comment The fntdir array is used to hold font-wide header information
+for both vnt/xgpfnt and alf output.  Hence, you can't produce both outputs
+at the same time.  This explains the errorstops with &quot;Incompatible
+resolution&quot; that occur in the procedure openofil;
+
+internal integer rstptr # words output in rstmode;
+internal saf integer array rstdir[0:50+4*128] # directory blocks of font file;
+
+IFDOVERMODES
+define nonexistentcharflag=⊂-(2.0^120)⊃ # a real number that won't occur
+	as the vector width X component of any real character;
+saf real array CharWidthX[0:'177];
+saf real array CharWidthY[0:'177] # x and y components of
+	the vector widths of characters;
+integer bbxlmin, bbxrmax, bbylmin, bbyhmax # extremes of bounding box;
+real charwxmax, charwxmin, charwymax, charwymin # extremes of width vector
+	components;
+define IX(typ, lngth)=⊂((typ lsh 12)+lngth)⊃;
+saf integer array charsegptr[0:'177] # filepos's of individual char segments;
+define charsegfilepos=⊂('3000)⊃ # earliest filepos in .oc file that a
+	character segment can start (in 16-bit words), rounded up to the
+	nearest multiple of 2*pagesize(For WAITS' sake!);
+ENDDOVERMODES
+internal integer array nextword,bytecount[1:numberofmodes];
+
+define out32(chan,bits)=⊂wordout(chan,(bits) lsh (bitsperwd-32))⊃;
+define uout32(chan,bits)=⊂wordout(chan,(bits) land (-1 lsh (bitsperwd-32)))⊃;
+
+integer procedure openofil(integer t) # initializes output for mode t;
+begin comment This procedure is called when output for mode t is requested.
+It opens the file and gets things started and returns the channel number;
+integer n,i # i is loop index, n is trunc(1000*mag);
+string fn # output file name;
+boolean binarymode # true if 36-bit-bytes, false if text chars;
+if ochan[t]≥0 then return(ochan[t]);
+binarymode←(t≠chrs) # chrs mode is always text, others usually binary;
+IFXGP
+if t=proof then binarymode←false # proof is text for XGP, binary for Press or DVI;
+ENDXGP
+open(ochan[t]←getchan,&quot;DSK&quot;,if binarymode then 8 else 0,0,2,0,0,eof);
+if t=rstfnt then begin integer mag; string s;
+    mag←10*(magnification+0.001) # the 0.001 is a kludge to mag mag right always;
+    if mag=0 then mag←10;
+    s←&quot;st&quot;;
+    if mag≤99 then if mag≥1 then s←cvs(mag);
+    ofilext[rstfnt]←&quot;.r&quot;&amp;s;
+    end;
+if not ofilname then ofilname←&quot;mfput&quot;;
+fn←ofilname&amp;ofilext[t];
+loop	begin enter(ochan[t],fn,eof);
+	if eof then
+		begin print(nextline,&quot;I can't write on file &quot;,fn,&quot;!&quot;);
+		if not_nonstop then
+			begin print(nextline,&quot;Output file = &quot;);
+			fn←inchwl;
+			end else quit;
+		end
+	else done;
+	end;
+flname[t]←fn;
+case t of begin
+IFDOVERMODES
+[presswd] begin 
+arrclr(CharWidthX,nonexistentcharflag) # mark all characters as missing;
+bbxlmin←infty; bbxrmax←-infty;
+bbylmin←infty; bbyhmax←-infty;
+charwxmin←infty; charwxmax←-infty;
+charwymin←infty; charwymax←-infty;
+end;
+[doveroc] begin 
+for i←1 thru charsegfilepos div 2 do wordout(ochan[doveroc],0);
+bytecount[doveroc]←charsegfilepos*2 # start of first character segment;
+arrclr(charsegptr,-1) # mark all characters as missing;
+end;
+ENDDOVERMODES
+IFVNT
+[vnt] begin
+arrclr(fntdir);
+out32(ochan[vnt],VNTID);
+fntptr←1;
+end;
+ELSEC
+[xgpfnt] begin string longtitle; 
+if ochan[alf]≥0 then
+  errorstop(&quot;Incompatible resolution&quot;) # see comment at decl of fntdir array;
+for i←0 thru '237 do fntdir[i]←0;
+longtitle←maintitle&amp;(nextline&amp;&quot;Written by METAFONT, &quot;)&amp;timeofday;
+for i←'240 thru '377 do fntdir[i]←cvasc(longtitle[5*(i-'237)-4 for 5]);
+arryout(ochan[xgpfnt],fntdir[0],'400) # will be overwritten later;
+fntptr←'400; fntdir['203]←maxht end;
+ENDC
+[chrs] out(ochan[chrs],maintitle&amp;(nextline&amp;&quot;Based on .CHR file written by METAFONT, &quot;)&amp;
+	timeofday&amp;(nextline&amp;&quot;ⓧ&quot;&amp;nextline)) # font description page;
+[proof] begin
+prfpno←0;
+prfheader←timeofday&amp;&quot;     &quot;&amp;filinf(ochan[proof])&amp;&quot;     Page &quot;;
+IFXGP
+out(ochan[proof],&quot;/LMAR=50/TMAR=50/RMAR=1700/BMAR=1/PMAR=0/XLINE=0&quot;&amp;
+&quot;/FONT#0=NGR13/FONT#1=FIG/END&quot;) # preamble for xgp server;
+ENDXGP
+IFDVI
+lastpageptr←-1;
+xmaxmax←ymaxmax←-99999;
+ENDDVI
+IFPRESS
+recnum←0; nparts←0;
+pdptr←point(16,memory[partdirbufptr],-1);
+greyhue←edgehue←dothue←0 # default if color turned on later;
+if color then
+	begin
+	integer procedure gethue(string prompt);
+		if not_nonstop then begin string s; integer acc;
+		outstr(&quot;Enter hue for &quot;&amp;prompt&amp;&quot;:&quot;); s←inchwl;
+		acc←0;
+		while (s≥&quot;0&quot;) and (s≤&quot;9&quot;) do acc←10*acc+lop(s)-&quot;0&quot;;
+		return(acc);
+		end else return(0);
+	greyhue←gethue(&quot;internal pixels (R=0,Y=40,G=80,C=120,B=160,M=200)&quot;);
+	edgehue←gethue(&quot;boundary pixels&quot;);
+	dothue←gethue(&quot;data points&quot;);
+	end;
+ENDPRESS
+end;
+[alf] begin string s;
+if ochan[vnt]≥0 then
+  errorstop(&quot;Incompatible resolution&quot;) # see comment at decl of fntdir array;
+for i←0 thru '377 do fntdir[i]←0;
+s←ofilname; antid←0; while s do antid←314159*antid+lop(s);
+antid←antid lor (1 lsh 31) # this is an identification number depending on fontname;
+out32(ochan[t],antid);
+alfptr←1 end;
+[rstfnt] begin integer chan;    arrclr(rstdir); 
+comment if debugging then change the next line from comments to code;
+comment     print(&quot;rst debug?&quot;); comment rstdebug← inchwl=&quot;y&quot;;
+comment	48= 8 for first 2 words, 2 for dir ptr, 34 for preamble fixed fields,
+		4 for string lengths of 4 strings,
+		12= lengths of &quot;Imprint-10&quot; &amp; &quot;mf&quot;   3=to make div round up;
+    rstptr← ((48 + 12 + length(fontidentifier) + length(fontfacebyte)
+		) + 3) div 4;
+		# ptr to directory;
+    rstfntptr← (((rstptr*4+15*128)+ 1023) div 1024)*1024;
+    if rstdebug then print(&quot;rstfntptr=&quot;,rstfntptr,'15&amp;'12);
+    for i←1 step 1 until (rstfntptr div 4) do wordout(ochan[rstfnt],0);
+    end;
+else comment do nothing;
+ end;
+return(ochan[t]);
+end;
+
+simple procedure rastpreamble; begin integer i, n; string s; 
+    define devstr=⊂&quot;ImPrint-10&quot;⊃,  shuv(a)=&quot;bout(rstfnt,a)&quot;;
+
+    comment the four word heading;
+    shuv(&quot;R&quot;); shuv(&quot;a&quot;); shuv(&quot;s&quot;); shuv(&quot;t&quot;);
+    shuv(0);   shuv(0);   shuv(0);   shuv(0);  # 1 word for posterity;
+
+    n← 4*rstptr - 10;
+    shuv(n lsh -8);    shuv(n);
+    shuv(0) # version number;
+    shuv(rstptr lsh -14);    shuv(rstptr lsh -6);    shuv(rstptr lsh 2);
+
+    shuv(0); shuv(0);	# number of the first character in font;
+    shuv(0); shuv(127);	# last character in the font (usually 127);
+    comment if number of chars&gt;128 then change al rstdir references in this file;
+
+    n←1000*magnification # The magnification in 1/1000's;
+    if n=0 then n←1000   # treat 0 magnification as 1 magnification;
+    shuv(n lsh -24);    shuv(n lsh -16);    shuv(n lsh -8);    shuv(n); 
+
+    n← designsize*2^20	 # the nominal height of unmagged font;
+    shuv(n lsh -24);    shuv(n lsh -16);    shuv(n lsh -8);    shuv(n); 
+
+    n← n*1.2		 # The width of a good interline distance?;
+    shuv(n lsh -24);    shuv(n lsh -16);    shuv(n lsh -8);    shuv(n); 
+
+    i← tfmpars[2]*2^20;	 # The width of a good looking interword space;
+    shuv(i lsh -24);    shuv(i lsh -16);    shuv(i lsh -8);    shuv(i); 
+
+    shuv(rotation lsh -8);    shuv(rotation)
+			 # the rotation of the font in degrees (positive);
+    shuv(0);   shuv(1);	 # char and line adv directions, →↓←^, 0123;
+
+    shuv(0);   shuv(0);
+    shuv(0);   shuv(0);  # a check identifier: 0 means not used;
+    shuv(0);   shuv(240) # resolution in pixels/inch- 240 for the imprint-10;
+
+    s← fontidentifier;	 # font identifier string;
+    shuv(length(s)); while s≠&quot;&quot; do shuv(lop(s));
+
+    s← fontfacebyte	 # font face byte string;
+    shuv(length(s)); while s≠&quot;&quot; do shuv(lop(s));
+
+    s← devstr;		 # output device string;
+    shuv(length(s)); while s≠&quot;&quot; do shuv(lop(s));
+
+    s← &quot;mf&quot;;		 # creator string;
+    shuv(length(s)); while s≠&quot;&quot; do shuv(lop(s));
+
+    while (bytecount[rstfnt] mod 4)≠0 do shuv(0);
+    end;
+
+comment special stuff for byte-oriented output;
+
+comment Here are some procedures for doing byte-oriented output. 
+	SAIL's normal &quot;wordout&quot; is doing the real work.  The arrays
+	nextword holds the bytes that will go into making a new
+	output word as they accumulate.  The array bytecount keeps
+	track of the total number of bytes output to each file;
+
+comment integer array nextword,bytecount[1:numberofmodes];
+
+simp procedure Bout(integer mode, byte);
+	begin comment output an 8-bit byte to channel for mode;
+	integer cnt,nxtwd,ofst;
+	cnt←bytecount[mode];
+	case (cnt mod 4) of
+	    begin
+	    [0] nextword[mode]←byte lsh 28;
+	    [1] nextword[mode]←
+			  nextword[mode] lor ((byte land '377) lsh 20);
+	    [2] nextword[mode]←
+			  nextword[mode] lor ((byte land '377) lsh 12);
+	    [3] wordout(ochan[mode],
+			  nextword[mode] lor ((byte land '377) lsh 4));
+	    else confusion
+	    end;
+	bytecount[mode]←cnt+1;
+	end;
+
+simp procedure Wout(integer mode,word);
+	begin comment output a 16-bit word to channel for mode;
+	integer cnt,nxtwd,ofst;
+	cnt←bytecount[mode];
+	case (cnt mod 4) of
+	    begin
+	    [0] nextword[mode]←word lsh 20;
+	    [2] wordout(ochan[mode],
+			  nextword[mode] lor ((word land '177777) lsh 4));
+	    else confusion comment must be at 16-bit-word boundary;
+	    end;
+	bytecount[mode]←cnt+2;
+	end;
+
+simp procedure Dout(integer mode,word);
+	begin
+	Wout(mode,word lsh -16); Wout(mode, word);
+	end;
+
+simp procedure DoutAligned(integer mode,word);
+	begin
+	integer cnt;
+	cnt←bytecount[mode];
+	if (cnt mod 4)≠0 then confusion;
+	wordout(ochan[mode],word);
+	bytecount[mode]←cnt+4;
+	end;
+
+simp procedure Sout(integer mode, ptr, numbytes);
+	begin comment output a string of 8-bit bytes: the output file
+		must start out 32-bit-word aligned!;
+	integer i, numwords, rembytes;
+	if bytecount[mode] mod 4≠0 then confusion;
+	numwords←numbytes div 4;
+	rembytes←numbytes mod 4;
+	arryout(ochan[mode],memory[ptr],numwords);
+	nextword[mode]←memory[ptr+numwords] land (-1 lsh (bitsperwd-8*rembytes));
+	bytecount[mode]←bytecount[mode]+numbytes;	
+	end;
+
+simp procedure BCPLout(integer mode; string s; integer maxbytes);
+	begin
+	integer len, i;
+	len←(maxbytes-1) min length(s);
+	Bout(mode,len);
+	for i←1 thru maxbytes-1 do
+		if i&lt;=len then Bout(mode,s[i to i]) else Bout(mode,0);
+	end;
+
+simp procedure DVISout(integer mode; string s);
+	begin
+	integer len, i;
+	len←length(s);
+	Bout(mode,len);
+	for i←1 thru len do Bout(mode,s[i to i]);
+	end;
+
+comment Routines for proof mode.
+
+In proof mode, all of the xy-variables are remembered in a special table
+as soon as both coordinates become known. This table is organized as a
+doubly threaded binary search tree, ordered by decreasing $y$ coordinate,
+and for fixed $y$ by increasing $x$ coordinate (i.e., top to bottom, left to right).
+The tree nodes have several fields:
+	llink[p]	left son (if $&gt;p$) or inorder predecessor (if $≤p$)
+	rlink[p]	right son (if $&gt;p$) or inorder successor (if $≤p$)
+	ycoord[p]	$y$ coordinate of the point
+	xcoord[p]	$x$ coordinate of the point
+	strng[p]	symbolic name of the point (to be put into the label box)
+	xll[p],yll[p]	coordinates of lower left corner of point label box
+	xur[p],yur[p]	coordinates of upper right corner of point label box
+	prevbox[p]	pointer to previous point label box, ordered by \\{yll}
+Hidden points have strng[p] null.
+We have $\\{rlink}[0]=0$ and \\{llink}[0] points to the root of the tree.
+The smallest unused node is \\{tptr}. To set the tree empty, one sets
+$\\{llink}[0]←0$ and $$\\{tptr}←1$. The fields \\{xll}, \\{yll}, \\{xur}, \\{yur},
+and \\{prevbox} are used only when allocating boxes for the point labels, just
+before outputting the raster pattern. Actually \\{yur} is not stored in memory,
+since $\\{yur}[p]$ always equals $\\{yll}[p]+10$.
+;
+internaldef proofmemsize=250 # size of proof mode tables;
+integer saf array llink,rlink,ycoord,xcoord,xll,yll,xur,prevbox[0:proofmemsize-1];
+string saf array strng[0:proofmemsize-1];
+integer tptr # end of tree;
+integer bxptr # pointer to last point label box (head of the \\{prevbox} list);
+
+internal procedure proofins(integer xco,yco; string s) # inserts into tree;
+begin integer q,r # pointer variables;
+label moveleft,moveright,insert # go here to move downward in the tree;
+label compare # go here to decide where to move next in the tree;
+r←0;
+moveleft: q←llink[r]; if q≤r then
+	begin llink[r]←tptr; rlink[tptr]←r; llink[tptr]←q; go to insert;
+	end;
+r←q;
+compare: if yco&gt;ycoord[r] then go to moveleft;
+if yco&lt;ycoord[r] or xco&gt;xcoord[r] then go to moveright;
+if xco&lt;xcoord[r] then go to moveleft;
+return # this point duplicates one that's already present;
+moveright: q←rlink[r]; if q≤r then
+	begin rlink[r]←tptr; llink[tptr]←r; rlink[tptr]←q; go to insert;
+	end;
+r←q; go to compare;
+insert: ycoord[tptr]←yco; xcoord[tptr]←xco; strng[tptr]←s;
+tptr←tptr+1; if tptr≥proofmemsize then overflow(proofmemsize);
+end;
+
+IFPRESS require &quot;PRESSO.SAI&quot; source_file; ENDPRESS
+IFXGP
+procedure makeproof # Outputs the raster in printable form;
+begin comment This routine figures out how to label the points, and then
+it outputs the raster in a format that is printable with a special font.
+The point label locations are computed in the following way: We go through
+the points from top to bottom, left to right, and use the first available
+position from a list of five choices:
+	centered above the point
+	centered to the left of the point
+	centered to the right of the point
+	centered below the point
+	in the right margin below previous entries like this
+(The last case always succeeds if the other four fail.) A position is
+&quot;available&quot; if the corresponding box containing the symbolic name of the point
+does not overlap with any previously placed boxes, and if this box is at least
+two units away from every other point, measuring distance along vertical
+and horizontal lines (Manhattan style). (The box is one unit away from
+the point it corresponds to.)
+
+Output for the XGP server is a sequence of 7-bit character codes of the following
+types:
+	'177&amp;'001&amp;'040&amp;x1&amp;x2, where x1&amp;x2=x is a 14-bit binary number, x&lt;4096
+		means &quot;move to column x&quot;
+	c, where c is a letter or digit or &quot;.&quot;
+		means &quot;output character c in the FIG font and advance as many
+			columns as c's width
+	'012&amp;'177&amp;'003&amp;y1&amp;y2, where y1&amp;y2=y is a 14-bit binary number
+		means &quot;move to row y (numbered from the top, increasing downwards)
+	'015&amp;'014&amp;'177&amp;'006&amp;'001
+		means &quot;cut the paper at the current row (and select FIG font)&quot;
+;
+
+simple string procedure twobytes(integer x) # changes x into x1&amp;x2, a 14-bit code
+	that represents 4x;
+begin integer four_x; four_x←4*x; return((four_x lsh -7)&amp;four_x);
+end;
+define movetocol(x)=⊂begin out(ch,'177&amp;'001&amp;'040);out(ch,twobytes(x-xl+50)) end⊃;
+define movetorow(y)=⊂begin out(ch,'012&amp;'177&amp;'003);
+	out(ch,twobytes(yhigh-(y)+50)) end⊃;
+define cutpage=⊂('051&amp;'014&amp;'177&amp;'006&amp;'001)⊃;
+
+integer xl,xr,p,q,r,ch,y,x,state,curx;
+integer yextra # coordinate for case 5 labels;
+procedure clearstate # Outputs bit codes that have accumulated;
+begin comment This procedure is used in the routine that puts out the raster.
+If state = n &gt; 0, we output the code for n grey cells
+(where P=1 cell, Q=2, R=4, etc.), while if state = -m &lt; 0 we output
+the code for m blanks;
+if state&gt;0 then
+	begin integer pt # power of 2;
+	string chr # corresponding character;
+	chr←&quot;U&quot;; pt←32 # the font has only &quot;P&quot;, &quot;Q&quot;, &quot;R&quot;, &quot;S&quot;, &quot;T&quot;, and &quot;U&quot;;
+	loop	begin while state≥pt do
+			begin out(ch,chr); state←state-pt; curx←curx+pt;
+			end;
+		if state=0 then return;
+		pt←pt lsh -1; chr←chr-1;
+		end;
+	end;
+curx←curx-state;
+movetocol(curx);
+state←0;
+end;
+
+xl←xleft*bitsperwd+(xrastmin+xpenmin) # leftmost bit position being output;
+xr←xright*bitsperwd+(xrastmin+xpenmin+bitsperwd-1) # rightmost;
+bxptr←0 # set list of active boxes empty;
+yextra←yhigh;
+p←0; if points then while llink[p]&gt;p do p←llink[p] # start at topmost leftmost point;
+while p do
+	begin integer j # choice number for the label;
+	integer m # four times the length of the label;
+	integer x0,y0,x1,y1 # coordinates of the box;
+	label advancep # go here when done with $p$;
+	if xcoord[p]&lt;xl or xcoord[p]&gt;xr or ycoord[p]&gt;yhigh or ycoord[p]&lt;ylow
+		or strng[p]=0
+		then go to advancep # points out of range won't be shown;
+	m←4*length(strng[p]);
+	for j←1 thru 5 do
+		begin integer q # runs through things that shouldn't clash;
+		label reject # go here when case $j$ is illegal;
+		case j of begin
+		[1] begin x0←xcoord[p]-1-m; y0←ycoord[p]+1 end;
+		[2] begin x0←xcoord[p]-3-2*m; y0←ycoord[p]-5 end;
+		[3] begin x0←xcoord[p]+1; y0←ycoord[p]-5 end;
+		[4] begin x0←xcoord[p]-1-m; y0←ycoord[p]-11 end;
+		else begin x0←infty; done end
+		  end;
+		x1←x0+2+2*m; y1←y0+10;
+		q←p # first we will check points just before $p$;
+		loop	begin integer x,y,r # temporary storage;
+			integer dist # Manhattan distance;
+			if (r←llink[q])≤q then
+				if r then q←r else done
+			else	begin q←r; while (r←rlink[q])&gt;q do q←r;
+				end;
+			comment The above lines moved $q$ backwards one;
+			y←ycoord[q]; if y&gt;y1+1 then done # no clash possible;
+			if y≥y1 then dist←y-y1 else if y≤y0 then dist←y0-y
+			else dist←0;
+			x←xcoord[q]; if x≥x1 then dist←dist+x-x1 else if
+			x≤x0 then dist←dist+x0-x;
+			if dist≤1 then go to reject;
+			end;
+		q←p # next we will check points just after $p$;
+		loop	begin integer x,y,r # temporary storage;
+			integer dist # Manhattan distance;
+			if (r←rlink[q])≤q then
+				if r then q←r else done
+			else	begin q←r; while (r←llink[q])&gt;q do q←r;
+				end;
+			comment The above lines moved $q$ forwards one;
+			y←ycoord[q]; if y&lt;y0-1 then done # no clash possible;
+			if y≥y1 then dist←y-y1 else if y≤y0 then dist←y0-y
+			else dist←0;
+			x←xcoord[q]; if x≥x1 then dist←dist+x-x1 else if
+			x≤x0 then dist←dist+x0-x;
+			if dist≤1 then go to reject;
+			end;
+		q←bxptr # finally we check that no overlap occurs;
+		while q do
+			begin
+			if yll[q]&gt;y1 then done;
+			if x1≥xll[q] and x0≤xur[q] and y0≤yll[q]+10
+				then go to reject;
+			q←prevbox[q];
+			end;
+		done # all tests have been passed;
+		reject: # this value of $j$ didn't work;
+		end;
+	if x0=infty then
+		begin comment case 5;
+		xll[p]←(xright+1-xleft)*bitsperwd;
+		xur[p]←xll[p]+2*m+2;
+		yextra←yextra-20; yll[p]←yextra;
+		end
+	else	begin comment case 1, 2, 3, or 4;
+		xll[p]←x0; xur[p]←x1; yll[p]←y0;
+		end;
+	q←bxptr; r←0;
+	while q and yll[q]&lt;yll[p] do
+		begin r←q; q←prevbox[q];
+		end;
+	prevbox[p]←q; if r then prevbox[r]←p else bxptr←p;
+	advancep:
+	if (r←rlink[p])≤p then p←r
+	else	begin p←r; while (r←llink[p])&gt;p do p←r;
+		end;
+	end;
+comment Now all points have been output, so we output the raster pattern.
+White spaces are handled by &quot;skips&quot;, but grey cells are classified into
+sixteen kinds according to the presence or absence of neighbors above, right,
+below, or left of a cell. An ordinary cell has all four neighbors present.
+Codes &quot;A&quot;, &quot;B&quot;, ..., &quot;O&quot; are used for the cases when one or more neighbors
+are absent, using a binary code. The &quot;fig&quot; font uses this information to put
+boundary lines at the edges.
+
+The &quot;fig&quot; font is designed so that character &quot;.&quot; placed at location (x,y) indicates
+a big black dot centered on cell (x,y). The digits 0...9 and lower case letters
+are designed to have a width of 8 cells, and so that the character will be
+approximately centered in an 11x11 rectangle whose lower left corner is (x0,y0) and
+whose upper right corner is (x0+10,y0+10) if the string begins at cell (x0+2,y0+8).
+
+In the program below it is necessary to merge three kinds of output (point labels,
+point dots, and grey cells) so that the XGP server gets its instructions in order
+of decreasing y coordinates;
+
+comment First we relink the point label boxes into down-the-page order and increase
+the \\{xll} and \\{yll} coordinates to account for the font offset;
+q←0; while bxptr do
+	begin r←prevbox[bxptr]; prevbox[bxptr]←q; q←bxptr; bxptr←r;
+	xll[q]←xll[q]+2; yll[q]←yll[q]+8;
+	end;
+bxptr←q;
+
+ch←openofil(proof); out(ch,cutpage) # begin a new page of output;
+out(ch,'012&amp;'177&amp;'003&amp;'000&amp;50) # insert page number and time at XGP row 50;
+out(ch,'177&amp;'001&amp;'040&amp;'000&amp;100) # beginning at XGP column 100;
+out(ch,'177&amp;'006&amp;0) # selecting font 0;
+out(ch,prfheader&amp;cvs(prfpno←prfpno+1));
+if pagewarning then out(ch,&quot;     &quot;&amp;pagewarning);
+out(ch,'177&amp;'006&amp;1) # then select font 1;
+
+p←0; if points then while llink[p]&gt;p do p←llink[p] # go to the topmost leftmost point;
+for y←yhigh step -1 until ylow do
+	begin while bxptr and yll[bxptr]≥y do
+		begin comment Outputting a point label;
+		movetorow(yll[bxptr]);
+		movetocol(xll[bxptr]);
+		out(ch,strng[bxptr]);
+		bxptr←prevbox[bxptr];
+		end;
+	movetorow(y);
+	while p and ycoord[p]≥y do
+		begin comment Outputting a point dot;
+		if ycoord[p]=y and xcoord[p]≥xl and xcoord[p]≤xr then
+			begin movetocol(xcoord[p]); out(ch,&quot;.&quot;);
+			end;
+		if (r←rlink[p])≤p then p←r
+		else	begin p←r; while (r←llink[p])&gt;p do p←r;
+			end;
+		end;
+	comment Now output all grey cells in row $y$;
+	state←0; curx←xl; movetocol(curx);
+	for x←xleft thru xright do
+		begin integer xw # position in \\{rast};
+		integer z # current bit pattern;
+		integer k # number of unscanned bits in $z$;
+		integer zt,zr,zb,zl # bit patterns of neighbors;
+		xw←x*rspan+y; var!gets!rast(z,xw) # z←rast[xw];
+		k←bitsperwd; if z then
+			begin zl←z lsh -1; zr← z lsh 1;
+			if x≠xleft then var!gets!rast!lsh!expr!lor!var
+						(zl,xw-rspan,bitsperwd-1);
+				# zl←(rast[xw-rspan] lsh(bitsperwd-1))lor zl;
+			if x≠xright then var!gets!rast!lsh!expr!lor!var
+						(zr,xw+rspan,1-bitsperwd);
+				# zr←(rast[xw+rspan] lsh(1-bitsperwd))lor zr;
+			if y≠yhigh then
+				var!gets!rast(zt,xw+1) comment zt←rast[xw+1];
+			else zt←0;
+			if y≠ylow then
+				var!gets!rast(zb,xw-1) comment zb←rast[xw-1];
+			else zb←0;
+			if z=-1 and zt=-1 and zr=-1 and zb=-1 and zl=-1 then
+				begin if state&lt;0 then clearstate;
+				state←state+bitsperwd; k←z←0;
+				end
+			else	begin zt←zt rot 1; zr←zr rot 2; zb←zb rot 3;
+				zl←zl rot 4 # now these are in convenient position;
+				end;
+			while z do
+				begin if z≥0 then
+					begin if state&gt;0 then clearstate;
+					state←state-1;
+					end
+				else	begin integer c; c←(zt land 1)+(zr land 2)+
+						(zb land 4)+(zl land 8);
+					if c=15 then
+						begin if state&lt;0 then clearstate;
+						state←state+1;
+						end
+					else	begin string chr; chr←'117 xor c;
+						if state≠0 then clearstate;
+						out(ch,chr); curx←curx+1;
+						end;
+					end;
+				z←z lsh 1; k←k-1;
+				zt←zt rot 1; zr←zr rot 1; zb←zb rot 1; zl←zl rot 1;
+				end;
+			end;
+		if k then
+			begin if state&gt;0 then clearstate;
+			state←state-k;
+			end;
+		end;
+	end;
+while bxptr do
+	begin comment Outputting any remaining point labels;
+	movetorow(yll[bxptr]);
+	movetocol(xll[bxptr]);
+	out(ch,strng[bxptr]);
+	bxptr←prevbox[bxptr];
+	end;
+movetorow((ylow-70)min(yextra-50));
+end;
+ENDXGP
+IFDVI
+# the DVI commands;
+ define	NOP=⊂128⊃, DVIBOP=⊂129⊃, DVIEOP=⊂130⊃, DVIPST=⊂131⊃, 
+	DVIPUSH=⊂132⊃, DVIPOP=⊂133⊃,
+	VERTRULE=⊂134⊃, HORZRULE=⊂135⊃, HORZCHAR=⊂136⊃, DVIFONT=⊂137⊃,
+	W4=⊂138⊃, W3=⊂139⊃, W2=⊂140⊃, W0=⊂141⊃,
+	DVIX4=⊂142⊃, DVIX3=⊂143⊃, DVIX2=⊂144⊃, DVIX0=⊂145⊃,
+	DVIY4=⊂146⊃, DVIY3=⊂147⊃, DVIY2=⊂148⊃, DVIY0=⊂149⊃,
+	Z4=⊂150⊃, Z3=⊂151⊃, Z2=⊂152⊃, Z0=⊂153⊃,
+	FONTNUM=⊂154⊃ # to 217;
+# routines for DVI command paramaters;
+ define onebyte(n)=⊂bout(proof,n)⊃,
+	twobytes(n)=⊂onebyte((n) lsh -8); onebyte(n)⊃,
+	threebytes(n)=⊂onebyte((n) lsh -16); twobytes(n)⊃,
+	fourbytes(n)=⊂onebyte((n) lsh -24); threebytes(n)⊃;
+procedure xmove(integer amt); begin
+	if amt&lt;(1 lsh 15) then begin onebyte(DVIX2); twobytes(amt); end
+	else if amt&lt;(1 lsh 23) then begin
+			onebyte(DVIX3); threebytes(amt); end
+	else begin onebyte(DVIX4); fourbytes(amt); end
+	end;
+procedure ymove(integer amt); begin
+	if amt&lt;(1 lsh 15) then begin onebyte(DVIY2); twobytes(amt); end
+	else if amt&lt;(1 lsh 23) then begin
+			onebyte(DVIY3); threebytes(amt); end
+	else begin onebyte(DVIY4); fourbytes(amt); end
+	end;
+procedure intout(integer i); begin fourbytes(i); end;
+procedure charsout(string s); begin integer i;
+	while s do if (i←lop(s))=&quot; &quot; then xmove(5) else onebyte(i);
+	end;
+procedure makeproof; begin &quot;makeproof&quot;
+comment This routine figures out how to label the points, and then
+it outputs the raster in a format that is printable with a special font.
+The point label locations are computed in the following way: We go through
+the points from top to bottom, left to right, and use the first available
+position from a list of five choices:
+	centered above the point
+	centered to the left of the point
+	centered to the right of the point
+	centered below the point
+	in the right margin below previous entries like this
+(The last case always succeeds if the other four fail.) A position is
+&quot;available&quot; if the corresponding box containing the symbolic name of the point
+does not overlap with any previously placed boxes, and if this box is at least
+two units away from every other point, measuring distance along vertical
+and horizontal lines (Manhattan style). (The box is one unit away from
+the point it corresponds to.)
+;
+string hdr;
+integer curpageptr, xmin, xmax, ymin, ymax;
+integer xl,xr,p,q,r,ch,y,x,state;
+integer yextra # coordinate for case 5 labels;
+procedure clearstate # Outputs bit codes that have accumulated;
+	begin &quot;clearstate&quot;
+	comment This procedure is used in the routine that puts out the raster.
+	If state = n &gt; 0, we output the code for n grey cells
+	(where P=1 cell, Q=2, R=4, etc.), while if state = -m &lt; 0 we output
+	the code for m blanks;
+	if state&gt;0 then
+		begin integer pt # power of 2;
+		string chr # corresponding character;
+		chr←&quot;S&quot;; pt←8 # the font has only &quot;P&quot;, &quot;Q&quot;, &quot;R&quot;, and &quot;S&quot;;
+		loop	begin while state≥pt do
+				begin onebyte(chr); state←state-pt;
+				end;
+			if state=0 then return;
+			pt←pt lsh -1; chr←chr-1;
+			end;
+		end
+	else	begin
+		xmove(-state);
+		state←0;
+		end;
+	end &quot;clearstate&quot;;
+xl←xleft*bitsperwd+(xrastmin+xpenmin) # leftmost bit position being output;
+xr←xright*bitsperwd+(xrastmin+xpenmin+bitsperwd-1) # rightmost;
+xmin←xl; xmax←xr; ymin←ylow; ymax←yhigh;
+bxptr←0 # set list of active boxes empty;
+yextra←yhigh;
+p←0; if points then while llink[p]&gt;p do p←llink[p] # start at topmost leftmost point;
+while p do
+	begin integer j # choice number for the label;
+	integer m # four times the length of the label;
+	integer x0,y0,x1,y1 # coordinates of the box;
+	label advancep # go here when done with $p$;
+	if xcoord[p]&lt;xl or xcoord[p]&gt;xr or ycoord[p]&gt;yhigh or ycoord[p]&lt;ylow
+		or strng[p]=0
+		then go to advancep # points out of range won't be shown;
+	m←4*length(strng[p]);
+	for j←1 thru 5 do
+		begin integer q # runs through things that shouldn't clash;
+		label reject # go here when case $j$ is illegal;
+		case j of begin
+		[1] begin x0←xcoord[p]-1-m; y0←ycoord[p]+1 end;
+		[2] begin x0←xcoord[p]-3-2*m; y0←ycoord[p]-5 end;
+		[3] begin x0←xcoord[p]+1; y0←ycoord[p]-5 end;
+		[4] begin x0←xcoord[p]-1-m; y0←ycoord[p]-11 end;
+		else begin x0←infty; done end
+		  end;
+		x1←x0+2+2*m; y1←y0+10;
+		q←p # first we will check points just before $p$;
+		loop	begin integer x,y,r # temporary storage;
+			integer dist # Manhattan distance;
+			if (r←llink[q])≤q then
+				if r then q←r else done
+			else	begin q←r; while (r←rlink[q])&gt;q do q←r;
+				end;
+			comment The above lines moved $q$ backwards one;
+			y←ycoord[q]; if y&gt;y1+1 then done # no clash possible;
+			if y≥y1 then dist←y-y1 else if y≤y0 then dist←y0-y
+			else dist←0;
+			x←xcoord[q]; if x≥x1 then dist←dist+x-x1 else if
+			x≤x0 then dist←dist+x0-x;
+			if dist≤1 then go to reject;
+			end;
+		q←p # next we will check points just after $p$;
+		loop	begin integer x,y,r # temporary storage;
+			integer dist # Manhattan distance;
+			if (r←rlink[q])≤q then
+				if r then q←r else done
+			else	begin q←r; while (r←llink[q])&gt;q do q←r;
+				end;
+			comment The above lines moved $q$ forwards one;
+			y←ycoord[q]; if y&lt;y0-1 then done # no clash possible;
+			if y≥y1 then dist←y-y1 else if y≤y0 then dist←y0-y
+			else dist←0;
+			x←xcoord[q]; if x≥x1 then dist←dist+x-x1 else if
+			x≤x0 then dist←dist+x0-x;
+			if dist≤1 then go to reject;
+			end;
+		q←bxptr # finally we check that no overlap occurs;
+		while q do
+			begin
+			if yll[q]&gt;y1 then done;
+			if x1≥xll[q] and x0≤xur[q] and y0≤yll[q]+10
+				then go to reject;
+			q←prevbox[q];
+			end;
+		done # all tests have been passed;
+		reject: # this value of $j$ didn't work;
+		end;
+	if x0=infty then
+		begin comment case 5;
+		xll[p]←(xright+1-xleft)*bitsperwd;
+		xur[p]←xll[p]+2*m+2;
+		yextra←yextra-20; yll[p]←yextra;
+		end
+	else	begin comment case 1, 2, 3, or 4;
+		xll[p]←x0; xur[p]←x1; yll[p]←y0;
+		end;
+	xmin←xmin min xll[p] min xcoord[p];
+	xmax←xmax max xur[p] max xcoord[p];
+	ymin←ymin min yll[p] min ycoord[p];
+	ymax←ymax max yll[p] max ycoord[p];
+	q←bxptr; r←0;
+	while q and yll[q]&lt;yll[p] do
+		begin r←q; q←prevbox[q];
+		end;
+	prevbox[p]←q; if r then prevbox[r]←p else bxptr←p;
+	advancep:
+	if (r←rlink[p])≤p then p←r
+	else	begin p←r; while (r←llink[p])&gt;p do p←r;
+		end;
+	end;
+comment Now all points have been output, so we output the raster pattern.
+White spaces are handled by &quot;skips&quot;, but grey cells are classified into
+sixteen kinds according to the presence or absence of neighbors above, right,
+below, or left of a cell. An ordinary cell has all four neighbors present.
+Codes &quot;A&quot;, &quot;B&quot;, ..., &quot;O&quot; are used for the cases when one or more neighbors
+is absent, using a binary code. The &quot;fig&quot; font uses this information to put
+boundary lines at the edges.
+The &quot;fig&quot; font is designed so that character &quot;.&quot; placed at location
+(x,y) indicates a big black dot centered on cell (x,y). The digits
+0...9 and lower case letters are designed to have a width of 8 cells,
+and so that the character will be approximately centered in an 11x11
+rectangle whose lower left corner is (x0,y0) and whose upper right
+corner is (x0+10,y0+10) if the string begins at cell (x0+2,y0+8).
+;
+openofil(proof) # make sure it's open;
+curpageptr←bytecount[proof];
+prfpno←prfpno+1;
+onebyte(DVIBOP); intout(prfpno); for x←1 thru 9 do intout(0);
+intout(lastpageptr);
+onebyte(FONTNUM+1) # select FIGTOP;
+ymove(10);
+onebyte(DVIPUSH);
+hdr←&quot; &quot;&amp;prfheader&amp;cvs(prfpno)&amp;&quot;     &quot;&amp;pagewarning;
+charsout(hdr);
+xmax←xmax max (xmin+(5*length(hdr)));
+onebyte(DVIPOP);
+ymove(35);
+onebyte(FONTNUM) # select FIG;
+if points then for p←1 thru tptr-1 do begin
+	onebyte(DVIPUSH);
+	xmove(xcoord[p]-xmin);
+	ymove(ymax-ycoord[p]);
+	onebyte(&quot;.&quot;);
+	onebyte(DVIPOP);
+	onebyte(DVIPUSH);
+	xmove(xll[p]-xmin+2);
+	ymove(ymax-yll[p]-8);
+	charsout(strng[p]);
+	onebyte(DVIPOP);
+	end;
+ymove(ymax-yhigh);
+for y←yhigh step -1 until ylow do
+	begin comment Now output all grey cells in row $y$;
+	state←0;
+	onebyte(DVIPUSH);
+	ymove(yhigh-y);
+	for x←xleft thru xright do
+		begin integer xw # position in \\{rast};
+		integer z # current bit pattern;
+		integer k # number of unscanned bits in $z$;
+		integer zt,zr,zb,zl # bit patterns of neighbors;
+		xw←x*rspan+y; var!gets!rast(z,xw) # z←rast[xw];
+		k←bitsperwd; if z then
+			begin zl←z lsh -1; zr← z lsh 1;
+			if x≠xleft then var!gets!rast!lsh!expr!lor!var
+						(zl,xw-rspan,bitsperwd-1);
+				# zl←(rast[xw-rspan] lsh(bitsperwd-1))lor zl;
+			if x≠xright then var!gets!rast!lsh!expr!lor!var
+						(zr,xw+rspan,1-bitsperwd);
+				# zr←(rast[xw+rspan] lsh(1-bitsperwd))lor zr;
+			if y≠yhigh then
+				var!gets!rast(zt,xw+1) comment zt←rast[xw+1];
+			else zt←0;
+			if y≠ylow then
+				var!gets!rast(zb,xw-1) comment zb←rast[xw-1];
+			else zb←0;
+			if z=-1 and zt=-1 and zr=-1 and zb=-1 and zl=-1 then
+				begin if state&lt;0 then clearstate;
+				state←state+bitsperwd; k←z←0;
+				end
+			else	begin zt←zt rot 1; zr←zr rot 2; zb←zb rot 3;
+				zl←zl rot 4 # now these are in convenient position;
+				end;
+			while z do
+				begin if z≥0 then
+					begin if state&gt;0 then clearstate;
+					state←state-1;
+					end
+				else	begin integer c; c←(zt land 1)+(zr land 2)+
+						(zb land 4)+(zl land 8);
+					if c=15 then
+						begin if state&lt;0 then clearstate;
+						state←state+1;
+						end
+					else	begin string chr; chr←'117 xor c;
+						if state≠0 then clearstate;
+						onebyte(chr);
+						end;
+					end;
+				z←z lsh 1; k←k-1;
+				zt←zt rot 1; zr←zr rot 1; zb←zb rot 1; zl←zl rot 1;
+				end;
+			end;
+		if k then
+			begin if state&gt;0 then clearstate;
+			state←state-k;
+			end;
+		end;
+	onebyte(DVIPOP);
+	end;
+COMMENT FOO FIX DEBUG;
+onebyte(DVIPUSH);
+xmove(xmin);
+ymove(yhigh-ymin);
+onebyte(&quot;.&quot;);
+onebyte(DVIPOP);
+xmove(xmax);
+ymove(yhigh-ymax);
+onebyte(&quot;.&quot;);
+lastpageptr←curpageptr;
+onebyte(DVIEOP);
+xmaxmax←xmaxmax max (xmax-xmin);
+ymaxmax←ymaxmax max (ymax-ymin);
+end &quot;makeproof&quot;;
+
+procedure proofcloseout; begin &quot;proofcloseout&quot;
+integer postambleptr, i;
+postambleptr←bytecount[proof];
+onebyte(DVIPST) # marks postamble;
+intout(lastpageptr);
+intout(25400000); intout(7227) # since we output in units of points;
+intout(1000) # magnification;
+intout(30+ymaxmax);
+intout(30+xmaxmax);
+intout(0) # font number 0 is FIG;
+intout(0) # no checksum;
+intout(1000) # magnification;
+dviSout(proof,&quot;FIG&quot;);
+intout(1) # font number 1 is FIGTOP;
+intout(0) # no checksum;
+intout(1000) # magnification;
+dviSout(proof,&quot;FIGTOP&quot;);
+intout(-1) # mark end of fonts;
+intout(postambleptr);
+onebyte(1) # DVI ID byte;
+for i←1 step 1 until 10 do onebyte(223) # to ensure written buffer;
+end &quot;proofcloseout&quot;;
+ENDDVI
+
+comment Routines for chr mode.
+
+In this mode we output the characters in asterisk-dot form. Exactly two
+columns have more than one dot, these columns specifying the pixels to the
+left and right of the character (columns -1 and chardw).
+Exactly one row has more than two dots, this row being the baseline (row 0);
+
+procedure makechr # outputs the current character to .chr file;
+begin integer xrk,xl,xr,xw,y,yl,yh,z,lz,xlb,lkd,rkd,bsd,ch,xwr,x,bits,xx;
+label nonblank1,nonblank2,nonblank3,nonblank4;
+if chardw&lt;0 then
+	begin chardw←0; error(&quot;Negative chardw, replaced by 0&quot;);
+	end
+else if chardw&gt;xrastmax+xpenmax then overflow(xrastmax+xpenmax);
+xrk←rcol(chardw);
+xl←xleft min rcol(-1); xr←xright max xrk;
+while xl&lt;rcol(-1) do
+	begin comment try to eliminate blank column at left;
+	xw←xl*rspan;
+	for y←xw+ylow thru xw+yhigh do
+IFXMEM	begin var!gets!rast(xtemp,y); if xtemp then go to nonblank1; end;
+ELSEC		if rast[y] then go to nonblank1;
+ENDC
+	xl←xl+1;
+	end;
+nonblank1: while xr&gt;xrk do
+	begin comment try to eliminate blank column at right;
+	xw←xr*rspan;
+	for y←xw+ylow thru xw+yhigh do
+IFXMEM	begin var!gets!rast(xtemp,y); if xtemp then go to nonblank2; end;
+ELSEC		if rast[y] then go to nonblank2;
+ENDC
+	xr←xr-1;
+	end;
+nonblank2: yl←ylow min 0; yh←yhigh max 0;
+while yl&lt;0 do
+	begin comment try to eliminate blank row at bottom;
+	for xw←xleft*rspan+yl step rspan until xright*rspan+yl do
+IFXMEM	begin var!gets!rast(xtemp,xw); if xtemp then go to nonblank3; end;
+ELSEC		if rast[xw] then go to nonblank3;
+ENDC
+	yl←yl+1;
+	end;
+nonblank3: while yh&gt;0 do
+	begin comment try to eliminate blank row at top;
+	for xw←xleft*rspan+yh step rspan until xright*rspan+yh do
+IFXMEM	begin var!gets!rast(xtemp,xw); if xtemp then go to nonblank4; end;
+ELSEC		if rast[xw] then go to nonblank4;
+ENDC
+	yh←yh-1;
+	end;
+nonblank4:if xl=rcol(-1) then z←1 lsh (hw+1) else z←0; xw←xl*rspan;
+for y←xw+ylow thru xw+yhigh do var!gets!rast!lor!var(z,y) # z←z lor rast[y];
+lz←0; while z&gt;0 do
+	begin lz←lz+1; z←z lsh 1;
+	end;
+xlb←1-hw+lz+bitsperwd*(xl-rcol(0));
+
+ch←openofil(chrs);
+out(ch,'14&amp;&quot;'&quot;&amp;cvos(charcode)&amp;nextline);
+y←yh; lkd←rkd←bsd←0;
+while y≥yl or lkd≤1 or rkd≤1 do
+	begin label rowdone;
+	xw←xl*rspan+y; xwr←xr*rspan+y;
+	x←xlb; var!gets!rast!lsh!expr(z,xw,lz) # z←rast[xw] lsh lz;
+	bits←bitsperwd-lz;
+	loop	begin if bits=0 then
+			begin bits←bitsperwd; xw←xw+rspan;
+			var!gets!rast(z,xw) # z←rast[xw];
+			end;
+		if z&lt;0 then out(ch,&quot;*&quot;)
+		else if x=-1 then
+			begin out(ch,&quot;.&quot;); lkd←lkd+1;
+			end
+		else if x=chardw then
+			begin out(ch,&quot;.&quot;); rkd←rkd+1;
+			end
+		else if y=0 then
+			begin label nonblank;
+			if z=0 and x&gt;chardw and bsd&gt;2 then
+				begin for xx←xw+rspan step rspan until xwr do
+IFXMEM					begin var!gets!rast(xtemp,xx);
+					if xtemp then go to nonblank; end;
+ELSEC					if rast[xx] then go to nonblank;
+ENDC
+				go to rowdone;
+				end;
+			nonblank: out(ch,&quot;.&quot;); bsd←bsd+1;
+			end
+		else 	begin label nonblank;
+			if z=0 and x&gt;chardw then
+				begin for xx←xw+rspan step rspan until xwr do
+IFXMEM					begin var!gets!rast(xtemp,xx);
+					if xtemp then go to nonblank; end;
+ELSEC					if rast[xx] then go to nonblank;
+ENDC
+				go to rowdone;
+				end;
+			nonblank: out(ch,&quot; &quot;);
+			end;
+		z←z lsh 1; bits←bits-1; x←x+1;
+		end;
+	rowdone: out(ch,nextline); y←y-1;
+	end;
+end;
+
+comment Routines for vnt/fnt mode;
+IFVNT
+comment VNT mode
+In this mode we output the characters in binary format as required by
+the Varian/Versatec conventions documented in VNT.INF by David Fuchs.
+This code was ripped off from the old FNT mode by DRF;
+internaldef VNTID=1001 # current VNT ID;
+internal integer vntch # channel being used for vntmode;
+procedure makevnt # outputs the current character to .vnt file;
+begin integer xl,xr # left/right-most black pixels column;
+integer z,xw,y;
+integer lz # number of consecutive zero's in the left of xl;
+integer xlb,xrb # left/right-most bit position;
+integer lzr # number of consecutive zero's in the right of xr;
+integer yl,yh # top/bottom-most black pixel row;
+integer xlw,xrw,shft;
+integer rasterwidth,datarowcount,leftkern,wordcount;
+label nonblank3,nonblank4,outchar;
+vntch←openofil(vnt);
+xl←xleft; xr←xright; z←0;
+loop	begin comment try to eliminate blank column at left;
+	xw←xl*rspan;
+	for y←xw+ylow thru xw+yhigh do
+		var!gets!rast!lor!var(z,y) # z←z lor rast[y];
+	if z then done;
+	xl←xl+1;
+	if xl&gt;xr then
+		begin comment blank raster;
+		rasterwidth←datarowcount←leftkern←wordcount←yh←0;
+		go to outchar;
+		end;
+	end;
+lz←0; while z&gt;0 do
+	begin lz←lz+1; z←z lsh 1;
+	end;
+xlb←(1-hw-bitsperwd*rcol(0))+lz+bitsperwd*xl;
+z←0;
+loop	begin comment try to eliminate blank column at right.  The
+		loop is guaranteed to halt, since raster is non-empty;
+	xw←xr*rspan;
+	for y←xw+ylow thru xw+yhigh do 
+		var!gets!rast!lor!var(z,y) # z←z lor rast[y];
+	if z then done;
+	xr←xr-1;
+	end;
+comment Assert z≠0;
+lzr←rightmostbitindex(z);
+xrb←(1-hw-bitsperwd*rcol(0))+lzr+bitsperwd*xr;
+yl←ylow; yh←yhigh;
+loop	begin comment try to eliminate blank row at bottom;
+	for xw←xl*rspan+yl step rspan until xr*rspan+yl do
+IFXMEM	begin var!gets!rast(xtemp,xw); if xtemp then go to nonblank3; end;
+ELSEC	if rast[xw] then go to nonblank3;
+ENDC
+	yl←yl+1;
+	end;
+nonblank3:
+loop	begin comment try to eliminate blank row at top;
+	for xw←xl*rspan+yh step rspan until xr*rspan+yh do
+IFXMEM	begin var!gets!rast(xtemp,xw); if xtemp then go to nonblank4; end;
+ELSEC	if rast[xw] then go to nonblank4;
+ENDC
+	yh←yh-1;
+	end;
+nonblank4:
+rasterwidth←xrb-xlb+1;
+datarowcount←yh-yl+1;
+wordcount←((rasterwidth-1) div 32 + 1)*datarowcount;
+leftkern←-xlb;
+outchar: 
+if fntdir[4*charcode+2] then error(&quot;Duplicate charcode: '&quot;&amp;cvos(charcode));
+fntdir[4*charcode+0]←(rasterwidth lsh 16)+datarowcount;
+fntdir[4*charcode+1]←(leftkern lsh 16)+(yh land '177777);
+fntdir[4*charcode+2]←fntptr;
+fntdir[4*charcode+3]←tfmfix(charwd,true);
+if rasterwidth=0 then return;
+fntptr←fntptr+wordcount;
+xlw←xl*rspan;
+xrw←xr*rspan;
+DEBUGONLY print(nextline,&quot; lz&quot;,lz,&quot; xl&quot;,xl,&quot; xr&quot;,xr,&quot; xlw&quot;,xlw,&quot; xrw&quot;,xrw);
+DEBUGONLY print(&quot; yh&quot;,yh,&quot; yl&quot;,yl,&quot; rasterwidth&quot;,rasterwidth);
+for y←yh step -1 until yl do begin integer bitsout;
+  shft←lz;
+  xw←y+xlw;
+  bitsout←0;
+DEBUGONLY print(nextline);
+  while bitsout&lt;rasterwidth do begin
+IFXMEM var!gets!two!rast!cols(xtemp,xw,shft); uout32(vntch,xtemp);
+ELSEC	uout32(vntch,(rast[xw]lsh shft)+(rast[xw+rspan]lsh (shft-bitsperwd)));
+ENDC
+DEBUGONLY var!gets!two!rast!cols(z,xw,shft);
+DEBUGONLY for xrw←1 step 1 until 32 do
+DEBUGONLY   if (z←z rot 1) land 1 then print(&quot;X&quot;) else print(&quot;.&quot;);
+	bitsout←bitsout+32; shft←shft+32;
+	if shft&gt;bitsperwd then begin shft←shft-bitsperwd; xw←xw+rspan; end;
+	end;
+   end;
+end;
+ELSEC
+comment fnt mode
+In this mode we output the characters in binary format as required by the
+XGP conventions documented in &quot;Find a Font&quot; by Les Earnest,
+SAIL Operating Note 74, May 1976, as subsequently modified to allow negative
+left kerns and to pack data according to raster_width instead of character_width;
+define ytop=⊂fntdir['203]⊃, maxwdth=⊂fntdir['202]⊃, maxdpth=⊂fntdir['201]⊃;
+procedure makefnt # outputs the current character to .fnt file;
+begin integer xl,xr,z,xw,y,lz,xlb,xrb,lzr,yl,yh,ch,xlw,lz1,xrw;
+integer rasterwidth,datarowcount,rowsfromtop,leftkern,wordcount;
+label nonblank3,nonblank4,outchar;
+ch←openofil(xgpfnt);
+if chardw&lt;0 then
+	begin chardw←0; error(&quot;Negative chardw, replaced by 0&quot;);
+	end;
+xl←xleft; xr←xright; z←0;
+loop	begin comment try to eliminate blank column at left;
+	xw←xl*rspan;
+	for y←xw+ylow thru xw+yhigh do
+		var!gets!rast!lor!var(z,y) # z←z lor rast[y];
+	if z then done;
+	xl←xl+1;
+	if xl&gt;xr then
+		begin comment blank raster;
+		rasterwidth←rowsfromtop←datarowcount←leftkern←wordcount←0;
+		go to outchar;
+		end;
+	end;
+lz←0; while z&gt;0 do
+	begin lz←lz+1; z←z lsh 1;
+	end;
+xlb←(1-hw-bitsperwd*rcol(0))+lz+bitsperwd*xl;
+z←0;
+loop	begin comment try to eliminate blank column at right.  The
+		loop is guaranteed to halt, since raster is non-empty;
+	xw←xr*rspan;
+	for y←xw+ylow thru xw+yhigh do 
+		var!gets!rast!lor!var(z,y) # z←z lor rast[y];
+	if z then done;
+	xr←xr-1;
+	end;
+comment Assert z≠0;
+lzr←rightmostbitindex(z);
+xrb←(1-hw-bitsperwd*rcol(0))+lzr+bitsperwd*xr;
+yl←ylow; yh←yhigh;
+loop	begin comment try to eliminate blank row at bottom;
+	for xw←xl*rspan+yl step rspan until xr*rspan+yl do
+IFXMEM	begin var!gets!rast(xtemp,xw); if xtemp then go to nonblank3; end;
+ELSEC	if rast[xw] then go to nonblank3;
+ENDC
+	yl←yl+1;
+	end;
+nonblank3:
+loop	begin comment try to eliminate blank row at top;
+	for xw←xl*rspan+yh step rspan until xr*rspan+yh do
+IFXMEM	begin var!gets!rast(xtemp,xw); if xtemp then go to nonblank4; end;
+ELSEC	if rast[xw] then go to nonblank4;
+ENDC
+	yh←yh-1;
+	end;
+nonblank4: if yh&gt;ytop then
+	begin error(&quot;Character '&quot;&amp;cvos(charcode)&amp;&quot; goes over the top (&quot;&amp;
+		cvs(yh)&amp;&quot; &gt; &quot;&amp;cvs(ytop)&amp;&quot;)&quot;);
+	yh←ytop;
+	end;
+if chardw&lt;xlb then
+	begin lz←(chardw+(hw-1)) mod bitsperwd; xlb←chardw; xl←rcol(chardw);
+	end;
+maxwdth←maxwdth max chardw;
+maxdpth←maxdpth min yl;
+
+rasterwidth←xrb-xlb+1;
+datarowcount←yh-yl+1;
+wordcount←if rasterwidth&gt;hw then ((rasterwidth-1) div bitsperwd + 1)*datarowcount
+	else (datarowcount-1) div (bitsperwd div rasterwidth) + 1;
+leftkern←-xlb;
+rowsfromtop←ytop-yh;
+
+outchar: 
+if fntdir[charcode] then error(&quot;Duplicate charcode: '&quot;&amp;cvos(charcode));
+fntdir[charcode]←(chardw lsh hw)+fntptr;
+comment The next two lines assume that bitsperwd=36;
+wordout(ch,(rasterwidth lsh 27)+(charcode lsh 18)+wordcount+2);
+wordout(ch,(leftkern lsh 27)+(rowsfromtop lsh 18)+datarowcount);
+fntptr←fntptr+2+wordcount;
+
+if rasterwidth=0 then return;
+xlw←xl*rspan; lz1←lz-bitsperwd;
+if rasterwidth≤hw then
+	begin integer bits,accum;
+	bits←accum←0;
+	for y←xlw+yh step -1 until xlw+yl do
+		begin var!gets!two!rast!cols(z,y,lz)
+			# z←(rast[y] lsh lz)+(rast[y+rspan] lsh lz1);
+		accum ← accum lor (z lsh (-bits));
+		bits←bits+rasterwidth;
+		if bits+rasterwidth&gt;bitsperwd then
+			begin wordout(ch,accum);
+			bits←accum←0;
+			end;
+		end;
+	if bits then wordout(ch,accum);
+	end
+else	begin xrw←xr*rspan; if lz&gt;lzr then xrw←xrw-rspan;
+	for y←yh step -1 until yl do for xw←y+xlw step rspan until y+xrw do 
+IFXMEM		begin var!gets!two!rast!cols(xtemp,xw,lz);
+						wordout(ch,xtemp); end;
+ELSEC		wordout(ch,(rast[xw]lsh lz)+(rast[xw+rspan]lsh lz1));
+ENDC
+	end;
+end;
+ENDC
+comment Routines for rst mode.
+
+This section is adapted for the creation of canon fonts.
+This code was adapted from the fnt mode code in the previous section;
+
+
+procedure makerst # outputs the current character to .r## file;
+begin &quot;-- makerst --&quot; 
+integer rasterwidth, rasterheight, leftkern, numbytes, 
+	leftbit, leftword, yh, yl, y;
+label nonblank3,nonblank4,outchar;
+
+comment outputs a row of rast as a byte sequence;
+simple procedure shuvbyt(integer curbit, ptr, numbytes);  begin 
+comment curbit on entry has a range of 1..36;
+    integer i,j, wd;
+    for i←1 step 1 until numbytes do begin 
+	if curbit≥8 then begin 
+	    curbit←curbit-8; 
+	    bout(rstfnt, wd←(rast[ptr] lsh -curbit))
+	    end
+	else begin  comment if 7≥curbit≥0 then do the following;
+	    wd←rast[ptr] lsh (8-curbit);
+	    curbit← bitsperwd-(8-curbit); ptr←ptr+rspan;
+	    bout(rstfnt, wd← wd lor (rast[ptr] lsh -curbit))
+	   end;
+	if rstdebug then for j←-6 step 2 until 0 do 
+	    print(case ((wd lsh j) land 3) of (&quot;..&quot;,&quot;.0&quot;,&quot;0.&quot;,&quot;00&quot;))
+	end; 
+    if rstdebug then print('15&amp;'12);
+    end;
+if chardw&lt;0 then begin chardw←0; error(&quot;Negative chardw, replaced by 0&quot;) end;
+openofil(rstfnt);
+if rstdebug then print(&quot;%&quot;,charcode);
+
+begin comment ------- set yl,yh to top and bottommost non-blank lines;
+	integer last, x;
+	yl←ylow; 
+	loop    begin comment try to eliminate blank row at bottom;
+		last← xright*rspan + yl;
+		for x←xleft*rspan+yl step rspan until last do
+			if rast[x] then go to nonblank3;
+		yl←yl+1;
+		end;
+	nonblank3:
+	yh←yhigh;
+	loop    begin comment try to eliminate blank row at top;
+		last← xright*rspan + yh;
+		for x←xleft*rspan+yh step rspan until last do
+			if rast[x] then go to nonblank4;
+		yh←yh-1;
+		end;
+	nonblank4: 
+
+	if (rasterheight← 0 max (yh-yl+1))=0 then go to outchar
+end;
+
+begin comment ------- set leftbit, leftword and rasterwidth and leftkern;
+    integer xl, xr, xw, zz, z, lz, rz, last;
+
+    if rstdebug then print(&quot;c(&quot;,charwd,&quot;,&quot;,charht,&quot;) ←→(&quot;,xleft,&quot;,&quot;,xright,&quot;)&quot;,
+			    &quot; ^(&quot;,yl,&quot;,&quot;,yh,&quot;)&quot;);
+
+    xl←xleft; z←0;
+    loop    begin comment try to eliminate blank column at left;
+	    last← xl*rspan + yh;
+	    for y← xl*rspan+yl thru last do z← z lor rast[y];
+	    if z≠0 then done;
+	    xl← xl+1;
+
+	    if xl&gt;xright then begin             comment blank raster;
+		rasterwidth←leftkern←0;     go to outchar;
+		end;
+	    end; zz←z;
+
+    lz←leftmostbitindex(z);
+
+    leftbit← 36-lz; leftword← xl;
+    # distance from leftmost bit to reference point (mid point of rcol(0));
+    leftkern← -(1 + lz - hw + bitsperwd * (leftword-rcol(0)));
+
+    xr←xright; z←0;
+    while xr≥xl do begin comment try to eliminate blank column at right;
+	    last← xr*rspan + yh;
+	    for y←xr*rspan+yl thru last do z← z lor rast[y];
+	    if z≠0 then done;
+	    xr←xr-1; 
+	    end;
+    rz←  rightmostbitindex(z);
+    rasterwidth← bitsperwd * (xr-xl) + (rz-lz) + 1;
+
+    if rasterwidth&lt;0 then 
+	print(&quot;ERROR: rasterwidth cannot be negative! (Sail error).&quot;);
+
+    comment  ???  what for is this ???;
+    comment if chardw&lt;xlb then print(&quot;{??? chardw&lt;xlb ????}&quot;);
+    comment lz←(chardw+(hw-1)) mod bitsperwd  xlb←chardw  xl←rcol(chardw) end;
+
+    if rstdebug then 
+	print(&quot; lz=&quot;,lz,&quot; →(&quot;,lz,&quot;,&quot;,rz,&quot;)=(&quot;,cvos(zz),&quot;,&quot;,cvos(z),&quot;)&quot;,'15&amp;'12,
+	      &quot;  wds(&quot;,xl,&quot;,&quot;,xr,&quot;) →&quot;,rasterwidth,
+	      &quot;← ^(&quot;,yl,&quot;,&quot;,yh,&quot;) ^&quot;,rasterheight,&quot; offs(&quot;,leftkern,&quot;,&quot;,yh,&quot;)&quot;);
+    end;
+outchar: 	# ----------------------------------------------------- ;
+if fntdir[charcode] then error(&quot;Duplicate charcode: '&quot;&amp;cvos(charcode));
+fntdir[charcode]←(chardw lsh hw)+rstfntptr;
+
+if rasterheight*rasterwidth=0 then rasterheight← rasterwidth← yh← leftkern← 0;
+rstdir[4*charcode+0]← (rasterheight lsh 16) lor (rasterwidth land '177777);
+rstdir[4*charcode+1]← (yh lsh 16) lor (leftkern land '177777);
+rstdir[4*charcode+2]← charwd * 2^20;
+rstdir[4*charcode+3]← rstfntptr;
+if rstdebug then print(&quot; rstfntptr=&quot;,rstfntptr,'15&amp;'12);
+if rasterwidth&lt;0 then return;
+rasterwidth ← (rasterwidth land '177777);
+
+if rasterwidth*rasterheight=0 then return;
+numbytes← (rasterwidth+7) lsh -3;
+rstfntptr← rstfntptr + numbytes * rasterheight;
+for y←yh step -1 until yl do shuvbyt(leftbit, y+leftword*rspan, numbytes);
+end &quot;-- makerst --&quot;;
+comment Routines for .oc files and .wd files;
+
+IFDOVERMODES require &quot;MFDOVR.SAI&quot; source_file; ENDDOVERMODES
+
+comment Routines for tfm mode.
+
+This mode is a rather tedious set of routines that pack information into the
+format TEX wants;
+
+integer nwd,nht,ndp,nic,nvc;
+internal integer nkr,nlg # table pointers in tfm mode;
+internal saf integer array tfmdir[0:'177] # tfm mode character table;
+internaldef wds=8,hts=4,dps=4,ics=6,tgs=2,rems=8 # sizes of tfm fields;
+define wdmsk=(1 lsh wds)-1,htmsk=(1 lsh hts)-1,dpmsk=(1 lsh dps)-1,
+	icmsk=(1 lsh ics)-1, vcmsk=(1 lsh rems)-1;
+define wdd=remd+rems+tgs+ics+dps+hts;
+internaldef lgmsk=(1 lsh rems)-1 # maximum ligature field;
+internaldef remd=0 # ligature displacement;
+internaldef tgmsk=(1 lsh tgs)-1;
+internaldef tgd=remd+rems # tag field is just to the left of rem field;
+internaldef tagnone=0, taglig=1, taglist=2, tagvar=3;
+saf real array tfmwd[0:wdmsk+1] # tfm width table;
+saf real array tfmht[0:htmsk+1] # tfm height table;
+saf real array tfmdp[0:dpmsk+1] # tfm depth table;
+saf real array tfmic[0:icmsk+1] # tfm italic-correction table;
+internal boolean isvarchar # this is a built-up character;
+internal integer varchardata # the four charcodes of the pieces;
+saf integer array tfmvc[0:vcmsk] # tfm varchar table;
+internal saf integer array tfmlg[0:lgmsk] # tfm ligature-and-kern codes;
+internal saf real array tfmkr[0:lgmsk] # tfm kern values;
+internaldef tfmparsize=24 # max number of tfm parameters;
+internal saf real array tfmpars[1:tfmparsize] # tfm parameters;
+internal integer tfmptr # number of tfm parameters stored;
+preload_with true; saf boolean array tfmnot[0:0] # tfm tables initialized;
+
+internal procedure tfminit;
+if tfmnot[0] then
+	begin integer i;
+	for i←0 thru '177 do tfmdir[i]←0; nkr←nvc←nlg←-1;
+	nwd←nht←ndp←nic←0; tfmwd[0]←0.0 # used to mark missing chars;
+	tfmic[0]←0.0 # zero ital correction is same as no ital correction;
+	tfmht[0]←tfmdp[0]←0.0; # so missing characters look right;
+	tfmptr←0;
+	tfmnot[0]←false;
+	end;
+
+procedure maketfm # enters tfm information for current character;
+begin integer jwd,jht,jdp,jic;
+tfminit;
+tfmwd[nwd+1]←charwd; jwd←1 # NOT 0, since zero flags a non-existent character;
+while tfmwd[jwd]≠charwd do jwd←jwd+1;
+if jwd&gt;nwd then if nwd&lt;wdmsk then nwd←jwd else
+	begin real diff; integer k; diff←abs(tfmwd[0]-charwd); jwd←0;
+	for k←1 thru wdmsk do 
+		begin real delta; delta←abs(tfmwd[k]-charwd);
+		if delta&lt;diff then
+			begin diff←delta; jwd←k;
+			end;
+		end;
+	error(&quot;Rounding of charwd necessary, &quot;&amp;cvf(charwd)&amp;&quot;-&gt;&quot;&amp;cvf(tfmwd[jwd]));
+	end;
+tfmht[nht+1]←charht; jht←0; while tfmht[jht]≠charht do jht←jht+1;
+if jht&gt;nht then if nht&lt;htmsk then nht←jht else
+	begin real diff; integer k; diff←abs(tfmht[0]-charht); jht←0;
+	for k←1 thru htmsk do 
+		begin real delta; delta←abs(tfmht[k]-charht);
+		if delta&lt;diff then
+			begin diff←delta; jht←k;
+			end;
+		end;
+	error(&quot;Rounding of charht necessary, &quot;&amp;cvf(charht)&amp;&quot;-&gt;&quot;&amp;cvf(tfmht[jht]));
+	end;
+tfmdp[ndp+1]←chardp; jdp←0; while tfmdp[jdp]≠chardp do jdp←jdp+1;
+if jdp&gt;ndp then if ndp&lt;dpmsk then ndp←jdp else
+	begin real diff; integer k; diff←abs(tfmdp[0]-chardp); jdp←0;
+	for k←1 thru dpmsk do 
+		begin real delta; delta←abs(tfmdp[k]-chardp);
+		if delta&lt;diff then
+			begin diff←delta; jdp←k;
+			end;
+		end;
+	error(&quot;Rounding of chardp necessary, &quot;&amp;cvf(chardp)&amp;&quot;-&gt;&quot;&amp;cvf(tfmdp[jdp]));
+	end;
+tfmic[nic+1]←charic; jic←0; while tfmic[jic]≠charic do jic←jic+1;
+if jic&gt;nic then if nic&lt;icmsk then nic←jic else
+	begin real diff; integer k; diff←abs(tfmic[0]-charic); jic←0;
+	for k←1 thru icmsk do
+		begin real delta; delta←abs(tfmic[k]-charic);
+		if delta&lt;diff then
+			begin diff←delta; jic←k;
+			end;
+		end;
+	error(&quot;Rounding of charic necessary, &quot;&amp;cvf(charic)&amp;&quot;-&gt;&quot;&amp;cvf(tfmic[jdp]));
+	end;
+if isvarchar then 
+	begin case field(tg,tfmdir[charcode]) of begin
+	[tagnone] ;
+	[taglig] error(&quot;Varchar can't have ligature/kern&quot;);
+	[taglist] error(&quot;Varchar can't be in the middle of a charlist&quot;);
+	else confusion
+	  end;
+	tfmdir[charcode]←tfmdir[charcode] xor ((tagnone xor tagvar) lsh tgd);
+	nvc←nvc+1; tfmvc[nvc]←varchardata;
+	tfmdir[charcode]←tfmdir[charcode] lor (nvc lsh remd);
+	end;
+tfmdir[charcode]←(((((((jwd lsh hts)lor jht)lsh dps)lor jdp)lsh ics)lor jic)lsh (tgs+rems)) lor tfmdir[charcode];
+end;
+
+simp procedure addtochecksum(integer val);
+begin
+comment checksum method is to accumulate the one's complement
+	quantity $\sum↓i D↓i*2^i$ where $D↓i$ is the $i$th data
+	word to be checked;
+checksum←checksum lsh 1 # rotate;
+if (checksum lsh -32) then checksum←checksum-'40000000000+1 # rotate;
+checksum←checksum+(val land '37777777777) # add and then;
+if (checksum lsh -32) then
+		checksum←checksum-'40000000000+1 # end-around-carry;
+end;
+
+procedure tfmout # this procedure computes the information that
+	constitutes the .tfm, and generates the checksum from that.
+	Then, if tfmmode is true, it writes out a .tfm file;
+begin integer ch,i,j,c,bc,ec,nc,lh,lf,nw,nh,nd,ni,nl,nk,ne,np,bp;
+for bc←0 step 1 until '177 do if field(wd,tfmdir[bc])≠0 then done;
+for ec←'177 step -1 until 0 do if field(wd,tfmdir[ec])≠0 then done;
+if bc&gt;ec then begin bc←1; ec←0 end;
+nc←ec-bc+1;
+while tfmptr&lt;7 do tfmpars[tfmptr←tfmptr+1]←0.0;
+lh←18 # current length of header for .tfm;
+nw←nwd+1; nh←nht+1; nd←ndp+1; ni←nic+1;
+nl←nlg+1; nk←nkr+1; ne←nvc+1; np←tfmptr;
+lf←6+lh+nc+nw+nh+nd+ni+nk+nl+ne+np;
+checksum←0;
+comment everything gets checked except for header data;
+addtochecksum(bc lsh 16 lor ec);
+addtochecksum(nw lsh 16 lor nh);
+addtochecksum(nd lsh 16 lor ni);
+addtochecksum(nl lsh 16 lor nk);
+addtochecksum(ne lsh 16 lor np);
+for c←bc thru ec do addtochecksum(tfmdir[c]);
+for i←0 thru nw-1 do addtochecksum(tfmfix(tfmwd[i],true));
+for i←0 thru nh-1 do addtochecksum(tfmfix(tfmht[i],true));
+for i←0 thru nd-1 do addtochecksum(tfmfix(tfmdp[i],true));
+for i←0 thru ni-1 do addtochecksum(tfmfix(tfmic[i],true));
+for i←0 thru nl-1 do addtochecksum(tfmlg[i]);
+for i←0 thru nk-1 do addtochecksum(tfmfix(tfmkr[i],true));
+for i←0 thru ne-1 do addtochecksum(tfmvc[i]);
+for i←1 thru np do addtochecksum(tfmfix(tfmpars[i],i≠1)) # scale
+	all parameters except the first, which is slant (a pure number);
+
+comment OK, we have computed the checksum.  Now, does user want
+	a .tfm file written?;
+if not tfmmode then return;
+ch←openofil(tfm);
+if fontfacebyte&lt;0 or fontfacebyte&gt;255 then
+	errorstop(&quot;Font face byte out of bounds&quot;);
+Wout(tfm,lf); Wout(tfm,lh);
+Wout(tfm,bc); Wout(tfm,ec);
+Wout(tfm,nw); Wout(tfm,nh);
+Wout(tfm,nd); Wout(tfm,ni);
+Wout(tfm,nl); Wout(tfm,nk);
+Wout(tfm,ne); Wout(tfm,np);
+comment Now output the header data;
+Dout(tfm,checksum);
+Dout(tfm,tfmfix(designsize,false));
+BCPLout(tfm,codingscheme,40) # character coding scheme string;
+BCPLout(tfm,fontidentifier,20) # PARC family name;
+Dout(tfm,(2^31)+fontfacebyte) # sevenbitsafeflag and PARC face byte;
+comment Check if the last step of the lig/kern program has the stop bit set;
+if (nlg≥0) and (tfmlg[nlg] lsh -31 = 0) then 
+	begin
+	error(&quot;Ligature/kern program didn't end&quot;);
+	tfmlg[nlg]←tfmlg[nlg] lor (1 lsh 31);
+	end;
+comment Then output the data...;
+
+for c←bc thru ec do Dout(tfm,tfmdir[c]);
+for i←0 thru nw-1 do Dout(tfm,tfmfix(tfmwd[i],true));
+for i←0 thru nh-1 do Dout(tfm,tfmfix(tfmht[i],true));
+for i←0 thru nd-1 do Dout(tfm,tfmfix(tfmdp[i],true));
+for i←0 thru ni-1 do Dout(tfm,tfmfix(tfmic[i],true));
+for i←0 thru nl-1 do Dout(tfm,tfmlg[i]);
+for i←0 thru nk-1 do Dout(tfm,tfmfix(tfmkr[i],true));
+for i←0 thru ne-1 do Dout(tfm,tfmvc[i]);
+for i←1 thru np do Dout(tfm,tfmfix(tfmpars[i],i≠1)) # scale
+	all parameters except the first, which is slant (a pure number);
+end;
+
+comment Routines for Alphatype fonts;
+
+internal integer yoffset # character to be shifted up this amount by typesetting routine;
+internal integer xoffset # character to be shifted right this amount by typesetting routine;
+internal integer alfch # channel being used for crsmode;
+integer offptr # number of entries in offtable;
+define offsize=13 # max number of entries in a reasonable offtable;
+saf integer array offtable[1:offsize] # offsets used so far;
+internal integer alfptr # number of words output in crsmode;
+internal integer alfylow,alfyhigh,alfxleft,alfxright # rectangle to output in crsmode;
+internal integer antid # identification word for ANT file;
+
+IFC ALPHATYPEMODE THENC
+internaldef maxglyph=400 # maximum number of subglyphs per font;
+internal saf integer array minmax[0:maxglyph+1] # xmin,xmax,bytetimes (packed);
+saf integer array xyoff[0:maxglyph] # x and y offsets;
+saf integer array byteref[0:maxglyph] # number of bytes and ANT pointer;
+define lowten(y)=⊂10*(((y+30000) div 10)-3000)⊃ # round down to multiple of 10;
+saf integer array saveleft,saveright[lowten(yrastmin+ypenmin):
+	lowten(yrastmax+ypenmax)+9] # temporary storage while raster is being diddled;
+
+ifc WAITS thenc
+	ifc SPECRAST thenc
+	require &quot;alfbig.rel[alf,dek]&quot; load_module; elsec
+	require &quot;alfnrm.rel[alf,dek]&quot; load_module; endc
+elsec
+	ifc TOPS20 thenc
+		ifc XMEM thenc require &quot;alfhug.rel&quot; load_module; 
+		elsec require &quot;alfnrm.rel&quot; load_module;
+		endc
+	elsec require &quot;ALFOUT.REL&quot; load_module;
+	endc
+endc
+
+recursive procedure alfout(integer x0,x1,y0,y1) # outputs sub-character in crsmode;
+begin comment This procedure outputs a rectangular section of the current
+character, from columns x0 to x1 inclusive and from rows y0 to y1 inclusive.
+The calling procedure ensures that column x1 does not fall among the rightmost
+six bits of a word;
+integer x00,x10,xlb,xrb,leftmask,rightmask,k,antloc,i;
+label failure;
+if y1-y0&gt;1020 or x1-x0&gt;1978 then go to failure;
+if y1&lt;760 and y0≥-260 then yoffset←0
+else	begin comment We try to minimize the number of distinct offsets;
+	integer i; label found;
+	for i←1 thru offptr do if y1-offtable[i]≤760 and y0-offtable[i]≥-260 then
+		begin yoffset←offtable[i]; go to found;
+		end;
+	if offptr=offsize then if y1&gt;760 then yoffset←y1-760 else yoffset←y0+260
+	else	begin offptr←offptr+1;
+		yoffset←10*((y1+y0-490) div 20);
+		offtable[offptr]←yoffset;
+		end;
+	found:
+	end;
+if x1≤1650 and x0≥-328 then xoffset←0
+else if x1&gt;1650 then xoffset←x1-1650 else xoffset←x0+328;
+xlb←(x0-(xrastmin+xpenmin)) mod bitsperwd # position of leftmost bit;
+leftmask←(-1) lsh (-xlb);
+xrb←(x1-(xrastmin+xpenmin)) mod bitsperwd # position of rightmost bit, is &lt;30;
+rightmask←(-1) lsh (bitsperwd-1-xrb);
+x00←rloc(x0,0); x10←rloc(x1,0);
+for i←y0 thru y1 do
+	begin comment save raster bits, then mask out unwanted section;
+	var!gets!rast(saveleft[i],x00+i);
+	rast!gets!rast!land!expr(x00+i,leftmask);
+	var!gets!rast(saveright[i],x10+i);
+	rast!gets!rast!land!expr(x10+i,rightmask);
+	end;
+antloc←alfptr;
+alfylow←y0; alfyhigh←y1; alfxleft←rcol(x0); alfxright←rcol(x1);
+clean; boundarize; k←crscode;
+leftmask←lnot leftmask; rightmask←lnot rightmask;
+for i←y0 thru y1 do
+	begin comment restore the raster bits that were saved;
+	rast!gets!rast!lor!expr(x00+i,saveleft[i] land leftmask);
+	rast!gets!rast!lor!expr(x10+i,saveright[i] land rightmask);
+	end;
+if k&gt;0 then
+	begin comment the character was converted without a hitch;
+	if fntptr&gt;maxglyph then overflow(maxglyph);
+	xyoff[fntptr]←(((2*xoffset div 3) land '177777) lsh 16)+
+		((3*yoffset div 10) land '177777);
+	byteref[fntptr]←(k lsh 21)+antloc;
+	fntptr←fntptr+1;
+	return;
+	end;
+if k=0 then return # empty;
+failure: comment we will bisect the rectangle and try again;
+if 2*(x1-x0)≥y1-y0 and y1-y0≤1020 then
+	begin integer x2;
+	x2←3*((x0+x1) div 6);
+	if (x2-(xrastmin+xpenmin+1)) mod bitsperwd ≥ bitsperwd-6 then x2←x2+6;
+	print(nextline,&quot;Inserting crsxbreak &quot;,x2);
+	alfout(x0,x2-1,y0,y1); alfout(x2,x1,y0,y1);
+	end
+else	begin integer y2;
+	y2←10*((y0+y1) div 20);
+	print(nextline,&quot;Inserting crsybreak &quot;,y2);
+	alfout(x0,x1,y0,y2-1); alfout(x0,x1,y2,y1);
+	end;
+end;
+
+procedure makealf # outputs the current character to ANT file;
+begin integer j,k,crsalign,xy,aftptr;
+alfch←openofil(alf); crsalign←0;
+if fntdir[charcode] then error(&quot;Duplicate charcode: '&quot;&amp;cvos(charcode));
+brktab[0,0]←xleft*bitsperwd+(xrastmin+xpenmin) # leftmost relevant bit position;
+brktab[0,brkptr[0]+1]←(xright*bitsperwd+(xrastmin+xpenmin+bitsperwd))
+	min (xpenmax+xrastmax+1) # rightmost relevant bit position, plus 1;
+brktab[1,0]←lowten(ylow) # bottommost row;
+brktab[1,brkptr[1]+1]←lowten(yhigh)+10 # topmost row, plus 1;
+for xy←0 thru 1 do
+	begin j←brkptr[xy]; while j&gt;0 do
+		begin if brktab[xy,j]≥brktab[xy,j+1]-32 or
+				brktab[xy,j]≤brktab[xy,0]+32 then
+			begin integer k; comment remove unnecessary break;
+			if brktab[xy,j]&gt;900000 then crsalign←1 lsh 15;
+			k←j; while k≤brkptr[xy] do
+				begin brktab[xy,k]←brktab[xy,k+1]; k←k+1;
+				end;
+			brkptr[xy]←brkptr[xy]-1;
+			end
+		else if xy=0 and (brktab[0,j]-(xpenmin+xrastmin+1)) mod bitsperwd
+				≥ bitsperwd-6 then brktab[0,j]←brktab[0,j]+6;
+		j←j-1;
+		end;
+	end;
+aftptr←fntptr;
+for j←0 thru brkptr[0] do for k←0 thru brkptr[1] do
+	alfout(brktab[0,j], brktab[0,j+1]-1, brktab[1,k], brktab[1,k+1]-1);
+fntdir[charcode]←((crsalign+fntptr-aftptr) lsh 16) + 256 + 5*aftptr;
+fntdir[charcode+128]←tfmfix(charwd,true);
+end;
+
+ELSEC
+internal procedure clean;; internal procedure boundarize;; 
+internal procedure makealf;; 
+internal integer procedure crscode; return(0);
+ENDC
+internal procedure initout # get MFOUT started properly;
+begin integer i # runs from 1 to numberofmodes;
+maintitle←ofilname←null;
+for i←1 thru numberofmodes do ochan[i]←-1;
+for i←1 thru numberofmodes do bytecount[i]←0;
+ofilext[tfm]←&quot;.tfm&quot;; 
+IFVNT
+ofilext[vnt]←&quot;.vnt&quot;;
+ELSEC
+ofilext[xgpfnt]←&quot;.fnt&quot;; 
+ENDC
+comment for Rst files OfilExt gets a value in openOfil after mag is determined;
+IFDVI ofilext[proof]←&quot;.dvi&quot;; ENDDVI
+IFPRESS ofilext[proof]←&quot;.press&quot;; ENDPRESS
+IFXGP ofilext[proof]←&quot;.xgp&quot;; ENDXGP
+ofilext[alf]←&quot;.ant&quot;; ofilext[chrs]←&quot;.chr&quot;;
+IFDOVERMODES ofilext[doveroc]←&quot;.oc&quot;; ofilext[presswd]←&quot;.wd&quot;; ENDDOVERMODES
+IFC TENEX OR TOPS20 THENC octaltime←gtad; ENDC
+IFWAITS octaltime←call(0,&quot;ACCTIM&quot;); ENDWAITS
+timeofday←daytime;
+tptr←1; llink[0]←rlink[0]←0;
+offptr←0;
+IFPRESS
+cellsize←4; cellsh←2;
+rotated←false;
+IFTENEX
+comment Now allocate the Press output buffers from the high segment:;
+highsegalloc(dlbufptr,d0lenpages);
+highsegalloc(elbufptr,e0lenpages);
+highsegalloc(partdirbufptr,partdirlenpages);
+ELSEC
+dlbufptr←location(dlbuf[0]);
+elbufptr←location(elbuf[0]);
+partdirbufptr←location(partdirbuf[0]);
+ENDC
+ENDPRESS
+end;
+
+internal procedure charclear # initializes parameters for a new character;
+begin charwd←chardp←charht←charic←charwx←charwy←0.0; isvarchar←false;
+chardw←0; charcode←-1;
+brkptr[0]←brkptr[1]←0; brktab[0,0]←brktab[1,0]←1 lsh (bitsperwd-1);
+IFDOVERMODES bndboxvalid←false; ENDDOVERMODES
+end;
+
+internal procedure finishchar # outputs a finished character;
+begin if chardisplay then ddoutrast;
+if charcode≥0 and charcode&lt;'200 then
+	begin if xleft=infty then
+		begin comment blank character;
+		xleft←xright←rcol(0); yhigh←ylow←0;
+		end;
+	if chrmode then makechr;
+	if proofmode then makeproof;
+	if needchecksum then maketfm;
+IFVNT
+	if vntmode then makevnt;
+ELSEC
+	if fntmode then makefnt;
+ENDC
+	if rstmode then makerst;
+	IFDOVERMODES 
+	if ocmode then makeoc;
+	if wdmode then makewd;
+	ENDDOVERMODES 
+	if crsmode then 
+		begin
+		makealf;
+		if chardisplay then ddoutrast # show rast in case it changed;
+		end;
+	clearrast;
+	end
+else if xleft&lt;infty then
+	begin if proofmode then makeproof else
+		error(&quot;Image lost since charcode not specified&quot;);
+	clearrast;
+	end;
+llink[0]←0; tptr←1 # clear the symbol table;
+end;
+
+IFC TOPS20 OR TENEX THENC
+procedure binaryrelease(integer chan);
+	begin comment Make TENEX realize that file is 8-bit bytes;
+	integer fllen # file length;
+	integer array fdb[0:'24] # file descriptor block;
+	closf(chan);
+	gtfdb(chan, fdb);
+	fllen←fdb['12];
+	comment change byte size from 36 to 8;
+	chfdb(chan, '11, (2^6-1) lsh 24, 8 lsh 24);
+	comment and multiply EOF byte count by 4 to compensate;
+	chfdb(chan, '12, -1, 4*fllen);	
+	rljfn(chan);
+	end;
+ENDC
+IFWAITS
+procedure binaryrelease(integer chan);
+	release(chan);
+ENDWAITS
+
+internal procedure closeout # finishes off the output;
+begin
+if needchecksum then tfmout;
+if ochan[tfm]≥0 then
+	begin
+	binaryrelease(ochan[tfm]);
+	print(nextline,&quot;TEX font metrics written on &quot;,flname[tfm]);
+	end;
+if ochan[chrs]≥0 then
+	begin release(ochan[chrs]);
+	print(nextline,&quot;Characters for editing written on file &quot;,flname[chrs]);
+	end;
+if ochan[alf]≥0 then
+	begin integer i,nalfch; string nalfnam;
+	for i←0 thru '377 do out32(alfch,fntdir[i]);
+IFC ALPHATYPEMODE THENC
+	for i←0 thru fntptr-1 do
+		begin out32(alfch,xyoff[i]); out32(alfch,minmax[i]);
+		out32(alfch,byteref[i]); out32(alfch,0); out32(alfch,0);
+		end;
+ENDC
+	out32(alfch,checksum);
+	i←magnification*1000+.5;
+	out32(alfch,i);
+	out32(alfch,(1365 lsh 16)+2047);
+	out32(alfch,tfmfix(designsize,false));
+	out32(alfch,alfptr);
+ifc DVI and TOPS20 thenc
+	nalfnam←&quot;0000&quot;&amp;cvs(magnification*1000+.5);
+	nalfnam←nalfnam[inf-3 to inf];
+	nalfnam←jfns(alfch,('111000 lsh 18)+1)&amp;&quot;.&quot;&amp;nalfnam&amp;&quot;ANT&quot;;
+	closf(alfch);
+	nalfch←gtjfn(nalfnam,1);
+	i←rnamf(alfch,nalfch);
+	if not i then error(&quot;Couldn't rename ANT file to &quot;&amp;nalfnam);
+	binaryrelease(nalfch);
+	print(nextline,&quot;Images written on &quot;,nalfnam);
+elsec
+	binaryrelease(alfch);
+	print(nextline,&quot;Images written on &quot;,flname[alf]);
+endc
+	end;
+IFVNT
+if ochan[vnt]≥0 then begin integer nvntch, i; string nvntnam;
+	for i←0 thru 511 do out32(vntch,fntdir[i]);
+	out32(vntch,checksum);
+	i←magnification*1000+.5;
+	out32(vntch,i);
+	out32(vntch,tfmfix(designsize,false));
+	out32(vntch,fntptr);
+	out32(vntch,VNTID);
+ifc DVI and TOPS20 thenc
+	nvntnam←&quot;0000&quot;&amp;cvs(i←magnification*1000+.5);
+	nvntnam←nvntnam[inf-3 to inf];
+	nvntnam←jfns(vntch,('111000 lsh 18)+1)&amp;&quot;.&quot;&amp;nvntnam&amp;&quot;VNT&quot;;
+	closf(vntch);
+	nvntch←gtjfn(nvntnam,1);
+	i←rnamf(vntch,nvntch);
+	if not i then error(&quot;Couldn't rename VNT file to &quot;&amp;nvntnam);
+	release(nvntch);
+	print(nextline,&quot;Images written on &quot;,nvntnam);
+elsec
+	release(vntch);
+	print(nextline,&quot;Images written on &quot;,flname[vnt]);
+endc
+	end;
+ELSEC
+if ochan[xgpfnt]≥0 then
+	begin useto(ochan[xgpfnt],1) # reposition font file at its beginning;
+	fntdir['203]←fntdir['203]+1 # this seems to work;
+	fntdir['201]←fntdir['203]-fntdir['201] # max(rowsfromtop+datarowcount);
+	arryout(ochan[xgpfnt],fntdir[0],'400) # write the font directory;
+	binaryrelease(ochan[xgpfnt]);
+	print(nextline,&quot;Images written on &quot;,flname[xgpfnt]);
+	end;
+ENDC
+if ochan[rstfnt]≥0 then
+    begin integer i, j, chan;
+    chan← ochan[rstfnt]; 
+    if bytecount[rstfnt]≠0 then wordout(chan, nextword[rstfnt]);
+    useto(ochan[rstfnt],1) # reposition font file at beginning;
+    nextword[rstfnt]←bytecount[rstfnt]←0;
+    rastpreamble;
+    nextword[rstfnt]←bytecount[rstfnt]←0;
+    for i←0 step 4 until 127*4 do begin
+	for j←-24 step 8 until 0 do bout(rstfnt, rstdir[i  ] lsh j);
+	for j←-24 step 8 until 0 do bout(rstfnt, rstdir[i+1] lsh j);
+	for j←-24 step 8 until 0 do bout(rstfnt, rstdir[i+2] lsh j);
+	for j←-16 step 8 until 0 do bout(rstfnt, rstdir[i+3] lsh j);
+	end;
+    binaryrelease(ochan[rstfnt]);
+    print(nextline,&quot;Images written on &quot;,flname[rstfnt]);
+    end;
+IFDOVERMODES
+if ochan[doveroc]≥0 then
+	begin occloseout;
+	binaryrelease(ochan[doveroc]);
+	print(nextline,&quot;Images written on &quot;,flname[doveroc]);
+	end;
+if ochan[presswd]≥0 then
+	begin wdcloseout;
+	binaryrelease(ochan[presswd]);
+	print(nextline,&quot;PrePress-style widths written on &quot;,flname[presswd]);
+	end;
+ENDDOVERMODES
+if ochan[proof]≥0 then
+	begin 
+	IFDVI proofcloseout; binaryrelease(ochan[proof]); ENDDVI
+	IFPRESS proofcloseout; binaryrelease(ochan[proof]); ENDPRESS
+	IFXGP release(ochan[proof]); ENDXGP
+	print(nextline,&quot;Proof figures written on file &quot;,flname[proof]);
+	IFWAITS ptostr(0,
+		IFXGP &quot;r xgpsyn;&quot;&amp;flname[proof]&amp;&quot;/L&quot; ENDXGP
+		IFPRESS &quot;dover &quot;&amp;flname[proof]&amp;&quot;/q&quot; ENDPRESS
+		IFDVI &quot;&quot; ENDDVI
+		);
+	ENDWAITS
+	end;
+end;
+
+comment Stuff for extended memory;
+
+IFXMEM
+define bigsmap=false; comment only true when DEC fixes process smaping;
+
+internal integer indir # addressing '@INDIR' gets the raster item whose 
+		number is in register '15;
+internal integer xtemp # used with VAR!GETS!RAST when there's no place 
+		else to put it;
+internal integer xblte # extended-blt instruction;
+
+define fhslf='400000, pmrd='100000, pmwr='40000, pmcnt='400000,
+	smap='767, pmap='56, rpcap='150, epcap='151;
+
+procedure makesect(integer s); begin
+	start!code
+		movei 	1,0;
+		movsi 	2,fhslf;
+		add 	2,s; 	comment make new section;
+		movsi 	3,pmrd+pmwr+pmcnt;
+		hrri	3,1;	comment number of sections to be made;
+		jsys 	smap;
+		end;
+	end;
+
+procedure delsect(integer s); begin
+	start!code
+		movni 	1,1;
+		movsi 	2,fhslf;
+		add 	2,s; 	comment delete section;
+		movsi 	3,pmrd+pmwr+pmcnt;
+		hrri	3,1;	comment number of sections to be deleted;
+		jsys 	smap;
+		end;
+	end;
+
+procedure makesectone; begin
+	if bigsmap then begin
+		start!code comment smap section 0 to section 1;
+			movsi	1,fhslf;
+			move	2,1;
+			hrri	2,1;  comment make section 1;
+			movsi	3,pmrd+pmwr;
+			hrri	3,1;  comment one section to be mapped;
+			jsys	smap;
+			end;
+		end
+	else begin comment only smap with 0 in acc 1, never fhslf;
+		makesect(1);
+		start!code comment pmap pages 0-777 to 1000-1777;
+			movsi	1,fhslf;
+			move	2,1;
+			hrri	2,'1000;
+			movsi	3,pmrd+pmwr+pmcnt;
+			hrri	3,'1000;
+			jsys	pmap;
+			end
+		end
+	end;
+
+procedure delsectone; begin
+	if bigsmap then delsect(1)
+	else begin
+		start!code comment unmap pages 1000-1777;
+			movni	1,1;
+			movsi	2,fhslf;
+			hrri	2,'1000;
+			movsi	3,pmcnt;
+			hrri	3,'1000;
+			jsys	pmap;
+			end;
+		delsect(1);
+		end
+	end;
+
+integer numsections # number of 256Kword sections to use for raster;
+forward simple procedure cntrlc # the control-c handler;
+integer array cntrlcmess[0:30] # can't use strings during interrupts;
+integer array continuemess[0:30] # can't use strings during interrupts;
+
+internal procedure initxmem; begin integer i; string s;
+	start!code comment test for recently fixed sail bug;
+		movei 1,2;
+		move 2,access(1); comment specifically, this move should not
+					compile into MOVE 2,1;
+		movem 2,xtemp;
+		end;
+	if xtemp neq 1 then 
+		errorstop(&quot;Your SAIL compiler isn't up to date enough.&quot;);
+	
+	start!code comment Enable control-c interrupt handler;
+		movei	1,fhslf;
+		jsys	rpcap;
+		movsi	7,'400000;
+		ior	3,7;
+		jsys	epcap;
+		end;
+	psimap(1,cntrlc,0,1); enable(1); ati(1,3);
+	s←&quot;
+You are control-c'ing out of Metafont.  Do you want to be able to continue? &quot;;
+	i←-1;while s do begin cntrlcmess[i←i+1]←cvasc(s); s←s[6 to inf]; end;
+	s←&quot;Metafont continuing... &quot;;
+	i←-1;while s do begin continuemess[i←i+1]←cvasc(s); s←s[6 to inf]; end;
+	xblte←'020000000000;
+	indir←('150002 lsh 18) - rast0 # so @INDIR addresses RAST[R'15];
+	numsections←((rast1-rast0) lsh -18) + 1;
+	makesectone;
+	for i←2 step 1 until numsections+1 do makesect(i);
+	end;
+
+internal procedure closexmem; begin integer i;
+	delsectone;
+	for i←2 step 1 until numsections+1 do delsect(i);
+	end;
+
+simple procedure cntrlc; begin integer answer;
+	start!code movei 1,cntrlcmess[0]; psout; pbin; movem 1,answer; end;
+	if answer=&quot;y&quot; or answer=&quot;Y&quot; then begin
+		quick!code haltf end;
+		start!code movei 1,continuemess[0]; psout; end;
+		end
+	else begin integer i; label foo;
+		delsectone; for i←2 step 1 until numsections+1 do delsect(i);
+		foo: quick!code haltf end; 
+		print(&quot;Can't continue this Metafont anymore.&quot;); go to foo; end;
+	end;
+		
+ENDXMEM
+
+end
+
+
+</PRE>
+</BODY>
+</HTML>

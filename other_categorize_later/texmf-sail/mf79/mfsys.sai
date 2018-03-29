@@ -1,0 +1,365 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00008 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00002 00002	begin &quot;mf&quot; comment The METAFONT processor.
+C00006 00003	Error handling procedures: quit,error,backerror,overflow,confusion
+C00011 00004	Dynamic memory allocation: links,memsize,vmemsize,mem,vmem,memreal,vmemint
+C00014 00005	Partial field macros: field,ufield,link,info,setfield...setinfo
+C00018 00006	Memory allocation: getavail, getvavail, freeavail, dslist
+C00021 00007	Memory, continued: checkmem, searchmem
+C00026 00008	Getting the whole thing started properly
+C00029 ENDMK
+Cⓧ;
+begin &quot;mf&quot; comment The METAFONT processor.
+
+This processor is in four parts:
+
+1. The present module contains routines for memory management,
+	initialization, and external control (getting things
+	started and stopped gracefully).
+2. The MFNTRP module, compiled separately, contains routines 
+	for scanning and interpreting the input.
+3. The MFRAST module, compiled separately, contains routines
+	for raster manipulations (drawing characters).
+4. The MFOUT module, compiled separately, contains routines
+	for outputting the characters to font files.
+	(Substitution of a different MFOUT module will prepare fonts
+	for different sets of devices.)
+
+There is an independently running program MFPRE that does the preprocessing
+necessary to compute the initial state of METAFONT's hash table and dynamic memory.
+
+There is also a MFHDR file that contains all the declarations of
+variables used by more than one module.
+
+It is wise to look at the first page of MFHDR before reading the
+following code, since MFHDR introduces a few abbreviations that are
+used throughout the METAFONT programs.
+
+Historical notes: A prototype version of METAFONT, containing the raster
+manipulation routines only (so that all characters were drawn via explicit
+subroutine calls) was developed by D. E. Knuth in the summer of 1977 and used
+to design approximately 400 characters during the fall and winter of 1977/1978. This
+experience led to the design of the METAFONT language, and a complete METAFONT
+system took shape in the latter part of 1978. The present code is the original
+December 1978 version with certain changes logged in file DEBUG.LOG;
+
+require &quot;MFHDR.SAI&quot; source_file;
+require &quot;MFNTRP.REL&quot; load_module;
+require &quot;MFRAST.REL&quot; load_module;
+require IFPARC &quot;MFPRS.REL&quot; elsec &quot;MFOUT.REL&quot; ENDPARC load_module;
+
+comment To compile METAFONT with the BAIL debugger, make sure that DEBUGONLY
+is defined to be ⊂⊃ in MFHDR, then do &quot;com mtntrp(27b,)&quot; and
+&quot;com mfrast(27b,)&quot; and &quot;com mfout(27b,)&quot; and finally &quot;try mfpre/nosai&quot;,
+&quot;try mfsys/nosai&quot;.
+To compile METAFONT without BAIL, make sure that DEBUGONLY is defined to be
+⊂comment⊃ in MFHDR, then do &quot;com mfntrp,mfrast,mfout&quot; and &quot;ex mfpre/nosai&quot;,
+&quot;ex mfsys/nosai&quot;;
+comment Error handling procedures: quit,error,backerror,overflow,confusion;
+
+label end_of_MF,final_end;
+internal procedure quit # closes output files and terminates METAFONT;
+begin integer c;
+DEBUGONLY print(nextline,&quot;Quitting. Do you want a chance to see the memory?&quot;);
+DEBUGONLY c←inchrw;
+DEBUGONLY if c=&quot;y&quot; then bail;
+go to end_of_MF;
+end;
+
+internal boolean pausing_on_errors # should METAFONT wait after error messages?;
+internal boolean deletions_allowed # is it safe for error routine to call getnext?;
+
+internal procedure error(string s) # prints an error message;
+begin comment The string s explains the type of error. This is displayed to the
+user and then the current source code position is indicated;
+print(nextline,&quot;! &quot;,s,&quot;.&quot;);
+dumpcontext # prints indication of where the scanner is now;
+if pausing_on_errors then
+  loop	begin integer c;
+	print(&quot;^&quot;) # prompt the user;
+	clrbuf # if user was typing ahead, clear the system buffer;
+	c←inchrw # wait for user to type a character;
+	setprint(null,&quot;F&quot;); print(c&amp;null); setprint(null,&quot;B&quot;) # echo on ERRORS.TMP;
+	IFSUAI if c='15 then begin c←inchrw # ignore the line-feed; return end; ENDSUAI
+	IFTENEX if c='37 then return; ENDTENEX
+	if c='12 then begin pausing_on_errors←false; return end;
+	if c&gt;'140 then c←c-'40 # change lower case to upper case;
+	IFSUAI if curfile and (c=&quot;E&quot; or c=&quot;T&quot;) then
+		begin comment abort and enter the system editor;
+		setprint(null,&quot;N&quot;) # close the errors file;
+		edfile(curfile,curfline,curfpage);
+		end; ENDSUAI
+	if c=&quot;I&quot; then
+		begin pushinput;
+		print(nextline,&quot;*&quot;); inbuf←inchwl # wait for user to type a line;
+		setprint(null,&quot;F&quot;); print(inbuf&amp;'15); setprint(null,&quot;B&quot;) # echo it;
+		curbuf←inbuf; filename←null; loc←recovery←0;
+		return;
+		end;
+	if c≥&quot;1&quot; and c≤&quot;9&quot; and deletions_allowed then
+		begin integer i; i←c-&quot;0&quot;;
+		while i&gt;0 do
+			begin getnext # recursive call shouldn't happen;
+			i←i-1;
+			end;
+		dumpcontext # print new scanner status;
+		continue;
+		end;
+	DEBUGONLY if c=&quot;B&quot; then
+	DEBUGONLY	begin bail;
+	DEBUGONLY	return;
+	DEBUGONLY	end;
+	if c=&quot;X&quot; then
+		begin print(nextline,&quot;Type x again to exit:&quot;);
+		clrbuf; c←inchrw;
+		if c=&quot;x&quot; or c=&quot;X&quot; then go to end_of_MF;
+		end;
+	print(nextline,&quot;Type &lt;cr&gt; to continue, &lt;lf&gt; to flash error messages,&quot;);
+	if deletions_allowed then print(nextline,
+		&quot;	1 or ... or 9 to ignore the next 1 to 9 tokens of input,&quot;);
+	print(nextline,&quot;	i or I to insert something,&quot;);
+	IFSUAI if curfile then print(&quot; e or E to edit,&quot;); ENDSUAI
+	print(&quot; x or X to quit.&quot;,nextline);
+	end;
+end;
+
+internal procedure errorstop(string s) # prints message and dies;
+begin pausing_on_errors←false;
+error(s);
+quit;
+end;
+
+internal procedure reportoverflow(string s; integer n)
+	# for fatal errors when a METAFONT table is undersized;
+errorstop(&quot;METAFONT capacity exceeded, sorry [&quot;&amp;s&amp;&quot;=&quot;&amp;cvs(n)&amp;&quot;]&quot;);
+
+internaldef overflow(s)=⊂reportoverflow(&quot;s&quot;,s)⊃ # specifies inadequate table size;
+internal procedure memoverflow; overflow(memsize);
+internal procedure vmemoverflow; overflow(vmemsize);
+
+internal procedure confusion # METAFONT consistency check failure;
+errorstop(&quot;This can't happen&quot;);
+comment Dynamic memory allocation: links,memsize,vmemsize,mem,vmem,memreal,vmemint;
+
+comment METAFONT does nearly all of its own memory allocation, so that it can
+readily be transported into environments that do not have automatic
+facilities for strings, garbage collection, etc. The dynamic storage
+requirements of METAFONT are handled by providing a large integer array &quot;mem&quot; 
+and a smaller real array &quot;vmem&quot;. Pointer variables are indices into these arrays.
+When a pointer value p is less than vmemsize, it essentially is pointing to a
+two-word node (mem[p], vmem[p]). When p is ≥ vmemsize, it essentially points to
+the one-word node mem[p].
+
+Separate available-space lists are maintained for two-word nodes and one-word
+nodes. In an emergency, a two-word node will be temporarily assigned to one-word
+duty.
+;
+internaldef links = 13 # number of bits per pointer;
+internaldef memsize=5000 # size of dynamic list memory, must be ≤ 2^links;
+internaldef vmemsize=2500 # size of two-word list memory, must be &lt;&lt; memsize;
+comment MFHDR contains the true values of these volatile parameters;
+
+comment saf integer array mem[0:memsize-1] # dynamic list memory;
+comment saf real array vmem[0:vmemsize-1] # two-word list memory;
+comment mem and vmem have been made internal to MFNTRP, for the sake of more
+efficient code;
+
+internaldef memreal(p)=⊂memory[location(mem[p]),real]⊃ # mem[p] as type real;
+internaldef vmemint(p)=⊂memory[location(vmem[p]),integer]⊃ # vmem[p] as integer;
+
+DEBUGONLY internal integer oneused,twoused # how much memory is in use;
+comment Partial field macros: field,ufield,link,info,setfield...setinfo;
+
+comment The following macros are for accessing and modifying partial fields
+of packed words. If f is a field name, then fs denotes its size in bits
+and fd denotes its displacement from the right of the word. These sizes and
+displacements are defined at compile time--e.g.,&quot;links&quot; for size of link fields.
+In the following definitions, x denotes the word being modified and y denotes
+a new value to be inserted into the specified field (it must not be too
+large for the field). The definitions look inefficient, but they take
+advantage of the fact that SAIL does a lot of local optimization;
+
+
+internaldef fs(f) = ⊂f⊃&amp;&quot;s&quot; # field size of f, in bits;
+internaldef fd(f) = ⊂f⊃&amp;&quot;d&quot; # field displacement of f, in bits;
+
+internaldef field(f,x) = ⊂ifc fd(f)=0 thenc ((x) land (2^fs(f)-1))
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc ((x) lsh -fd(f))
+	elsec (((x) lsh -fd(f)) land (2^fs(f)-1)) endc endc⊃ # field f of x;
+
+internaldef setfield(f,x,y) = ⊂ifc fd(f)=0 thenc x←(x land(-2^fs(f)))+(y)
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc 
+		x←((x lsh(bitsperwd-fd(f)))+(y))rot fd(f)
+	elsec x←(((x rot -fd(f))land(-2^fs(f)))+(y))rot fd(f) endc endc⊃
+		# sets field f of x equal to y, 0 ≤ y &lt; 2^fs(f);
+
+comment Sometimes an unshifted field is desired. For this purpose, we use
+ufield instead of field, and deal with values times 2^fd;
+
+internaldef ufield(f,x) = ⊂((x) land((1 lsh(fs(f)+fd(f)))-2^fd(f)))⊃
+		# unshifted field f of x;
+internaldef setufield(f,x,y) = ⊂x←(x land lnot((1 lsh(fs(f)+fd(f)))-2^fd(f)))+(y)⊃
+		# field f of x set to unshifted value y;
+
+comment The special case of a pointer field at the right of a word is
+most common, so there are special conventions for it. When p is a pointer,
+we write link(p) for the pointer field of mem[p] and info(p) for the
+(shifted) remaining fields of the word;
+
+internaldef linkd = 0 # displacement of link field;
+internaldef link(p) = ⊂field(link,mem[p])⊃ # link field of mem[p];
+internaldef setlink(p,y) = ⊂setfield(link,mem[p],y)⊃ # sets link(p)←y;
+internaldef infod = links, infos = bitsperwd-infod # definition of info field;
+internaldef info(p) = ⊂field(info,mem[p])⊃ # info field of mem[p];
+internaldef setinfo(p,y) = ⊂setfield(info,mem[p],y)⊃ # sets info(p)←y;
+
+DEBUGONLY integer procedure lk(integer x);
+DEBUGONLY return(x land(2^links-1)) # link field of packed word;
+DEBUGONLY integer procedure fo(integer x);
+DEBUGONLY return(x lsh -infod) # info field of packed word;
+comment Memory allocation: getavail, getvavail, freeavail, dslist;
+
+comment	The dynamic memory is accessed via three simple macros:
+	getavail(p) makes p point to a new one-word node,
+	gettavail(p) makes p point to a new two-word node,
+	freeavail(p) returns node p to storage.
+;
+internal integer avail # head of available space list for one-word nodes;
+internal integer vavail # head of available space list for two-word nodes;
+internaldef getavail(p) = ⊂begin if(p←avail)then
+	begin avail←mem[avail]: DEBUGONLY oneused←oneused+1: end
+	else if(p←vavail)then
+	begin vavail←mem[vavail]: DEBUGONLY twoused←twoused+1: end
+	else memoverflow: end⊃ # p ← new one-word node;
+internaldef getvavail(p) = ⊂begin if(p←vavail)then vavail←mem[vavail]
+	else vmemoverflow: DEBUGONLY twoused←twoused+1: end⊃ # p ← new two-wd node;
+internaldef freeavail(p) = ⊂if p&lt;vmemsize then
+	begin mem[p]←vavail: vavail←p: DEBUGONLY twoused←twoused-1: end
+	else begin mem[p]←avail: avail←p: DEBUGONLY oneused←oneused-1: end⊃
+		# node p now available;
+
+comment The following procedure can be used to free up an entire linked list;
+internal procedure dslist(integer p) # makes list of nodes available;
+begin integer q # pointer to node following node p;
+while p do
+	begin q←link(p); freeavail(p); p←q;
+	end;
+end;
+comment Memory, continued: checkmem, searchmem;
+
+comment There are also two procedures that may come in handy when diagnosing
+mysterious errors;
+
+DEBUGONLY integer array free[0:memsize-1];
+DEBUGONLY internal procedure checkmem(boolean printlocs) # checks links in mem;
+DEBUGONLY begin comment This procedure checks the format of the available space
+DEBUGONLY lists and (if printlocs is true) prints those locations of mem that were
+DEBUGONLY free the last time this procedure was called but reserved now.
+DEBUGONLY All nodes should be returned to the avail lists when METAFONT is done with
+DEBUGONLY them, and checkmem can be used to check if this has been done correctly;
+DEBUGONLY integer p,i;
+DEBUGONLY p←avail;
+DEBUGONLY while p do
+DEBUGONLY 	begin if (mem[p]≥memsize) or (free[p] land 1) or
+DEBUGONLY		(mem[p]≠0 and mem[p]&lt;vmemsize) then
+DEBUGONLY 		begin print(nextline,&quot;avail list clobbered at &quot;,p);
+DEBUGONLY		bail;
+DEBUGONLY		done;
+DEBUGONLY 		end;
+DEBUGONLY 	free[p]←free[p] lor 1;
+DEBUGONLY 	p←mem[p];
+DEBUGONLY 	end;
+DEBUGONLY p←vavail;
+DEBUGONLY while p do
+DEBUGONLY 	begin if (mem[p]≥vmemsize) or (free[p] land 1) or (mem[p]&lt;0) then
+DEBUGONLY 		begin print(nextline,&quot;vavail list clobbered at &quot;,p);
+DEBUGONLY		bail;
+DEBUGONLY		done;
+DEBUGONLY 		end;
+DEBUGONLY 	free[p]←free[p] lor 1;
+DEBUGONLY 	p←mem[p];
+DEBUGONLY 	end;
+DEBUGONLY if printlocs then print(nextline,&quot;New busy locs: &quot;);
+DEBUGONLY for i←0 thru memsize-1 do
+DEBUGONLY 	begin if free[i] land 3 = 2 and printlocs then print(i,&quot; &quot;);
+DEBUGONLY 	free[i]←free[i] lsh 1;
+DEBUGONLY 	end;
+DEBUGONLY end;
+
+DEBUGONLY procedure searchmem(integer p) # finds pointers to p;
+DEBUGONLY begin integer i;
+DEBUGONLY for i←0 thru memsize-1 do
+DEBUGONLY 	begin if link(i)=p then print(nextline,&quot;link(&quot;,i,&quot;)&quot;);
+DEBUGONLY 	if name(i)=p then print(nextline,&quot;name(&quot;,i,&quot;)&quot;);
+DEBUGONLY 	end;
+DEBUGONLY for i←0 thru vmemsize-1 do
+DEBUGONLY	begin
+DEBUGONLY 	if field(link,vmemint(i))=p then print(nextline,&quot;vlink(&quot;,i,&quot;)&quot;);
+DEBUGONLY	if field(info,vmemint(i))=p then print(nextline,&quot;vinfo(&quot;,i,&quot;)&quot;);
+DEBUGONLY 	end;
+DEBUGONLY for i←0 thru hashsize-1 do if hashh[i]=p then
+DEBUGONLY	print(nextline,&quot;link in hash[&quot;,i,&quot;]&quot;);
+DEBUGONLY end;
+
+comment A few words of the memory are dedicated to fixed usage. Location mem[0]
+is used during elementary list manipulations, and location wvar (the one-word
+node) is the list head for w-variables;
+internaldef wvar = memsize-1 # head of list for w-variables;
+internaldef depvar = wvar-1 # head of list for dependent variables;
+internaldef temphead = depvar-1 # temporary list head for created lists;
+internaldef main = ⊂1⊃ # area header for main program;
+internaldef firstvmem = 2, lastmem = temphead-1 # nodes not specially dedicated;
+comment Getting the whole thing started properly;
+
+preload_with true; safe boolean array notalreadyinitialized[0:0];
+
+comment The declarations have now ended, METAFONT starts here after being loaded;
+if notalreadyinitialized[0] then
+	begin integer chan;
+	notalreadyinitialized[0]←false;
+	open(chan←getchan,&quot;DSK&quot;,'10,2,0,0,0,eof);
+	lookup(chan,&quot;MFINI.TBL&quot;, eof);
+	if eof or wordin(chan)≠hashsize or wordin(chan)≠vmemsize
+		or wordin(chan)≠memsize then
+		begin print(&quot;MFINI.TBL is clobbered!&quot;);
+		go to final_end;
+		comment If this error happens, execute MFPRE to recreate the file;
+		end;
+	hptr←wordin(chan);
+	arryin(chan,hashh[0],hashsize);
+	arryin(chan,hname[0],hptr);
+	arryin(chan,mem[0],memsize);
+	arryin(chan,vmem[0],vmemsize);
+	avail←wordin(chan);
+	vavail←wordin(chan);
+	release(chan);
+	DEBUGONLY oneused←twoused←0;
+	pausing_on_errors←true; deletions_allowed←true;
+	arrclr(rast); xleft←ylow←infty; xright←yhigh←-infty # clear the raster;
+
+	outstr(&quot;OK, METAFONT's tables have been initialized. &quot;&amp;
+		&quot;Please SAVE the core image.&quot;);
+	IFSUAI ptostr(0,&quot;SAVE mf&quot;) # this is what the user probably wants to do next; ENDSUAI
+go to final_end;
+	end;
+setformat(0,4) # controls format of cvf in diagnostic routine &quot;dumplist&quot;;
+setprint(&quot;errors.tmp&quot;,&quot;B&quot;) # printing goes to file as well as terminal;
+IFPARC print(nextline,&quot;PARC METAFONT 2.2 of September 13, 1979  &quot;,nextline); ENDPARC
+initin # initialize the input system;
+initout # initialize the output system;
+maincontrol # transfer power to the chief executive;
+
+end_of_MF: closeout # close output files of MFOUT;
+setprint(&quot;errors.tmp&quot;,&quot;N&quot;) # close print output file;
+final_end: end &quot;mf&quot;
+
+</PRE>
+</BODY>
+</HTML>

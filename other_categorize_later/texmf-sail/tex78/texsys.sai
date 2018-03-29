@@ -1,0 +1,419 @@
+require 1200 system_pdl;
+require &quot;TEXSYN.REL&quot; load_module;
+require &quot;TEXSEM.REL&quot; load_module;
+require &quot;TEXOUT.REL&quot; load_module;
+require &quot;TEXEXT.REL&quot; load_module;
+require &quot;TEXHDR.SAI&quot; source_file;
+
+comment To compile TEX with the BAIL debugger, make sure that DEBUGONLY
+is defined to be ⊂⊃ in TEXHDR, then do &quot;com texsyn(27b,)&quot; and
+&quot;com texsem(27b,)&quot; and &quot;com texout(27b,)&quot; and &quot;com texext(27b,)&quot; and
+&quot;try texpre/nosai&quot; and finally &quot;try texsys/nosai&quot;.
+To compile TEX without BAIL, make sure that DEBUGONLY is defined to be
+⊂comment⊃ in TEXHDR, then do &quot;com texsyn&quot;...&quot;com texext&quot; and &quot;ex texpre/nosai&quot; and
+&quot;ex texsys/nosai&quot;;
+comment Error handling procedures: quit,error,backerror,overflow,confusion;
+
+label end_of_TEX,final_end;
+internal procedure quit # closes output files and terminates TEX;
+begin integer c;
+DEBUGONLY print(nextline,&quot;Quitting. Do you want a chance to see the memory?&quot;);
+DEBUGONLY c←inchrw;
+DEBUGONLY if c=&quot;y&quot; then bail;
+go to end_of_TEX;
+end;
+
+internal boolean pausing_on_errors # should TEX wait after error messages?;
+internal boolean deletions_allowed # is it safe for error routine to call getnext?;
+
+internal procedure error(string s) # prints an error message;
+begin comment String s explains the type of error. This is displayed to the
+user and then the current source code position is indicated;
+print(nextline,&quot;! &quot;,s,&quot;.&quot;);
+dumpcontext # prints indication of where the scanner is now;
+if pausing_on_errors then while true do
+	begin integer c;
+	print(&quot;^&quot;); c←inchrw # wait for user to type a character;
+	setprint(null,&quot;F&quot;); print(c&amp;null); setprint(null,&quot;B&quot;) # echo on ERRORS.TMP;
+	if c='15 then begin c←inchrw # ignore the line-feed; return end;
+	if c='12 then begin pausing_on_errors←false; return end;
+	if c&gt;'140 then c←c-'40 # change lower case to upper case;
+	if c=&quot;E&quot; or c=&quot;T&quot; then
+		begin comment abort and enter the system editor;
+		if curfile then
+			begin setprint(null,&quot;N&quot;) # close the errors file;
+			edfile(curfile,curfline,curfpage);
+			end
+		else	begin print(&quot; (sorry, there's no current file)&quot;); quit;
+			end;
+		end;
+	if c=&quot;I&quot; then
+		begin pushinput;
+		print(nextline,&quot;*&quot;); inbuf←inchwl # wait for user to type a line;
+		setprint(null,&quot;F&quot;); print(inbuf&amp;'15); setprint(null,&quot;B&quot;) # echo it;
+		curbuf←inbuf; state←midline; filename←null;
+		return;
+		end;
+	if c=&quot;X&quot; then go to end_of_TEX;
+	if c≥&quot;1&quot; and c≤&quot;9&quot; and deletions_allowed then
+		begin integer i; i←c-&quot;0&quot;;
+		while i&gt;0 do
+			begin getnext # recursive call shouldn't happen;
+			i←i-1;
+			end;
+		dumpcontext # print new scanner status;
+		continue;
+		end;
+	DEBUGONLY if c=&quot;B&quot; then
+	DEBUGONLY	begin bail;
+	DEBUGONLY	return;
+	DEBUGONLY	end;
+	print(nextline,&quot;Type &lt;cr&gt; to continue, &lt;lf&gt; to flash error messages,&quot;);
+	if deletions_allowed then print(nextline,
+		&quot;	1 or ... or 9 to ignore the next 1 to 9 tokens of input,&quot;);
+	print(nextline,&quot;	i or I to insert something, e or E to edit,&quot;,
+	&quot; x or X to quit.&quot;,nextline);
+	end;
+end;
+
+internal procedure backerror(string s) # error preceded by backinput;
+begin backinput;
+error(s);
+end;
+
+procedure errorstop(string s) # prints message and dies;
+begin pausing_on_errors←false;
+error(s);
+quit;
+end;
+
+internal procedure reportoverflow(string s; integer n)
+	# for fatal errors when a TEX table is undersized;
+errorstop(&quot;TEX capacity exceeded, sorry [&quot;&amp;s&amp;&quot;=&quot;&amp;cvs(n)&amp;&quot;]&quot;);
+
+internaldef overflow(s)=⊂reportoverflow(&quot;s&quot;,s)⊃ # specifies inadequate table size;
+internal procedure memoverflow; overflow(memsize);
+
+internal procedure confusion # TEX consistency check failure;
+errorstop(&quot;This can't happen&quot;);
+
+internal procedure mustquit # user input is really wild;
+errorstop(&quot;All mixed up, can't continue&quot;);
+comment Dynamic memory allocation: links, memsize, varsize, mem, memreal;
+
+internaldef links = 14 # number of bits per pointer;
+internaldef memsize=8000 # size of dynamic list memory, must be ≤ 2^links;
+internaldef varsize=2500 # size of variable node memory, must be &lt;&lt; memsize;
+comment TEXHDR contains the true values of these volatile parameters;
+
+comment saf integer array mem[0:memsize-1] # dynamic list memory;
+comment mem has been made internal to TEXSEM, for the sake of more efficient code;
+internaldef memreal(p)=⊂memory[location(mem[p]),real]⊃ # mem[p] as type real;
+
+DEBUGONLY internal integer dynused,varused # how much memory is in use;
+comment Partial field macros: field,ufield,link,info,setfield...setinfo;
+
+internaldef fs(f) = ⊂f⊃&amp;&quot;s&quot; # field size of f, in bits;
+internaldef fd(f) = ⊂f⊃&amp;&quot;d&quot; # field displacement of f, in bits;
+
+internaldef field(f,x) = ⊂ifc fd(f)=0 thenc ((x) land (2^fs(f)-1))
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc ((x) lsh -fd(f))
+	elsec (((x) lsh -fd(f)) land (2^fs(f)-1)) endc endc⊃ # field f of x;
+
+internaldef setfield(f,x,y) = ⊂ifc fd(f)=0 thenc x←(x land(-2^fs(f)))+(y)
+	elsec ifc fs(f)+fd(f)≥bitsperwd thenc
+		x←((x lsh(bitsperwd-fd(f)))+(y))rot fd(f)
+	elsec x←(((x rot -fd(f))land(-2^fs(f)))+(y))rot fd(f) endc endc⊃
+		# sets field f of x equal to y, 0 ≤ y &lt; 2^fs(f);
+
+comment Sometimes an unshifted field is desired. For this purpose, we use
+ufield instead of field, and deal with values times 2^fd;
+
+internaldef ufield(f,x) = ⊂((x) land((1 lsh(fs(f)+fd(f)))-2^fd(f)))⊃
+		# unshifted field f of x;
+internaldef setufield(f,x,y) = ⊂x←(x land lnot((1 lsh(fs(f)+fd(f)))-2^fd(f)))+(y)⊃
+		# field f of x set to unshifted value y;
+
+comment The special case of a pointer field at the right of a word is
+most common, so there are special conventions for it. When p is a pointer,
+we write link(p) for the pointer field of mem[p] and info(p) for the
+(shifted) remaining fields of the word;
+
+internaldef linkd = 0 # displacement of link field;
+internaldef link(p) = ⊂field(link,mem[p])⊃ # link field of mem[p];
+internaldef setlink(p,y) = ⊂setfield(link,mem[p],y)⊃ # sets link(p)←y;
+internaldef infod = links, infos = bitsperwd-infod # definition of info field;
+internaldef info(p) = ⊂field(info,mem[p])⊃ # info field of mem[p];
+internaldef setinfo(p,y) = ⊂setfield(info,mem[p],y)⊃ # sets info(p)←y;
+
+DEBUGONLY integer procedure lk(integer x);
+DEBUGONLY return(x land(2^links-1)) # link field of packed word;
+DEBUGONLY integer procedure fo(integer x);
+DEBUGONLY return(x lsh -infod) # info field of packed word;
+comment Memory allocation procedures: getavail, freeavail, getnode, freenode;
+
+comment	getavail(p) makes p point to a new one-word node,
+	freeavail(p) returns it to storage.
+	p←getnode(s) makes p point to a new s-word node and clears mem[p] to zero,
+	freenode(p,s) will return this node to storage.
+;
+internal integer avail # head of available space list for one-word nodes;
+internaldef getavail(p) = ⊂begin if(p←avail)then avail←mem[avail]
+	else memoverflow: DEBUGONLY dynused←dynused+1: end⊃ # p ← new node;
+internaldef freeavail(p) = ⊂begin mem[p]←avail: avail←p:
+	DEBUGONLY dynused←dynused-1: end⊃ # node p now available;
+
+comment The available space list for variable-size nodes is a nonempty,
+doubly-linked circular list, pointed to by the roving pointer &quot;rover&quot;.
+The second word of each entry contains the size (which is always ≥2), while
+the first word contains the llink and rlink and a minus sign;
+
+integer rover # pointer into double-avail list;
+define nodesize(p) = ⊂mem[p+1]⊃;
+define llinks = links, llinkd = infod # definition of llink field;
+
+internal integer procedure getnode(integer size) # variable-size node allocation;
+begin comment returns a pointer to a new node of the specified size,
+which must be 2 or more. All words of the new node are set to zero;
+integer p,q,s,t,u;
+label ovfl, found;
+comment The following tricky code does
+	llink(rlink(p))←llink(p), rlink(llink(p))←rlink(p);
+define removenode(p)=
+	⊂begin if p=rover then
+		begin rover←link(p);
+		if p=rover then go to ovfl # list musn't become empty;
+		end;
+	u←((p lsh llinkd) + p) xor mem[p] # bits to change;
+	t←field(llink,mem[p]) # llink(p);
+	mem[t]←field(link,u) xor mem[t];
+	t←link(p) # rlink(p);
+	mem[t]←ufield(llink,u) xor mem[t];
+	end⊃;
+p←rover;
+do	begin q←p+nodesize(p) # q points past the end of node(p);
+	while mem[q]&lt;0 do
+		begin comment merge with the next node, if it is free too;
+		removenode(q); q←q+nodesize(q);
+		end;
+	if (s←q-p) ≥ size+2 then
+		begin q←q-size # allocate from top end;
+		nodesize(p)←q-p # remaining free area size;
+		rover ← p # let rover rove around;
+		go to found;
+		end;
+	if s = size then
+		begin removenode(p) # exact fit, now t = rlink(p);
+		rover ← t # let rover rove;
+		q ← p; go to found;
+		end;
+	nodesize(p)←s # reset the node size in case it grew;
+	p←link(p);
+	end until p=rover # repeat until whole list traversed;
+ovfl: overflow(varsize) # no large enough space was found;
+found: for p ← q thru q+size-1 do mem[p]←0 # clear out the node found;
+DEBUGONLY varused←varused+size;
+return(q) # deliver the goods;
+end;
+
+internal procedure freenode(integer p,size) # variable-size node liberation;
+begin comment The node of length &quot;size&quot; starting at mem[p] is made available
+to the variable-node storage pool, by inserting it into the double-avail
+list just before where rover now points. We must have size ≥ 2;
+integer q;
+q←field(llink,mem[rover]) # llink(rover);
+setlink(q,p); setfield(llink,mem[rover],p);
+mem[p]←(q lsh llinkd)+rover+(1 lsh(bitsperwd-1)) # now p is linked into the circle;
+DEBUGONLY varused←varused-size;
+nodesize(p)←size;
+end;
+comment Memory, continued: dslist,delrclink,delgluelink,checkmem,initmem;
+
+internal procedure dslist(integer p) # makes list of 1-word nodes available;
+begin comment The linked list of single-word nodes pointed to by p is freed;
+integer q;
+while p do
+	begin q←link(p); freeavail(p); p←q;
+	end;
+end;
+
+internaldef refct1 = 1 lsh infod # 1 in the information (reference count) field;
+
+internal simple procedure delrclink(integer p) # remove ptr to list with ref ct;
+begin comment info(p) is a reference count which is to be decreased by 1.
+If the result is negative, the linked list of single-word nodes pointed to by p
+is freed;
+if(mem[p]←mem[p]-refct1)&lt;0 then dslist(p);
+end;
+
+internal simple procedure delgluelink(integer p) # remove pointer to glue node;
+begin comment info(p) is a reference count which is to be decreased by 1.
+If the result is negative, node(p) (which has &quot;gluespecsize&quot; words) is freed;
+if(mem[p]←mem[p]-refct1)&lt;0 then freenode(p,gluespecsize);
+comment In this case it's OK to let the first word of the node go negative;
+end;
+
+DEBUGONLY integer array free[0:memsize-1];
+DEBUGONLY internal procedure checkmem(boolean printlocs) # checks links in mem;
+DEBUGONLY begin comment This procedure checks the format of the available space
+DEBUGONLY lists and (if printlocs is true) prints those locations of mem that were
+DEBUGONLY free the last time this procedure was called but reserved now.
+DEBUGONLY All nodes should be returned to the avail lists when TEX is done with
+DEBUGONLY them, and checkmem can be used to check if this has been done correctly;
+DEBUGONLY integer p,i;
+DEBUGONLY label checksign;
+DEBUGONLY p←avail;
+DEBUGONLY while p do
+DEBUGONLY 	begin if (free[p] land 1) or mem[p]≥memsize or
+DEBUGONLY		(mem[p]≠0 and mem[p]≤varsize) then
+DEBUGONLY 		begin print(nextline,&quot;avail list clobbered at &quot;,p);
+DEBUGONLY		bail;
+DEBUGONLY		done;
+DEBUGONLY 		end;
+DEBUGONLY 	free[p]←free[p] lor 1;
+DEBUGONLY 	p←mem[p];
+DEBUGONLY 	end;
+DEBUGONLY p←rover;
+DEBUGONLY do	begin
+DEBUGONLY 	if p≥varsize or p≤0 or mem[p]≥0 or p+nodesize(p)&gt;varsize or
+DEBUGONLY 	nodesize(p)&lt;2 or field(llink,mem[link(p)])≠p then
+DEBUGONLY 		begin print(nextline,&quot;double-avail list clobbered at &quot;,p);
+DEBUGONLY		bail;
+DEBUGONLY		done;
+DEBUGONLY 		end;
+DEBUGONLY 	for i←p thru p+nodesize(p)-1 do
+DEBUGONLY 		begin if free[i] land 1 then
+DEBUGONLY 			begin print(nextline,&quot;doubly free location at &quot;,i);
+DEBUGONLY 			bail;
+DEBUGONLY			go to checksign;
+DEBUGONLY 			end;
+DEBUGONLY 		free[i]←free[i] lor 1;
+DEBUGONLY 		end;
+DEBUGONLY 	p←link(p);
+DEBUGONLY 	end until p=rover;
+DEBUGONLY checksign: i←0;
+DEBUGONLY	while i&lt; varsize do
+DEBUGONLY	begin if mem[i]&lt;0 then
+DEBUGONLY		begin print(nextline,&quot;node &quot;,i,&quot;starts negative&quot;);
+DEBUGONLY		bail;
+DEBUGONLY		end;
+DEBUGONLY	while i&lt;varsize and (free[i] land 1)=0 do i←i+1;
+DEBUGONLY	while i&lt;varsize and (free[i] land 1)≠0 do i←i+1;
+DEBUGONLY	end;
+DEBUGONLY if printlocs then print(nextline,&quot;New busy locs: &quot;);
+DEBUGONLY for i←0 thru memsize-1 do
+DEBUGONLY 	begin if free[i] land 3 = 2 and printlocs then print(i,&quot; &quot;);
+DEBUGONLY 	free[i]←free[i] lsh 1;
+DEBUGONLY 	end;
+DEBUGONLY end;
+
+DEBUGONLY procedure searchmem(integer p) # finds pointers to p;
+DEBUGONLY begin integer i;
+DEBUGONLY for i←0 thru memsize-1 do
+DEBUGONLY 	begin if link(i)=p then print(nextline,&quot;link(&quot;,i,&quot;)&quot;);
+DEBUGONLY 	if value(i)=p then print(nextline,&quot;value(&quot;,i,&quot;)&quot;);
+DEBUGONLY 	end;
+DEBUGONLY for i←0 thru hashsize+127 do if field(link,eqtb[i])=p then
+DEBUGONLY	print(nextline,&quot;link in eqtb[&quot;,i,&quot;]&quot;);
+DEBUGONLY end;
+
+internaldef fillglue=0 # location of glue specification 0pt plus 10^10 pt;
+internaldef lowerfillglue=gluespecsize # loc of glue specification
+		0pt plus 10^6pt minus 10^6 pt;
+internaldef zeroglue=lowerfillglue+gluespecsize # loc of glue specification 0pt;
+internaldef fontglue=zeroglue+gluespecsize # location of glue for variable spaces;
+internaldef firstmem=fontglue+32*gluespecsize # location of
+		first usable mem word, must be &gt;0;
+internaldef waitinghead=varsize # head of list of inserts too big for current page;
+internaldef contribhead=waitinghead+1 # head of contribution vlist for current page;
+internaldef pagehead=pagecontrib+1 # head of vlist for current page;
+internaldef temphead=pagehead+1 # temporary head of a miscellaneous list;
+internaldef holdhead=temphead+1 # temporary head of another miscellaneous list;
+internaldef alignhead=holdhead+1 # alignhead+j is head of jth alignrecordlist;
+internaldef inserts=alignhead+alignsize # head of insert list returned by packager;
+internaldef hsizemem=inserts+1 # location where default hsize is stored;
+internaldef vsizemem=hsizemem+1 # location where default vsize is stored;
+internaldef maxdepthmem=vsizemem+1 # location where default maxdepth is stored;
+internaldef parindentmem=maxdepthmem+1 # location where default parindent is stored;
+internaldef topbaselinemem=parindentmem+1 # loc where default topbaseline is stored;
+internaldef secondmem=topbaselinemem+1 # first usable mem word in 1-word area;
+
+internal procedure initmem # initializes the memory system;
+begin integer i;
+for i←secondmem thru memsize-2 do mem[i+1]←i;
+mem[secondmem]←0; avail←memsize-1 # now the avail stack is initialized;
+
+mem[firstmem]←(firstmem lsh llinkd)+firstmem+(1 lsh(bitsperwd-1));
+nodesize(firstmem)←varsize-firstmem # one node in the circle;
+rover←firstmem # rover points to it, now the double-avail list is initialized;
+
+for i←0 thru firstmem-1 do mem[i]←0;
+for i←varsize thru secondmem-1 do mem[i]←0;
+end;
+comment Getting the whole thing started properly;
+
+preload_with true; safe boolean array notalreadyinitialized[0:0];
+
+comment The declarations have now ended, TEX starts here after being loaded;
+if notalreadyinitialized[0] then
+	begin integer chan;
+	notalreadyinitialized[0]←false;
+	initmem # initialize the mem array, this should be done first;
+	gluestretch(fillglue)←10000000000.0 # initialize the fillglue;
+	gluestretch(lowerfillglue)←glueshrink(lowerfillglue)←1000000.0;
+	mem[zeroglue]←mem[lowerfillglue]←mem[fillglue]←
+		1000000 lsh infod # &quot;infinite&quot; reference count;
+	initsftable(3.0,3.0,3.0,2.0,1.5,1.25) # initialize the spacefactor table;
+
+	open(chan←getchan,&quot;DSK&quot;,'10,2,0,0,0,eof);
+	lookup(chan,&quot;TEXINI.TBL&quot;,eof);
+	if eof or wordin(chan)≠hashsize or wordin(chan)≠eqtbsize or
+		wordin(chan)≠locsize or
+		wordin(chan)≠excepsize or wordin(chan)≠sufsize or
+		wordin(chan)≠prefsize or wordin(chan)≠btabsize or
+		wordin(chan)≠pagememsize or wordin(chan)≠fmemsize then
+		begin print(&quot;TEXINI.TBL is clobbered!&quot;); go to final_end;
+		comment If this error happens, execute TEXPRE to rewrite the file;
+		end;
+	arryin(chan,hash[0],hashsize);
+	arryin(chan,eqtb[0],eqtbsize);
+	arryin(chan,locs[0],locsize);
+	arryin(chan,exceptable[0],excepsize);
+	arryin(chan,excephyph[1],excepsize-1);
+	arryin(chan,suffix[0],sufsize);
+	arryin(chan,prefix[0],prefsize);
+	arryin(chan,btable[2],btabsize);
+	arryin(chan,pagemem[0],pagememsize);
+	arryin(chan,delimtable[0],128);
+	arryin(chan,fmem[0],fmemsize);
+	arryin(chan,wdbase[0],32);
+	arryin(chan,htbase[0],32);
+	arryin(chan,dpbase[0],32);
+	arryin(chan,lgbase[0],32);
+	arryin(chan,msbase[0],32);
+	arryin(chan,dwbase[0],32);
+	arryin(chan,parbase[0],32);
+	arryin(chan,fontinfo[0],'10000);
+	fmemptr←wordin(chan);
+	release(chan);
+
+	pausing_on_errors←true; deletions_allowed←true;
+
+	outstr(&quot;TEX's tables have been initialized.
+	Either hit CALL and .SAVE TEX for future RUNning,
+	or type &lt;cr&gt; to go on.&quot;);
+	if inchwl then;
+	end;
+initext # initialize the extensions if any;
+initsave # initialize the save-restore mechanism;
+setformat(0,4) # controls format of cvf in diagnostic routine &quot;dumpnodelist&quot;;
+setprint(&quot;errors.tmp&quot;,&quot;B&quot;) # printing goes to file as well as terminal;
+DEBUGONLY dynused←varused←0;
+initin # initialize the input system;
+initout # initialize the output system;
+maincontrol # transfer power to the chief executive;
+
+end_of_TEX: closeout # close output files of TEXOUT;
+setprint(&quot;errors.tmp&quot;,&quot;N&quot;) # close print output file;
+finishext # do any closing actions desired by extensions;
+final_end: end &quot;TEX&quot;

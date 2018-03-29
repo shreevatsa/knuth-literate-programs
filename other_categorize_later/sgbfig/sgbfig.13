@@ -1,0 +1,83 @@
+%!PS
+%%BoundingBox: 0 0 237 87 
+%%HiResBoundingBox: 0 0 236.71477 86.39978 
+%%Creator: MetaPost 2.000
+%%CreationDate: 2017.09.17:1026
+%%Pages: 1
+%%BeginProlog
+%%EndProlog
+%%Page: 1 1
+%%%ExactBoundingBox: 0 0 236.71477 86.39978
+ 0 0 0 setrgbcolor 0 3 dtransform truncate idtransform setlinewidth pop [] 0 setdash 1 setlinecap 1 setlinejoin 10 setmiterlimit
+newpath 118.35739 86.39978 moveto 0 0 rlineto stroke
+newpath 118.35739 64.79984 moveto 0 0 rlineto stroke
+ 0.5 0 dtransform exch truncate exch idtransform pop setlinewidth
+newpath 118.35739 86.39978 moveto
+118.35739 64.79984 lineto stroke
+ 0 0.5 dtransform truncate idtransform setlinewidth pop
+newpath 118.35739 86.39978 moveto
+77.27214 56.54956 lineto stroke
+newpath 118.35739 64.79984 moveto
+105.6613 25.72508 lineto stroke
+ 0 2.99997 dtransform truncate idtransform setlinewidth pop
+gsave newpath 77.27214 56.54956 moveto 0 0 rlineto
+[0.30902 0.95105 -0.95105 0.30902 0 0] concat stroke grestore
+gsave newpath 97.81477 49.87473 moveto 0 0 rlineto
+[0.30902 0.95105 -0.95105 0.30902 0 0] concat stroke grestore
+ 0 0.49998 dtransform truncate idtransform setlinewidth pop
+gsave newpath 77.27214 56.54956 moveto
+97.81477 49.87473 lineto
+[0.30902 0.95105 -0.95105 0.30902 0 0] concat stroke grestore
+gsave newpath 77.27214 56.54956 moveto
+92.96498 8.2511 lineto
+[0.30902 0.95105 -0.95105 0.30902 0 0] concat stroke grestore
+gsave newpath 97.81477 49.87473 moveto
+131.05345 25.72519 lineto
+[0.30902 0.95105 -0.95105 0.30902 0 0] concat stroke grestore
+ 0 3 dtransform truncate idtransform setlinewidth pop
+gsave newpath 92.9652 8.25027 moveto 0 0 rlineto
+[-0.809 0.58777 -0.58777 -0.809 0 0] concat stroke grestore
+gsave newpath 105.6613 25.72508 moveto 0 0 rlineto
+[-0.809 0.58777 -0.58777 -0.809 0 0] concat stroke grestore
+ 0 0.5 dtransform truncate idtransform setlinewidth pop
+gsave newpath 92.9652 8.25027 moveto
+105.6613 25.72508 lineto
+[-0.809 0.58778 -0.58778 -0.809 0 0] concat stroke grestore
+gsave newpath 92.9652 8.25027 moveto
+143.7495 8.25047 lineto
+[-0.809 0.58778 -0.58778 -0.809 0 0] concat stroke grestore
+gsave newpath 105.6613 25.72508 moveto
+138.9002 49.87482 lineto
+[-0.809 0.58778 -0.58778 -0.809 0 0] concat stroke grestore
+ 0 3 dtransform truncate idtransform setlinewidth pop
+gsave newpath 143.74959 8.25027 moveto 0 0 rlineto
+[-0.809 -0.58777 0.58777 -0.809 0 0] concat stroke grestore
+gsave newpath 131.05348 25.72508 moveto 0 0 rlineto
+[-0.809 -0.58777 0.58777 -0.809 0 0] concat stroke grestore
+ 0 0.5 dtransform truncate idtransform setlinewidth pop
+gsave newpath 143.74959 8.25027 moveto
+131.05348 25.72508 lineto
+[-0.809 -0.58778 0.58778 -0.809 0 0] concat stroke grestore
+gsave newpath 143.74959 8.25027 moveto
+159.44295 56.54897 lineto
+[-0.809 -0.58778 0.58778 -0.809 0 0] concat stroke grestore
+gsave newpath 131.05348 25.72508 moveto
+118.35739 64.79993 lineto
+[-0.809 -0.58778 0.58778 -0.809 0 0] concat stroke grestore
+ 0 2.99997 dtransform truncate idtransform setlinewidth pop
+gsave newpath 159.44264 56.54956 moveto 0 0 rlineto
+[0.30902 -0.95105 0.95105 0.30902 0 0] concat stroke grestore
+gsave newpath 138.90001 49.87473 moveto 0 0 rlineto
+[0.30902 -0.95105 0.95105 0.30902 0 0] concat stroke grestore
+ 0 0.49998 dtransform truncate idtransform setlinewidth pop
+gsave newpath 159.44264 56.54956 moveto
+138.90001 49.87473 lineto
+[0.30902 -0.95105 0.95105 0.30902 0 0] concat stroke grestore
+gsave newpath 159.44264 56.54956 moveto
+118.35738 86.39935 lineto
+[0.30902 -0.95105 0.95105 0.30902 0 0] concat stroke grestore
+gsave newpath 138.90001 49.87473 moveto
+97.81462 49.87442 lineto
+[0.30902 -0.95105 0.95105 0.30902 0 0] concat stroke grestore
+showpage
+%%EOF

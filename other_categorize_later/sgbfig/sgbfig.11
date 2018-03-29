@@ -1,0 +1,210 @@
+%!PS
+%%BoundingBox: 0 0 237 144 
+%%HiResBoundingBox: 0 0 236.71477 144 
+%%Creator: MetaPost 2.000
+%%CreationDate: 2017.09.17:1026
+%%Pages: 1
+%%BeginProlog
+%%EndProlog
+%%Page: 1 1
+%%%ExactBoundingBox: 0 0 236.71477 144
+ 0 0 0 setrgbcolor 0 3 dtransform truncate idtransform setlinewidth pop [] 0 setdash 1 setlinecap 1 setlinejoin 10 setmiterlimit
+newpath 73.35739 27 moveto 0 0 rlineto stroke
+newpath 73.35739 45 moveto 0 0 rlineto stroke
+newpath 73.35739 63 moveto 0 0 rlineto stroke
+newpath 73.35739 81 moveto 0 0 rlineto stroke
+newpath 73.35739 99 moveto 0 0 rlineto stroke
+newpath 73.35739 117 moveto 0 0 rlineto stroke
+newpath 91.35739 27 moveto 0 0 rlineto stroke
+newpath 91.35739 45 moveto 0 0 rlineto stroke
+newpath 91.35739 63 moveto 0 0 rlineto stroke
+newpath 91.35739 81 moveto 0 0 rlineto stroke
+newpath 91.35739 99 moveto 0 0 rlineto stroke
+newpath 91.35739 117 moveto 0 0 rlineto stroke
+newpath 109.35739 27 moveto 0 0 rlineto stroke
+newpath 109.35739 45 moveto 0 0 rlineto stroke
+newpath 109.35739 63 moveto 0 0 rlineto stroke
+newpath 109.35739 81 moveto 0 0 rlineto stroke
+newpath 109.35739 99 moveto 0 0 rlineto stroke
+newpath 109.35739 117 moveto 0 0 rlineto stroke
+newpath 127.35739 27 moveto 0 0 rlineto stroke
+newpath 127.35739 45 moveto 0 0 rlineto stroke
+newpath 127.35739 63 moveto 0 0 rlineto stroke
+newpath 127.35739 81 moveto 0 0 rlineto stroke
+newpath 127.35739 99 moveto 0 0 rlineto stroke
+newpath 127.35739 117 moveto 0 0 rlineto stroke
+newpath 145.35739 27 moveto 0 0 rlineto stroke
+newpath 145.35739 45 moveto 0 0 rlineto stroke
+newpath 145.35739 63 moveto 0 0 rlineto stroke
+newpath 145.35739 81 moveto 0 0 rlineto stroke
+newpath 145.35739 99 moveto 0 0 rlineto stroke
+newpath 145.35739 117 moveto 0 0 rlineto stroke
+newpath 163.35739 27 moveto 0 0 rlineto stroke
+newpath 163.35739 45 moveto 0 0 rlineto stroke
+newpath 163.35739 63 moveto 0 0 rlineto stroke
+newpath 163.35739 81 moveto 0 0 rlineto stroke
+newpath 163.35739 99 moveto 0 0 rlineto stroke
+newpath 163.35739 117 moveto 0 0 rlineto stroke
+ 0 0.5 dtransform truncate idtransform setlinewidth pop
+newpath 73.35739 27 moveto
+91.35739 63 lineto stroke
+newpath 73.35739 45 moveto
+91.35739 81 lineto stroke
+newpath 73.35739 63 moveto
+91.35739 99 lineto stroke
+newpath 73.35739 81 moveto
+91.35739 117 lineto stroke
+newpath 73.35739 63 moveto
+91.35739 27 lineto stroke
+newpath 73.35739 81 moveto
+91.35739 45 lineto stroke
+newpath 73.35739 99 moveto
+91.35739 63 lineto stroke
+newpath 73.35739 117 moveto
+91.35739 81 lineto stroke
+newpath 91.35739 27 moveto
+109.35739 63 lineto stroke
+newpath 91.35739 45 moveto
+109.35739 81 lineto stroke
+newpath 91.35739 63 moveto
+109.35739 99 lineto stroke
+newpath 91.35739 81 moveto
+109.35739 117 lineto stroke
+newpath 91.35739 63 moveto
+109.35739 27 lineto stroke
+newpath 91.35739 81 moveto
+109.35739 45 lineto stroke
+newpath 91.35739 99 moveto
+109.35739 63 lineto stroke
+newpath 91.35739 117 moveto
+109.35739 81 lineto stroke
+newpath 109.35739 27 moveto
+127.35739 63 lineto stroke
+newpath 109.35739 45 moveto
+127.35739 81 lineto stroke
+newpath 109.35739 63 moveto
+127.35739 99 lineto stroke
+newpath 109.35739 81 moveto
+127.35739 117 lineto stroke
+newpath 109.35739 63 moveto
+127.35739 27 lineto stroke
+newpath 109.35739 81 moveto
+127.35739 45 lineto stroke
+newpath 109.35739 99 moveto
+127.35739 63 lineto stroke
+newpath 109.35739 117 moveto
+127.35739 81 lineto stroke
+newpath 127.35739 27 moveto
+145.35739 63 lineto stroke
+newpath 127.35739 45 moveto
+145.35739 81 lineto stroke
+newpath 127.35739 63 moveto
+145.35739 99 lineto stroke
+newpath 127.35739 81 moveto
+145.35739 117 lineto stroke
+newpath 127.35739 63 moveto
+145.35739 27 lineto stroke
+newpath 127.35739 81 moveto
+145.35739 45 lineto stroke
+newpath 127.35739 99 moveto
+145.35739 63 lineto stroke
+newpath 127.35739 117 moveto
+145.35739 81 lineto stroke
+newpath 145.35739 27 moveto
+163.35739 63 lineto stroke
+newpath 145.35739 45 moveto
+163.35739 81 lineto stroke
+newpath 145.35739 63 moveto
+163.35739 99 lineto stroke
+newpath 145.35739 81 moveto
+163.35739 117 lineto stroke
+newpath 145.35739 63 moveto
+163.35739 27 lineto stroke
+newpath 145.35739 81 moveto
+163.35739 45 lineto stroke
+newpath 145.35739 99 moveto
+163.35739 63 lineto stroke
+newpath 145.35739 117 moveto
+163.35739 81 lineto stroke
+newpath 73.35739 27 moveto
+109.35739 45 lineto stroke
+newpath 73.35739 45 moveto
+109.35739 63 lineto stroke
+newpath 73.35739 63 moveto
+109.35739 81 lineto stroke
+newpath 73.35739 81 moveto
+109.35739 99 lineto stroke
+newpath 73.35739 99 moveto
+109.35739 117 lineto stroke
+newpath 73.35739 45 moveto
+109.35739 27 lineto stroke
+newpath 73.35739 63 moveto
+109.35739 45 lineto stroke
+newpath 73.35739 81 moveto
+109.35739 63 lineto stroke
+newpath 73.35739 99 moveto
+109.35739 81 lineto stroke
+newpath 73.35739 117 moveto
+109.35739 99 lineto stroke
+newpath 91.35739 27 moveto
+127.35739 45 lineto stroke
+newpath 91.35739 45 moveto
+127.35739 63 lineto stroke
+newpath 91.35739 63 moveto
+127.35739 81 lineto stroke
+newpath 91.35739 81 moveto
+127.35739 99 lineto stroke
+newpath 91.35739 99 moveto
+127.35739 117 lineto stroke
+newpath 91.35739 45 moveto
+127.35739 27 lineto stroke
+newpath 91.35739 63 moveto
+127.35739 45 lineto stroke
+newpath 91.35739 81 moveto
+127.35739 63 lineto stroke
+newpath 91.35739 99 moveto
+127.35739 81 lineto stroke
+newpath 91.35739 117 moveto
+127.35739 99 lineto stroke
+newpath 109.35739 27 moveto
+145.35739 45 lineto stroke
+newpath 109.35739 45 moveto
+145.35739 63 lineto stroke
+newpath 109.35739 63 moveto
+145.35739 81 lineto stroke
+newpath 109.35739 81 moveto
+145.35739 99 lineto stroke
+newpath 109.35739 99 moveto
+145.35739 117 lineto stroke
+newpath 109.35739 45 moveto
+145.35739 27 lineto stroke
+newpath 109.35739 63 moveto
+145.35739 45 lineto stroke
+newpath 109.35739 81 moveto
+145.35739 63 lineto stroke
+newpath 109.35739 99 moveto
+145.35739 81 lineto stroke
+newpath 109.35739 117 moveto
+145.35739 99 lineto stroke
+newpath 127.35739 27 moveto
+163.35739 45 lineto stroke
+newpath 127.35739 45 moveto
+163.35739 63 lineto stroke
+newpath 127.35739 63 moveto
+163.35739 81 lineto stroke
+newpath 127.35739 81 moveto
+163.35739 99 lineto stroke
+newpath 127.35739 99 moveto
+163.35739 117 lineto stroke
+newpath 127.35739 45 moveto
+163.35739 27 lineto stroke
+newpath 127.35739 63 moveto
+163.35739 45 lineto stroke
+newpath 127.35739 81 moveto
+163.35739 63 lineto stroke
+newpath 127.35739 99 moveto
+163.35739 81 lineto stroke
+newpath 127.35739 117 moveto
+163.35739 99 lineto stroke
+showpage
+%%EOF

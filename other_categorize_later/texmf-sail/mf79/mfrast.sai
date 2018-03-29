@@ -1,0 +1,1468 @@
+<HTML>
+<TITLE>SAILDART</TITLE>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+</HEAD>
+<BODY bgcolor=white>
+<PRE>COMMENT ⓧ   VALID 00010 PAGES
+C REC  PAGE   DESCRIPTION
+C00001 00001
+C00002 00002	entry begin comment The semantics module of METAFONT.
+C00005 00003	Procedures for generating and storing pens
+C00037 00004	Procedures for plotting points on the raster
+C00049 00005	Beginning of the main procedure \\{drawit}
+C00057 00006	The routine that plots a cubic
+C00071 00007	procedure ccubics # compute the cubic splines
+C00079 00008	procedure filldraw(real pensize)
+C00083 00009	The \\{drawit} procedure begins here
+C00090 00010	Now comes very system-dependent code for displaying on the user's screen
+C00096 ENDMK
+Cⓧ;
+entry; begin comment The semantics module of METAFONT.
+
+(It is wise to be familiar with the memory management routines of MFSYS
+before going very deeply into the following code.)
+
+This module contains routines that draw characters on a bit raster. It is
+pretty much independent of the other modules of METAFONT, although you should
+read the documentation of \\{scanpath} in MFNTRP if you want to understand what
+information is passed to the \\{drawit} routine. 
+
+The algorithms have been designed to take time (and space) of order $n^2$
+if the resolution is $n$ pixels per inch. The space and time requirements have
+also been reduced by using full-word boolean operations. Thus, it is hoped
+that METAFONT will be sufficiently quick on the draw;
+
+comment Certain bits of the &quot;control&quot; variable govern the on-line output:
+	'100	trace numeric data of curves to be drawn
+	'200	trace changes made to avoid sharp corners or high speeds
+	'400	trace the points plotted
+    '2000000	display the raster after every &quot;draw&quot; or &quot;ddraw&quot;
+;
+
+require &quot;MFHDR.SAI&quot; source_file;
+define drawtrace=⊂(control land '100)⊃, modtrace=⊂(control land '200)⊃,
+	plottrace=⊂(control land '400)⊃;
+define drawdisplay=⊂(control land '2000000)⊃;
+define displaymodes='3000000;
+internaldef all_ones=-1 # full word of one bits;
+
+internaldef xxtr=⊂realparam[1]⊃, xytr=⊂realparam[2]⊃, xtr=⊂realparam[3]⊃,
+	yxtr=⊂realparam[4]⊃, yytr=⊂realparam[5]⊃, ytr=⊂realparam[6]⊃;
+comment These are the coefficients of transformation: we plot
+	(xxtr.x + xytr.y + xtr, yxtr.x + yytr.y + ytr)
+instead of $(x,y)$;
+comment Procedures for generating and storing pens;
+
+internaldef hw=bitsperwd div 2 # number of bits in a halfword;
+define lefthalf(x)=⊂(x ash -hw)⊃ # left halfword;
+define righthalf(x)=⊂(x land ((1 lsh hw)-1))⊃ # right halfword;
+
+comment The major activity of METAFONT's raster module is to take digitized &quot;pens&quot;
+(or erasers) and to make digital images by placing the pen in some specified
+point and setting the corresponding bits of the picture to 1 (or resetting them
+to 0).
+
+The digitized pen images are stored in a rather peculiar fashion, in order
+to facilitate &quot;dynamic&quot; plotting, since the main application is to plot a pen that
+is making a sequence of king moves (one step horizontally, vertically, or
+diagonally). Eight bit patterns are stored for each pen, corresponding to the
+eight possible moves. If $P(x,y)$ denotes the precidate that the pen includes
+point $(x,y)$, the eight edge patterns are
+
+	N	P(x,y) ∧ ¬P(x,y+1)
+	NE	P(x,y) ∧ ¬P(x+1,y+1)
+	E	P(x,y) ∧ ¬P(x+1,y)
+	SE	P(x,y) ∧ ¬P(x+1,y-1)
+	S	P(x,y) ∧ ¬P(x,y-1)
+	SW	P(x,y) ∧ ¬P(x-1,y-1)
+	W	P(x,y) ∧ ¬P(x-1,y)
+	NW	P(x,y) ∧ ¬P(x-1,y+1)
+
+Thus, for example, the edge patterns corresponding to a pen that is a $3\times3$
+square array would be
+
+	 N     NE    E     SE    S     SW    W     NW
+
+	111   111   001   001   000   100   100   111
+	000   001   001   001   000   100   100   100
+	000   001   001   111   111   111   100   100
+
+This information is redundant, essentially four times as much as needed, since any
+of the pairs N-S, NE-SW, E-W, NW-SE gives enough information to deduce the entire
+pen shape. But all eight patterns are stored, to gain speed.
+
+For simplicity it is assumed that the pen shapes are &quot;horizontally convex&quot;, i.e.,
+that all the 1's in each row are consecutive. Pen images are usually generated in
+the arrays \\{penl} and \\{penr}, specifying the leftmost and rightmost
+bit positions of the pen in each row. More precisely, the integer variables \\{ymin}
+and \\{ymax} and the integer arrays \\{penl} and \\{penr} are set so that, for
+$\\{ymin}≤y≤\\{ymax}$, the pen image includes points $(x,y)$ if and only if
+$\\{penl}[y]≤x≤\\{penr}[y]$. For example, a $3\times3$ pen would be represented
+by $\\{ymin}=-1$, $\\{ymax}=+1$, $\\{penl}[y]=-1$ and $\\{penr}[y]=+1$ for
+$-1≤y≤+1$.
+
+After a pen has been generated, its eight representations are stored into a big
+array called \\{pmem}. This array is allocated sequentially, and it is used to
+save all pen images except the special ones defined by \&amp;{spen} or \&amp;{epen}.
+Within this array the pens of a given type are linked together in a
+sorted, doubly linked list. For example, all pens of type \\{hpen} are
+accessible from location \\{hpenhead}, which contains a forward pointer to
+the smallest \\{hpen}, which in turn contains both a backward pointer to
+\\{hpenhead} and a forward pointer to the second-smallest \\{hpen}, and so on.
+The largest \\{hpen} has a forward pointer to $\\{hpenhead}+2$, where the list ends.
+In \\{pmem} these forward and backward pointers are followed by the pen size and
+a specification of the individual edges.
+
+More precisely, a digitized pen is represented in \\{pmem} as follows:
+
+		lefthalf		righthalf
+
+0th word:	backward pointer	forward pointer
+1st word: the pen size, a positive integer less than \\{infty}
+2nd word:	   N			   NE
+3rd word:	   E			   SE
+4th word:	   S			   SW
+5th word:	   W			   NW
+
+Here N, NE, etc., are pointers to the first \\{pmem} entries for the corresponding
+edge patterns. Each edge pattern (except for the E and W edges) is stored as a
+packed bit array in the following form: First comes a word containing
+$\\{lefthalf}=\\{xdelta}$, $\\{righthalf}=\\{xcount}$. The bits are stored in
+columns of words, with \\{bitsperwd} bits in each word. For example, if each word
+contains 36 bits, column zero contains bits for $-17≤x≤+18$, and column $-1$
+contains bits for $-53≤x≤-18$, etc. If \\{xlc} and \\{xrc} denote the leftmost
+and rightmost column numbers of the edge pattern, then $\\{xdelta}=\\{xlc}$ and
+$\\{xcount}=\\{xrc}-\\{xlc}$.\xskip(Note that \\{xdelta} can be negative but
+\\{xcount} is always $≥0$. This property will hold in general when two
+quantities are being packed into halfwords in METAFONT's data structures.)\xskip
+The first word of the edge representation is followed by $\\{xcount}+1$ groups
+of words specifying the individual columns from left to right as follows: The
+first word of a column group contains $\\{lefthalf}=\\{ydelta}$ and $\\{righthalf}
+=\\{ycount}$, where \\{ydelta} is the $y$ coordinate of the bottom word in the
+column and $\\{ydelta}+\\{ycount}$ is the $y$ coordinate of the top word. The
+following $\\{ycount}+1$ words contain the actual full-word bit patterns of the
+pen edge from bottom to top of that column. (If the column is blank, \\{ycount}
+will be zero and the following word contains all zeroes.)
+
+For example, suppose we are representing columns with only two bits per word.
+Then the NW edge of the $3\times3$ pen discussed above would be presented as a total
+of seven words:
+
+	xdelta=-1	xcount=1
+	ydelta=-1	ycount=2
+		   01
+		   01
+		   01
+	ydelta=1	ycount=0
+		   11
+
+The E and W edges are stored in another form intended to facilitate horizontal
+painting. The E-W form is simply a word containing $(\\{ydelta},\\{ycount}$,
+followed by $\\{ycount}+1$ words containing the (unique) $x$ coordinate of the
+pen edge in row $y$, for $y=\\{ydelta}$, $\\{ydelta}+1$, $\ldotss$, $\\{ydelta}
++\\{ycount}$. For example, the E pattern of the $3\times3$ pen would have
+$\\{ydelta}=-1$ and $\\{ycount}=2$, with the sequence of $x$ coordinates $+1$,
+$+1$, $+1$.
+;
+
+internaldef xpenmin=-125,xpenmax=126,ypenmax=99,ypenmin=-ypenmax # legal pen range;
+comment $\\{xpenmin}-1$ and \\{xpenmax} should be congruent to \\{hw},
+	modulo \\{bitsperwd};
+define column(x)=⊂((x-xpenmin) div bitsperwd)⊃;
+define bitloc(x)=⊂((x+(1000*bitsperwd+hw-1))mod bitsperwd)⊃ #
+	number of bits to the left of bit \\x in a packed word;
+saf integer array penl,penr[ypenmin:ypenmax] # pens generated here;
+integer ymin, ymax # lower and upper boundaries of a generated pen;
+integer xmin, xmax # left and right boundaries of a generated oval pen;
+
+internaldef pmemsize=10000 # number of words of pen storage;
+saf integer array pmem[0:pmemsize+8] # storage of pens;
+integer pmemptr # pointer to first available place in \\{pmem};
+integer pmemplace # value of \\{pmemptr} on most recent entry to \\{storepen};
+saf integer array penlist[0:column(xpenmax)] # array used by \\{storepen};
+
+define N_dir=⊂lefthalf(pmem[curploc+2])⊃, NE_dir=⊂righthalf(pmem[curploc+2])⊃,
+	E_dir=⊂lefthalf(pmem[curploc+3])⊃, SE_dir=⊂righthalf(pmem[curploc+3])⊃,
+	S_dir=⊂lefthalf(pmem[curploc+4])⊃, SW_dir=⊂righthalf(pmem[curploc+4])⊃,
+	W_dir=⊂lefthalf(pmem[curploc+5])⊃, NW_dir=⊂righthalf(pmem[curploc+5])⊃;
+	
+procedure storepen # takes generated pen and moves it into \\{pmem};
+begin comment Assuming that a nonempty pen is described by \\{ymin}, \\{ymax},
+\\{penl}, and \\{penr} as explained above, this procedure converts it to the format
+required in \\{pmem}. During the calculation a number of linked lists are used:
+\\{penloc}[\\{xc}] points to a list of two-word entries for column \\{xc}, where
+node $p$ contains three fields:
+	vmemint(p) is a nonzero bit pattern,
+	info(p) is the $y$ coordinate minus \\ypenmin,
+	link(p) points to the next node in the list.
+These lists are in increasing order by $y$ coordinate;
+integer i,j # increments to $x,y$ for the current edge;
+
+pmemplace←pmemptr;
+pmemptr←pmemptr+6 # move pmemptr to the location of the first edge;
+for i←-1 thru 1 do for j←-1 thru 1 do
+	begin case 3*i+j+4 of begin comment (This +4 is here only because
+		SAIL doesn't allow negative cases.);
+	[0] pmem[pmemplace+4]←pmemptr # SW;
+	[1] pmem[pmemplace+5]←pmemptr lsh hw # W;
+	[2] pmem[pmemplace+5]←pmem[pmemplace+5]+pmemptr # NW;
+	[3] pmem[pmemplace+4]←pmem[pmemplace+4]+(pmemptr lsh hw) # S;
+	[5] pmem[pmemplace+2]←pmemptr lsh hw # N;
+	[6] pmem[pmemplace+3]←pmemptr # SE;
+	[7] pmem[pmemplace+3]←pmem[pmemplace+3]+(pmemptr lsh hw) # E;
+	[8] pmem[pmemplace+2]←pmem[pmemplace+2]+pmemptr # NE;
+	else continue
+	  end;
+	if j then
+		begin comment Storing the packed bit image (not E-W) form;
+		integer xminc,xmaxc # smallest and largest columns;
+		integer xc # runs thru the columns;
+		integer y # runs thru the rows;
+		xminc←infty;
+		for y←ymax step -1 until ymin do
+			begin integer l,r,ll,rr; label one_interval,two_intervals;
+			l←penl[y]; r←penr[y];
+			if (y=ymin and j&lt;0) or (y=ymax and j&gt;0) then
+				go to one_interval;
+			ll←penl[y+j]-i; rr←penr[y+j]-i;
+			comment We want to represent all bits $x$ such that
+				$l≤x≤r$ and not $\\{ll}≤x≤\\{rr}$;
+			if ll&gt;r or rr&lt;l then go to one_interval;
+			if ll≤l then
+				begin if rr≥r then continue;
+				l←rr+1; go to one_interval;
+				end
+			else if rr≥r then
+				begin r←ll-1; go to one_interval;
+				end;
+			two_intervals: comment $l≤x&lt;\\{ll}$ and $\\{rr}&lt;x≤r$;
+			define interval(l,r)=⊂begin integer xlc,xrc,p,bl,yy;
+			xlc←column(l); xrc←column((r)); yy←y-ypenmin;
+			if xlc&lt;xminc then
+				begin if xminc=infty then
+					begin xminc←xmaxc←xlc; penlist[xlc]←0;
+					end
+				else while xlc&lt;xminc do
+					begin xminc←xminc-1; penlist[xminc]←0;
+					end;
+				end;
+			while xrc&gt;xmaxc do
+				begin xmaxc←xmaxc+1; penlist[xmaxc]←0;
+				end;
+			bl←bitloc(l);
+			while xlc&lt;xrc do
+				begin getvavail(p); vmemint(p)←all_ones lsh(-bl);
+				mem[p]←penlist[xlc]+(yy lsh infod); penlist[xlc]←p;
+				xlc←xlc+1; bl←0;
+				end;
+			getvavail(p); vmemint(p)←(all_ones lsh((bitsperwd-1)
+				-bitloc((r))+bl)) lsh(-bl);
+			mem[p]←penlist[xlc]+(yy lsh infod); penlist[xlc]←p;
+			end⊃ # end of the definition of interval(l,r);
+			interval(l,ll-1); l←rr+1;
+			one_interval: comment $l≤x≤r$; interval(l,r);
+			end;
+		pmem[pmemptr]←((xminc-column(0)) lsh hw) + xmaxc-xminc;
+		pmemptr←pmemptr+1;
+		for xc←xminc thru xmaxc do if penlist[xc] then
+			begin integer p,pmemp,y,q;
+			p←penlist[xc]; y←info(p);
+			pmem[pmemptr]←((y+ypenmin) lsh hw)-y;
+			pmemp←pmemptr; pmemptr←pmemptr+1;
+			loop	begin comment Now $y=\info(p)$;
+				label advance_p # go here when finished with $p$;
+				pmem[pmemptr]←vmemint(p);
+				pmemptr←pmemptr+1;
+				if pmemptr≥pmemsize then overflow(pmemsize);
+				advance_p: q←p; p←link(p); freeavail(q);
+				if p=0 then done;
+				if y=info(p) then
+					begin comment Two entries for the same $y$;
+					pmem[pmemptr-1] ←
+						pmem[pmemptr-1] lor vmemint(p);
+					go to advance_p;
+					end;
+				loop	begin y←y+1;
+					if y=info(p) then done;
+					pmem[pmemptr]←0;
+					pmemptr←pmemptr+1;
+					if pmemptr≥pmemsize then overflow(pmemsize);
+					end;
+				end;
+			pmem[pmemp]←pmem[pmemp]+y;
+			end
+		else	begin comment Empty list;
+			pmem[pmemptr]←pmem[pmemptr+1]←0; pmemptr←pmemptr+2;
+			if pmemptr≥pmemsize then overflow(pmemsize);
+			end;
+		end
+	else	begin comment The simple E-W form;
+		integer y # runs through the rows;
+		pmem[pmemptr]←(ymin lsh hw)+ymax-ymin;
+		pmemptr←pmemptr+1;
+		if pmemptr+ymax-ymin≥pmemsize then overflow(pmemsize);
+		for y←ymin thru ymax do
+			begin pmem[pmemptr]←(if i&lt;0 then penl[y] else penr[y]);
+			pmemptr←pmemptr+1;
+			end;
+		end;
+	end;
+end;
+
+procedure makeovalpen(real a,b,c,x0,y0) # generate a pen with elliptical shape;
+begin comment This procedure creates a pen containing all integer points $(x,y)$
+such that $a(x-x0)^2+b(x-x0)(y-y0)+c(y-y0)^2≤1$, assuming that $a&gt;0$, $c&gt;0$,
+and $b^2-4ac&lt;0$. The pen is stored in the \\{pmem} array beginning at the
+location stored in \\{pmemplace};
+real delta # the discriminant;
+real s # maximum of $|y-y0|$;
+real t # maximum of $|x-x0|$;
+integer y # runs through possible \\y values;
+label bad # go here when the assumptions are violated;
+label ready # go here when a pen has been generated ready to be stored;
+if (delta←4*a*c-b^2)≤0.0 then go to bad;
+s←sqrt(4*a/delta); t←sqrt(4*c/delta);
+ymax←floor(s+y0); ymin←-floor(s-y0);
+if ymax&gt;ypenmax then overflow(ypenmax);
+if ymin&lt;ypenmin then overflow(ypenmin);
+xmin←infty; xmax←-infty;
+for y←ymin thru ymax do
+	begin real d,yy; integer xl,xr;
+	yy←y-y0;
+	d←sqrt(4*a-delta*yy^2);
+	xr←penr[y]←floor((-b*yy+d)/(2*a)+x0);
+	xl←penl[y]←-floor((b*yy+d)/(2*a)-x0);
+	if xl&lt;xmin and xl≤xr then xmin←xl;
+	if xr&gt;xmax and xl≤xr then xmax←xr;
+	end;
+if xmin=infty then go to bad # empty pen;
+while penl[ymin]&gt;penr[ymin] do ymin←ymin+1;
+while penl[ymax]&gt;penr[ymax] do ymax←ymax-1;
+if xmin&lt;xpenmin then overflow(xpenmin);
+if xmax&gt;xpenmax then overflow(xpenmax);
+go to ready;
+bad: error(&quot;Empty pen specification&quot;);
+penl[0]←penr[0]←ymin←ymax←xmin←xmax←0 # substitute single bit at (0,0);
+ready: storepen;
+end;
+
+procedure makepen(integer xwidth,ywidth) # generate a standard oval pen;
+begin comment This procedure makes an elliptical pen of dimensions
+$\\{xwidth}\times\\{ywidth}$ pixels, assuming that both parameters
+are positive integers;
+integer x,y;
+real xcorr,ycorr # pen offsets;
+real fudge # A factor that guarantees correct width and height in terms of pixels;
+x←(xwidth+1) land 1; if x then xcorr←.5 else xcorr←0.0;
+y←(ywidth+1) land 1; if y then ycorr←.5 else ycorr←0.0;
+fudge←x/xwidth; if y/ywidth&gt;fudge then fudge←y/ywidth;
+fudge←1.0/(1.0+fudge^2);
+makeovalpen(fudge*(2.0/xwidth)^2, 0, fudge*(2.0/ywidth)^2,xcorr,ycorr);
+end;
+
+procedure makerpen(integer xwidth,ywidth) # generate a standard rectangular pen;
+begin comment This procedure makes a rectangular pen of dimensions
+$\\{xwidth}\times\\{ywidth}$ pixels, but shifted to the left or right of the
+origin depending on whether \\{curpen} is \\{lpen} or \\{rpen},
+assuming that both parameters are positive integers;
+integer xl,xr,y;
+if xwidth&gt;-xpenmin then
+	begin error(&quot;Rectangle too wide&quot;); xwidth←-xpenmin;
+	end;
+xl←-xwidth; xr←xwidth;
+ymin←1+((-ywidth) ash -1); ymax←ywidth ash -1;
+if ymin&lt;ypenmin then overflow(ypenmin);
+if curpen=lpen then xr←-1 else xl←1;
+for y←ymin thru ymax do
+	begin penl[y]←xl; penr[y]←xr;
+	end;
+storepen;
+end;
+
+internal saf real array spenspec[1:7] # specifications for a special pen;
+real sxcorr,sycorr,sxmin,sxmax,symin,symax # pen offsets for special pen;
+
+internal procedure makespen # create a new special pen;
+begin makeovalpen(spenspec[1],spenspec[2],spenspec[3],spenspec[4],spenspec[5]);
+sxcorr←spenspec[6]; sycorr←spenspec[7];
+sxmin←xmin; sxmax←xmax; symin←ymin; symax←ymax;
+pmemptr←pmemplace # this position in \\{pmem} will be reusable;
+end;
+	
+internaldef epensize=ypenmax-ypenmin+1 # maximum length of \&amp;{epen} specs;
+internal saf integer array epenlspec,epenrspec[0:epensize] # explicit pen specs;
+internal integer epen0,epenptr # zero point and end of explicit pen specs;
+real exmax,exmin,eymax,eymin # pen offsets for explicit pen;
+
+internal procedure makeepen # create a new explicit pen;
+begin integer k,m,y;
+k←epen0-1; m←epenptr-epen0;
+if epenyfactor≤0 then
+	begin error(&quot;epenyfactor must be positive (1.0 assumed)&quot;); epenyfactor←1.0;
+	end;
+if epenxfactor≤0 then
+	begin error(&quot;epenxfactor must be positive (1.0 assumed)&quot;); epenxfactor←1.0;
+	end;
+ymax←epenyfactor*k;
+ymin←epenyfactor*m; ymin←-ymin # truncate towards zero;
+if ymax&gt;ypenmax then overflow(ypenmax);
+if ymin&lt;ypenmin then overflow(ypenmin);
+xmin←infty; xmax←-infty;
+for y←ymin thru ymax do
+	begin real yy,alpha; integer t; yy←y/epenyfactor;
+	t←yy; alpha←yy-t; t←epen0-t;
+	penl[y]←epenxfactor*(epenlspec[t]+alpha*(epenlspec[t-1]-epenlspec[t]))+.5;
+	penr[y]←epenxfactor*(epenrspec[t]+alpha*(epenrspec[t-1]-epenrspec[t]))+.5;
+	if penl[y]&lt;xmin then xmin←penl[y];
+	if penr[y]&gt;xmax then xmax←penr[y];
+	end;
+storepen;
+exmin←xmin; exmax←xmax; eymin←ymin; eymax←ymax;
+pmemptr←pmemplace # this position in \\{pmem} will be reusable;
+end;
+
+internal integer curploc # location of the current pen in \\{pmem};
+internal boolean eraser # the current &quot;pen&quot; really is an eraser;
+comment When the current pen type (\\{curpen}) changes, \\{curploc} should
+be set to zero, and \\{eraser} should be set to \false. The routines assume that,
+if $\\{curploc}≠0$, it points to a pen of type \\{curpen} but possibly of the
+wrong width, and that \\{eraser} is properly set;
+
+define cpenhead=0,hpenhead=4,vpenhead=8,lpenhead=12,rpenhead=16;
+define pmemstart=20 # first location in \\{pmem} that isn't preallocated;
+
+internal procedure resetpens # initializes the current pen;
+begin curpen←badpen; cursize←0.0; curploc←0; eraser←false;
+spenspec[1]←spenspec[2]←spenspec[3]←spenspec[4]←spenspec[5]←spenspec[6]←spenspec[7]←
+	epenlspec[1]←epenrspec[1]←0;
+epen0←epenptr←1;
+end;
+
+internal procedure clearpens(boolean all) # initializes the pen memory;
+begin comment This procedure wipes out all the information currently in \\{pmem},
+and does all other initialization required for the pen/eraser routines;
+integer h # runs through cpenhead, hpenhead, etc.;
+if all then resetpens else curploc←0;
+for h←cpenhead step 4 until pmemstart-4 do
+	begin comment Set doubly linked lists empty;
+	pmem[h]←h+2; pmem[h+1]←0;
+	pmem[h+2]←h lsh hw; pmem[h+3]←infty;
+	end;
+pmemptr←pmemstart;
+end;
+
+procedure setuppen(integer w) # ensures that the current pen is in \\{pmem};
+begin comment This procedure makes sure that \\{curploc} is pointing to the
+pen node of type \\{curpen} and size \\w;
+if curploc=0 then
+	begin case curpen of begin
+	[cpen] curploc←cpenhead;
+	[hpen] curploc←hpenhead;
+	[vpen] curploc←vpenhead;
+	[lpen] curploc←lpenhead;
+	[rpen] curploc←rpenhead;
+	[spen] begin makespen; curploc←pmemplace end;
+	[epen] begin makeepen; curploc←pmemplace end;
+	else begin error(&quot;No pen defined&quot;); curpen←cpen # $\\{cpenhead}=0$; end
+	  end;
+	if ((w≤0) or (w≥infty)) then
+		begin error(&quot;Illegal pen size (&quot;&amp;cvs(w)&amp;&quot;)&quot;); w←1;
+		end;
+	end;
+if curpen≥spen then
+	begin comment The size of an spen or epen is ignored;
+	pmem[curploc+1]←w; return;
+	end;
+if pmem[curploc+1]=w then return;
+if plottrace then print(&quot;|&quot;,w,&quot;|&quot;);
+if pmem[curploc+1]&lt;w then 
+	do curploc←righthalf(pmem[curploc]) until pmem[curploc+1]≥w
+else	do curploc←lefthalf(pmem[curploc]) until pmem[curploc+1]≤w;
+if pmem[curploc+1]=w then return;
+
+comment It is necessary to generate a new pen image;
+case curpen of begin
+[cpen] makepen(w,w);
+[hpen] makepen(w,hpenht);
+[vpen] makepen(vpenwd,w);
+[lpen][rpen] makerpen(w,hpenht);
+else confusion
+  end;
+if pmem[curploc+1]&gt;w then
+	begin comment Insert to left in doubly linked list;
+	integer p; p←lefthalf(pmem[curploc]);
+	pmem[p]←(pmem[p] land (all_ones lsh hw))+pmemplace;
+	pmem[curploc]←(pmem[curploc] land (all_ones lsh-hw))+(pmemplace lsh hw);
+	pmem[pmemplace]←(p lsh hw) + curploc;
+	end
+else	begin comment Insert to right in doubly linked list;
+	integer p; p←righthalf(pmem[curploc]);
+	pmem[p]←(pmem[p] land (all_ones lsh-hw))+(pmemplace lsh hw);
+	pmem[curploc]←(pmem[curploc] land (all_ones lsh hw))+pmemplace;
+	pmem[pmemplace]←(curploc lsh hw) + p;
+	end;
+curploc←pmemplace; pmem[pmemplace+1]←w;
+end;
+
+internal real procedure penadj(real width; integer dir) # boundary of pen position;
+begin comment For example, &quot;lft9 z&quot; equals $z$ plus $\\{penadj}(w↓9,\.{lft})$;
+integer w;
+w←width+.5; if w≤0 then w←1;
+if curpen≥spen then setuppen(1) # ensure that an spen or epen has been generated;
+case 4*curpen+dir of begin
+[4*cpen+lft][4*cpen+bot][4*hpen+lft][4*vpen+bot] return(.5*(1-w));
+[4*cpen+rt][4*cpen+top][4*hpen+rt][4*vpen+top] return(.5*(w-1));
+[4*hpen+bot][4*lpen+bot][4*rpen+bot] return(.5*(1-hpenht));
+[4*vpen+lft] return(.5*(1-vpenwd));
+[4*hpen+top][4*lpen+top][4*rpen+top] return(.5*(hpenht-1));
+[4*vpen+rt] return(.5*(vpenwd-1));
+[4*lpen+lft] return(-w);
+[4*lpen+rt] return(-1.0);
+[4*rpen+lft] return(1.0);
+[4*rpen+rt] return(w);
+[4*spen+lft] return(sxmin-sxcorr);
+[4*spen+rt] return(sxmax-sxcorr);
+[4*spen+bot] return(symin-sycorr);
+[4*spen+top] return(symax-sycorr);
+[4*epen+lft] return(exmin-excorr);
+[4*epen+rt] return(exmax-excorr);
+[4*epen+bot] return(eymin-eycorr);
+[4*epen+top] return(eymax-eycorr);
+else comment do nothing;
+  end;
+error(&quot;Undefined pen&quot;); return(0.0);
+end;
+
+string procedure strpen # symbolic name of current pen;
+return(case curpen of(&quot;cpen&quot;,&quot;hpen&quot;,&quot;vpen&quot;,&quot;lpen&quot;,&quot;rpen&quot;,&quot;spen&quot;,&quot;epen&quot;,&quot;no pen&quot;));
+comment Procedures for plotting points on the raster;
+
+comment METAFONT draws characters in a big array called \\{rast}, containing
+bits packed into words. When a pen is positioned at point $(x,y)$, its
+pixel coordinates are shifted by addition of $x$ and $y$, to obtain the
+points of \\{rast} that are set or reset (depending on whether \\{eraser} is
+\\{false} or \\{true}. Only points $(x,y)$ in the range $\\{xrastmin}≤x
+≤\\{xrastmax}$ and $\\{yrastmin}≤y≤\\{yrastmax}$ may be plotted.
+Here \\{xrastmin} and \\{xrastmax} are multiples of \\{bitsperwd}.
+Bit $(x,y)$ in the raster appears in word $\\{rast}[\\{rloc}(x,y)],
+with $\\{bitloc}(x)$ bits to its left in that word.
+The allocation is such that bits $(x,\\{yrastmax}+1)$ thru
+$(x,\\{yrastmax}+\\{ypenmax})$ occupy the same position as bits
+$(x+\\{bitsperwd},\\{yrastmin}+\\{ypenmin})$ thru
+$(x+\\{bitsperwd},\\{yrastmin}-1)$;
+
+comment No procedures except those on this page are supposed to change \\{rast}.
+The routines maintain four variables \\{xleft}, \\{xright}, \\{ylow}, and
+\\{yhigh} such that $\\{rast}[k*rspan+l]$ is zero unless
+	xleft ≤ k ≤ xright   and   ylow ≤ l ≤ yhigh;
+
+internaldef xrastmin=-72,xrastmax=360,yrastmin=-75,yrastmax=300 # raster bounds;
+internaldef rspan=yrastmax+ypenmax+1-yrastmin # words per raster column;
+internaldef rcol(x)=⊂((x-(xrastmin+xpenmin)) div bitsperwd)⊃ # column for bit $x$;
+internaldef rloc(x,y)=⊂rcol(x)*rspan+y⊃ # allocation function for \\{rast};
+internal saf integer array rast[rloc(xrastmin+xpenmin,yrastmin+ypenmin):
+	rloc(xrastmax+xpenmax,yrastmax+ypenmax)+rspan] # the big raster workspace;
+internal integer xleft,xright,ylow,yhigh # active part of the raster;
+
+forward procedure cleardd # clear the datadisk buffer;
+internal procedure clearrast # sets raster to zero;
+begin integer k,l;
+for k←xleft thru xright do for l←ylow thru yhigh do rast[k*rspan+l]←0;
+xleft←ylow←infty; xright←yhigh←-infty;
+cleardd;
+end;
+
+procedure vrastplot(integer p,x0,y0,n) # pen $p$ applied to (x0,y0)...(x0,y0+n);
+begin comment This procedure uses the pen or eraser specified by the non-E-W
+edge pattern beginning at location $p$ in \\{pmem} to update the raster
+at $n+1$ points in a vertical line going up from point $(x0,y0)$. It assumes
+that all of these points are in range (the calling routine should check this);
+integer xb,xw,xcount,xlc,xrc,yl,yh;
+if plottrace then print(&quot;(&quot;,x0,&quot;,&quot;,y0,&quot;:&quot;,y0+n,&quot;)&quot;);
+xb←(x0-xrastmin)mod bitsperwd; xlc←rcol(x0-xb)+lefthalf(pmem[p]);
+xcount←righthalf(pmem[p]) # range of columns spanned by the pen;
+xrc←xlc+xcount;
+if xlc&lt;xleft then xleft←xlc;
+if xrc≥xright then xright←xrc+1;
+xw←xlc*rspan # location of pen in \\{rast};
+p←p+1;
+loop	begin integer xy # current word in \\{rast};
+	integer k # \\{ycount} in current column;
+	integer i,j # loop indices, running thru pen columns;
+	integer z # current portion of pen image;
+	yl←y0+lefthalf(pmem[p]);
+	yh←yl+k+n;
+	if yl&lt;ylow then ylow←yl;
+	if yh&gt;yhigh then yhigh←yh;
+	xy←xw+yl; k←righthalf(pmem[p]); z←0;
+	comment Now comes the ``inner loop'';
+	define applypen=⊂if eraser then begin
+		rast[xy]←rast[xy] land lnot (z lsh -xb);
+		rast[xy+rspan]←rast[xy+rspan] land lnot (z lsh (bitsperwd-xb));
+		xy←xy+1 end else begin rast[xy]←rast[xy] lor (z lsh -xb);
+		rast[xy+rspan]←rast[xy+rspan] lor (z lsh (bitsperwd-xb));
+		xy←xy+1 end⊃;
+	if n&lt;k then
+		begin for i←0 thru n do
+			begin z←z xor pmem[p+i+1]; applypen;
+			end;
+		for i←n+1 thru k do
+			begin z←(z xor pmem[p+i+1]) xor pmem[p+i-n]; applypen;
+			end;
+		for i←k-n thru k-1 do
+			begin z←z xor pmem[p+i+1]; applypen;
+			end;
+		end
+	else	begin for i←0 thru k do
+			begin z←z xor pmem[p+i+1]; applypen;
+			end;
+		for i←1 thru n-k do
+			begin applypen;
+			end;
+		for i←0 thru k-1 do
+			begin z←z xor pmem[p+i+1]; applypen;
+			end;
+		end;
+	p←p+k+2;
+	if xcount=0 then done;
+	xcount←xcount-1;
+	xw←xw+rspan # advance to next column;
+	end;
+end;
+
+procedure hrastplot(integer p,x0,y0,n) # pen $p$ applied to (x0,y0)...(x0+n,y0);
+begin comment This procedure uses the pen or eraser edge stored in E-W form
+beginning at location $p$ to update the raster at $n+1$ points in a horizontal line
+going to the right from point $(x0,y0)$. It assumes that all of these points are
+in range (the calling routine should check this);
+integer y,ycount,xl,xr,xlw,xrw,xb,yh,xlc,xrc;
+if plottrace then print(&quot;(&quot;,x0,&quot;:&quot;,x0+n,&quot;,&quot;,y0,&quot;)&quot;);
+y←y0+lefthalf(pmem[p]); ycount←righthalf(pmem[p]);
+yh←y+ycount;
+if y&lt;ylow then ylow←y;
+if yh&gt;yhigh then yhigh←yh;
+loop	begin p←p+1; xl←x0+pmem[p]; xr←xl+n;
+	xlc←rcol(xl); xrc←rcol(xr);
+	if xlc&lt;xleft then xleft←xlc;
+	if xrc&gt;xright then xright←xrc;
+	xlw←xlc*rspan+y; xrw←xrc*rspan+y; xb←bitloc(xl);
+	if eraser then
+		begin while xlw&lt;xrw do
+			begin rast[xlw]←rast[xlw] land
+				(all_ones lsh (bitsperwd-xb));
+			xlw←xlw+rspan; xb←0;
+			end;
+		rast[xlw]←rast[xlw] land
+			((all_ones lsh -(bitloc(xr)-xb+1))rot(-xb));
+		end
+	else	begin while xlw&lt;xrw do
+			begin rast[xlw]←rast[xlw] lor (all_ones lsh -xb);
+			xlw←xlw+rspan; xb←0;
+			end;
+		rast[xlw]←rast[xlw] lor
+			((all_ones lsh ((bitsperwd-1)-bitloc(xr)+xb)) lsh -xb);
+		end;
+	if ycount=0 then done;
+	ycount←ycount-1;
+	y←y+1;
+	end;
+end;
+
+procedure fullrastplot(integer x0,y0) # current pen at $(x0,y0)$;
+begin comment This procedure uses the current pen or eraser to update the
+raster at point $(x0,y0)$, including all interior points (not just an edge).
+It assumes that point $(x0,y0)$ is in range (the calling routine should check this);
+integer p1,p2,xb,xw,xcount,xlc,xrc;
+if plottrace then print(&quot;(&quot;,x0,&quot;,&quot;,y0,&quot;)&quot;);
+p1←lefthalf(pmem[curploc+4])+2 # S edge of the current pen;
+p2←lefthalf(pmem[curploc+2])+2 # N edge of the current pen;
+if pmem[p1-2] ≠ pmem[p2-2] then confusion;
+xb←(x0-xrastmin)mod bitsperwd; xlc←rcol(x0-xb)+lefthalf(pmem[p1-2]);
+xcount←righthalf(pmem[p1-2]) # the number of columns;
+xrc←xlc+xcount;
+if xlc&lt;xleft then xleft←xlc;
+if xrc≥xright then xright←xrc+1;
+xw←xlc*rspan # location of pen in \\{rast};
+loop	begin integer xy # current word in \\{rast};
+	integer q1,q2 # end of current column;
+	integer y1,y2 # current row;
+	integer z # current portion of pen image;
+	define applypen=⊂if eraser then begin
+		rast[xy]←rast[xy] land lnot (z lsh -xb);
+		rast[xy+rspan]←rast[xy+rspan] land lnot (z lsh (bitsperwd-xb));
+		xy←xy+1 end else begin rast[xy]←rast[xy] lor (z lsh -xb);
+		rast[xy+rspan]←rast[xy+rspan] lor (z lsh (bitsperwd-xb));
+		xy←xy+1 end⊃;
+	y1←lefthalf(pmem[p1-1])+y0; y2←lefthalf(pmem[p2-1])+y0;
+	q1←p1+righthalf(pmem[p1-1]); q2←p2+righthalf(pmem[p2-1]);
+	xy←xw+y1; z←0;
+	if y1&lt;ylow then ylow←y1;
+	while y1&lt;y2 do
+		begin if p1≤q1 then
+			begin z←z xor pmem[p1]; p1←p1+1;
+			end;
+		applypen; y1←y1+1;
+		end;
+	while p1≤q1 do
+		begin z←z xor pmem[p1]; p1←p1+1;
+		applypen; y1←y1+1;
+		z←z xor pmem[p2]; p2←p2+1;
+		end;
+	while p2≤q2 do
+		begin applypen; y1←y1+1;
+		z←z xor pmem[p2]; p2←p2+1;
+		end;
+	if z≠0 then confusion;
+	if y1-1&gt;yhigh then yhigh←y1-1;
+	if xcount=0 then done;
+	xcount←xcount-1; xw←xw+rspan;
+	p1←p1+1; p2←p2+1;
+	end;
+end;
+comment Beginning of the main procedure \\{drawit};
+
+boolean plotted # we have plotted a point on the current curve;
+integer lastx,lasty # if \\{plotted} is \true, these are the coordinates of the
+	last point plotted;
+
+saf real array tt[0:9] # boundary values for monoctantic subintervals in \\{spdraw};
+
+define pmin=xrastmin min (-xrastmin) min yrastmin min (-yrastmax),
+	pmax=-pmin # legal coordinate range;
+saf integer array xl,xr[pmin:pmax] # coordinate bounds computed in \\{spdraw} loop;
+saf real array tl,tr[pmin:pmax] # $t$ values computed in \\{spdraw} loop;
+
+saf real array xdel,ydel,del,wdel,tanw[0:maxpoints] # differences used when
+	computing spline coefficients;
+saf real array w,x,y,xx,yy[0:3,1:maxpoints-1] # coefficients of cubic splines;
+
+internal procedure drawit(boolean ddrawit) # draws a specified curve;
+begin comment This procedure is called on to perform a \.{draw} or \.{ddraw}
+operation, after the arrays \\w, \\x, \\y, \\{tanx}, \\{tany}, \\{pointstab},
+etc., have been set up as described in \.{MFNTRP}. The code for \\{drawit}
+begins several pages below. It is necessary to define several procedures within
+\\{drawit} so that errors that abort a drawing will be able to return control
+to the main interpretive routine;
+
+label end_of_drawit # go here when drawing is finished or aborted;
+
+procedure drawerror(string s) # give error message and abort the drawing;
+begin error(s); go to end_of_drawit;
+end;
+
+procedure vplot(integer x0,y0,y1) # current pen applied to $(x0,y0:y1)$;
+begin comment This procedure uses the current pen or eraser to update the raster
+in a vertical line going up or down from points $(x0,y0)$ to $(x0,y1)$ inclusive;
+label plot_one # go here if $(x0,y0)$ must be fully plotted with interior points;
+label good_case # go here if the same edge can be used for the whole plot;
+label remove_one # go here to remove the first point $(x0,y0)$;
+label finished # go here when the plotting is done;
+integer p # pointer to proper edge of current pen;
+if x0&lt;xrastmin or x0&gt;xrastmax or y0 min y1 &lt; yrastmin or y0 max y1 &gt; yrastmax
+	then drawerror(&quot;Curve out of range&quot;);
+if plotted then
+	begin integer i,j;
+	i←x0-lastx; j←y0-lasty;
+	if abs(i)&gt;1 or abs(j)&gt;1 then go to plot_one;
+	case 3*i+j+4 of begin
+	[0] begin vrastplot(SW_dir,x0,y0,0); go to remove_one end;
+	[1] begin hrastplot(W_dir,x0,y0,0); go to remove_one end;
+	[2] begin vrastplot(NW_dir,x0,y0,0); go to remove_one end;
+	[3] if y1&lt;y0 then go to good_case else begin vrastplot(S_dir,x0,y0,0);
+	go to remove_one end;
+	[4] go to good_case;
+	[5] if y1≥y0 then go to good_case else begin vrastplot(N_dir,x0,y0,0);
+	go to remove_one end;
+	[6] begin vrastplot(SE_dir,x0,y0,0); go to remove_one end;
+	[7] begin hrastplot(E_dir,x0,y0,0); go to remove_one end;
+	[8] begin vrastplot(NE_dir,x0,y0,0); go to remove_one end;
+	else confusion
+	  end;
+	end
+else plotted←true;
+plot_one: fullrastplot(x0,y0);
+remove_one: if y0=y1 then go to finished;
+if y0&lt;y1 then y0←y0+1
+else if y0=y1+1 then
+	begin vrastplot(S_dir,x0,y1,0); go to finished;
+	end
+else y0←y0-1;
+good_case: if y0≤y1 then vrastplot(N_dir,x0,y0,y1-y0)
+	else vrastplot(S_dir,x0,y1,y0-y1);
+finished: lastx←x0; lasty←y1;
+end;
+
+procedure hplot(integer x0,y0,x1) # current pen applied to $(x0:x1,y0)$;
+begin comment This procedure uses the current pen or eraser to update the raster
+in a horizontal line going left or right from $(x0,y0)$ to $(x0,y1)$ inclusive;
+label plot_one # go here if $(x0,y0)$ must be fully plotted with interior points;
+label good_case # go here if the same edge can be used for the whole plot;
+label remove_one # go here to remove the first point $(x0,y0)$;
+label finished # go here when the plotting is done;
+integer p # pointer to proper edge of current pen;
+if x0 min x1 &lt; xrastmin or x0 max x1 &gt; xrastmax or y0&lt;yrastmin or y0&gt;yrastmax
+	then drawerror(&quot;Curve out of range&quot;);
+if plotted then
+	begin integer i,j;
+	i←x0-lastx; j←y0-lasty;
+	if abs(i)&gt;1 or abs(j)&gt;1 then go to plot_one;
+	case 3*i+j+4 of begin
+	[0] begin vrastplot(SW_dir,x0,y0,0); go to remove_one end;
+	[1] if x1&lt;x0 then go to good_case else begin hrastplot(W_dir,x0,y0,0);
+	go to remove_one end;
+	[2] begin vrastplot(NW_dir,x0,y0,0); go to remove_one end;
+	[3] begin vrastplot(S_dir,x0,y0,0); go to remove_one end;
+	[4] go to good_case;
+	[5] begin vrastplot(N_dir,x0,y0,0); go to remove_one end;
+	[6] begin vrastplot(SE_dir,x0,y0,0); go to remove_one end;
+	[7] if x1≥x0 then go to good_case else begin hrastplot(E_dir,x0,y0,0);
+	go to remove_one end;
+	[8] begin vrastplot(NE_dir,x0,y0,0); go to remove_one end;
+	else confusion
+	  end;
+	end
+else plotted←true;
+plot_one: fullrastplot(x0,y0);
+remove_one: if x0=x1 then go to finished;
+if x0&lt;x1 then x0←x0+1
+else if x0=x1+1 then
+	begin hrastplot(W_dir,x1,y0,0); go to finished;
+	end
+else x0←x0-1;
+good_case: if x0≤x1 then hrastplot(E_dir,x0,y0,x1-x0)
+	else hrastplot(W_dir,x1,y0,x0-x1);
+finished: lastx←x1; lasty←y0;
+end;
+comment The routine that plots a cubic;
+
+procedure spdraw(real rw,rx0,rx1,rx2,rx3,ry0,ry1,ry2,ry3);
+begin comment This procedure plots the cubic curves defined by 
+$x(t)= \\{rx0}+\\{rx1}\cdot t+\\{rx2}\cdot t^2+\\{rx3}\cdot t^3$ and
+$y(t)= \\{ry0}+\\{ry1}\cdot t+\\{ry2}\cdot t^2+\\{ry3}\cdot t^3$ for $0≤t≤1$,
+where the pen size is \\{rw}.
+
+First the interval is subdivided, if necessary, so that the relevant cubics are
+monotonic and so that we don't have both $|x^\prime(t)| &gt; |y^\prime(t)|$ and
+$|x^\prime(t)| &lt; |y^\prime(t)|$ in the same interval. The variable \\{octant} will
+be used to classify the subintervals according to the following scheme:
+
+	octant=0	0 ≤ y'(t) ≤ x'(t)
+	octant=1	0 ≤ y'(t) ≤ -x'(t)
+	octant=2	0 ≤ -y'(t) ≤ x'(t)
+	octant=3	0 ≤ -y'(t) ≤ -x'(t)
+	octant=4	0 ≤ x'(t) ≤ y'(t)
+	octant=5	0 ≤ -x'(t) ≤ y'(t)
+	octant=6	0 ≤ x'(t) ≤ -y'(t)
+	octant=7	0 ≤ -x'(t) ≤ -y'(t)
+
+When $\\{octant}=0$, for example, the drawing routine makes use of the facts that
+$x(t)$ and $y(t)$ are nondecreasing and that $y(t)$ is growing less rapidly than
+$x(t)$. The subintervals are specified by an array of points
+	1 = tt[0] &gt; tt[1] &gt; ... &gt; tt[m] = 0
+where $\\{tt}[i-1]≥\\{tt}[i]+\\{eps}$ for $1≤i≤m$.
+
+Since METAFONT works with a discrete raster, it gives careful attention to the set
+of integer points $(k,l)$ that are plotted. The general idea is to plot $(k,l)$ if,
+for some $0≤t≤1$, we have $k=\round\biglp x(t)\bigrp$ and 
+$l=\round\biglp y(t)\bigrp$ and $|x(t)-k|+|y(t)-l|&lt;{1\over2}$. In other words,
+we plot $(k,l)$ when the curve hits the diamond-shaped region
+		|x-k| + |y-l| &lt; 1/2.
+We also plot $(k,l)$ in certain boundary cases when the curve just happens to go
+between diamonds, or when it appears to do so as a consequence of the limited
+accuracy of floating-point arithmetic. A fairly arbitrary decision is made in
+such boundary cases, but this procedure preserves important symmetry: If $x(t)$
+were to be replaced by $n-x(t)$ for some integer $n$, the set of plotted points
+$(k,l)$ would be replaced by the set of points $(n-k,l)$, except in the case that
+$x(t)$ is constant and equal to an integer plus 1/2. (In the latter case such
+symmetry is obviously impossible.) Similarly there would be reflective symmetry
+if $y(t)$ were changed to $n-y(t)$, or if $x(t)$ and $y(t)$ were interchanged.
+This symmetry is a simple consequence of the fact that octants are used to govern
+the plotting: In each subinterval the curves are reduced to the case
+$\\{octant}=0$ by performing the operations $x(t)←-x(t)$ and/or $y(t)←-y(t)$
+and/or $x(t)↔y(t)$. There operations are applied later in reverse order when
+drawing the actual curve in the actual octant.
+
+A correction is added to $x(t)$ and/or $y(t)$ to compensate for possible
+off-centeredness of a pen whose width and/or height is even. The routine is
+designed to plot a straight horizontal or vertical sequence of points by making
+a single call to \\{hplot} or \\{vplot}. Only the edges of the pen are plotted,
+corresponding to increasing values of $t$.
+;
+integer octant # one of eight ways the curve may be varying (see above);
+real a0,a1,a2,a3,b0,b1,b2,b3 # coefficients of transformed $x(t)$ and $y(t)$;
+integer m # the number of subintervals;
+integer w # pen size;
+
+procedure ttinsert(real t);
+begin comment This procedure inserts $t$ into the \\{tt} table, unless $t$ is
+out of bounds or within \\{eps} of one the entries already present;
+integer i;
+if t&gt;1.0-eps or t&lt;eps then return;
+i←1; while t≤tt[i] do i←i+1;
+if t&gt;tt[i-1]-eps or t&lt;tt[i]+eps then return;
+while i≤m do
+	begin t↔tt[i]; i←i+1;
+	end;
+m←i; tt[m]←0.0;
+end;
+
+procedure split(real a,b,c);
+begin comment This procedure calls $\\{ttinsert}(t)$ for all $t$ such that the
+polynomial $3at^2+2bt+c$ changes sign at $t$;
+a←3.0*a;
+if abs(a)≥eps then
+	begin real d,r;
+	if (d←b^2-a*c)&gt;eps then
+		begin if b≥0 then r←(-b-sqrt(d))/a
+		else r←(-b+sqrt(d))/a;
+		ttinsert(r); ttinsert((c/a)/r);
+		end;
+	end
+else if abs(b)≥eps then ttinsert(-.5*c/b);
+end;
+
+recursive procedure initlr(integer l0,l1);
+begin comment This subprocedure is used to fill the \\{xl}, \\{xr}, \\{tl}, and
+\\{tr} arrays in positions between $l0$ and $l1$, according to the conventions
+described below. It is assumed that $\\{xr}[l0]$, $\\{tr}[l0]$, $\\{xl}[l1]$, and
+$\\{tl}[l1]$ are already known;
+integer k,l; real t0,t1,t;
+if l1≤l0+1 then return;
+t0←tr[l0]; t1←tl[l1];
+loop	begin t←.5*(t0+t1);
+	if t-t0≤eps then drawerror(&quot;Curve too wild&quot;);
+	k←((a3*t+a2)*t+a1)*t+a0;
+	l←((b3*t+b2)*t+b1)*t+b0;
+	if l=l0 then
+		begin tr[l]←t; t0←t; xr[l]←k;
+		end
+	else if l=l1 then
+		begin tl[l]←t; t1←t; xl[l]←k;
+		end
+	else done;
+	end;
+tl[l]←tr[l]←t;
+xl[l]←xr[l]←k;
+initlr(l0,l);
+initlr(l,l1);
+end;
+
+comment The \\{spdraw} procedure begins here;
+if plottrace then print(nextline);
+tt[0]←1.0; tt[1]←0.0; m←1;
+split(rx3,rx2,rx1);
+split(ry3,ry2,ry1);
+split(rx3+ry3,rx2+ry2,rx1+ry1);
+split(rx3-ry3,rx2-ry2,rx1-ry1);
+comment Now each subinterval belongs to a single octant;
+w←rw+.5 # round the pen size;
+setuppen(w);
+define corr(val,size)=⊂if size land 1 then val else val-.5⊃;
+case curpen of begin
+[cpen] begin rx0←corr(rx0,w); ry0←corr(ry0,w) end;
+[hpen] begin rx0←corr(rx0,w); ry0←corr(ry0,hpenht) end;
+[vpen] begin rx0←corr(rx0,vpenwd); ry0←corr(ry0,w) end;
+[lpen][rpen] ry0←corr(ry0,hpenht);
+[spen] begin rx0←rx0-sxcorr; ry0←ry0-sycorr end;
+[epen] begin rx0←rx0-excorr; ry0←ry0-eycorr end;
+else confusion
+  end;
+
+while m&gt;0 do
+	begin comment Now we draw the curve between tt[m] and tt[m-1];
+	real t0,t1,t,xprime,yprime,xi,eta;
+	integer x0,x1,ax,bx,ay,by,l;
+	t0←tt[m]; t1←tt[m-1]; m←m-1;
+	t←.5*(t0+t1);
+	xprime←(3*rx3*t+2*rx2)*t+rx1;
+	if xprime≥0 then
+		begin a0←rx0; a1←rx1; a2←rx2; a3←rx3; octant←0;
+		end
+	else	begin comment $x(t)$ decreasing, negate the sign;
+		a0←-rx0; a1←-rx1; a2←-rx2; a3←-rx3; octant←1;
+		end;
+	yprime←(3*ry3*t+2*ry2)*t+ry1;
+	if yprime≥0 then
+		begin b0←ry0; b1←ry1; b2←ry2; b3←ry3;
+		end
+	else	begin comment $y(t)$ decreasing, negate the sign;
+		b0←-ry0; b1←-ry1; b2←-ry2; b3←-ry3; octant←octant+2;
+		end;
+	if abs(yprime)&gt;abs(xprime) then
+		begin comment $y$ growing faster thn $x$, interchange them;
+		a0↔b0; a1↔b1; a2↔b2; a3↔b3; octant←octant+4;
+		end;
+	b0←b0+.5 # reduce rounding to truncation;
+
+	xi←((a3*t1+a2)*t1+a1)*t1+a0;
+	eta←((b3*t1+b2)*t1+b1)*t1+b0;
+	x1←bx←xi; by←eta;
+	if abs(xi-bx-1.0)+abs(eta-by-.5)≤.5 then bx←bx+1;
+	xi←((a3*t0+a2)*t0+a1)*t0+a0;
+	eta←((b3*t0+b2)*t0+b1)*t0+b0;
+	x0←ax←xi; ay←eta;
+	if abs(xi-ax)+abs(eta-ay-.5)≤.5 then ax←ax-1;
+	comment Taking due account of whether or not this curve segment touches
+	the diamonds at its left and right ends, we will plot points $(k,l)$ for
+	$\\{ax}&lt;k≤\\{bx}$. The relevant $l$ values are $\\{ay}≤l≤\\{by}$. For
+	each $l$ in this range we will maintain table entries $\\{tl}[l]$ and
+	$\\{tr}[l]$, the least and greatest $t$ values known such that
+	$\round\biglp y(t)\bigrp=l$. We also will store the corresponding
+	truncated $x(t)$ values $\\{xl}[l]$ and $\\{xr}[l]$. Our goal is to
+	refine our knowledge about the cubics so that
+		xr[l] = xl[l+1]  for  ay ≤ l &lt; by.
+	Then we shall plot $(k,l)$ for
+		xl[l] &lt; k ≤ xr[l],  ay ≤ l ≤ by.
+	The boundary values $\\{xl}[{ay}]$ and $\\{xr}[{by}]$ are set to
+	$\\{ax}$ and $\\{bx}$, respectively.
+	;
+	if ay&lt;pmin or by&gt;pmax then drawerror(&quot;Curve out of range&quot;);
+	xr[ay]←x0; tr[ay]←t0;
+	xl[by]←x1; tl[by]←t1;
+	xl[ay]←ax; xr[by]←bx # note order of assignment in case $\\{ay}=\\{by}$;
+	initlr(ay,by);
+	for l←ay thru by do
+		begin if l≠by and xr[l]&lt;xl[l+1] then
+			begin real t0,t1,t; integer k0,k1,k,ll;
+			t0←tr[l]; t1←tl[l+1]; k0←xr[l]; k1←xl[l+1];
+			loop	begin t←.5*(t0+t1);
+				if t-t0≤eps then
+					begin k1←k1-1;
+					if k0=k1 then done;
+					drawerror(&quot;Curve too wild&quot;);
+					end
+				else	begin k←((a3*t+a2)*t+a1)*t+a0;
+					ll←((b3*t+b2)*t+b1)*t+b0;
+					if ll=l then
+						begin t0←t; k0←k;
+						end
+					else	begin t1←t; k1←k;
+						end;
+					if k0=k1 then done;
+					end;
+				end;
+			xr[l]←k0; xl[l+1]←k1;
+			comment There's no need to reset $\\{th}[l]$, $\\{tl}[l+1]$;
+			end;
+		if xl[l]&lt;xr[l] then
+			begin comment plotting $(k,l)$ for all appropriate $k$;
+			case octant of begin
+			[0] hplot(xl[l]+1,l,xr[l]);
+			[1] hplot(-xl[l]-1,l,-xr[l]);
+			[2] hplot(xl[l]+1,-l,xr[l]);
+			[3] hplot(-xl[l]-1,-l,-xr[l]);
+			[4] vplot(l,xl[l]+1,xr[l]);
+			[5] vplot(-l,xl[l]+1,xr[l]);
+			[6] vplot(l,-xl[l]-1,-xr[l]);
+			[7] vplot(-l,-xl[l]-1,-xr[l]);
+			else confusion
+			  end;
+			end;
+		end;
+	end;
+end;
+procedure ccubics # compute the cubic splines;
+begin comment This procedure uses the data in arrays \\{pointx}, \\{pointy},
+\\{tanx}, and \\{tany} to compute the coefficients of cubic splines to be drawn;
+integer j,k;
+label trivial;
+if npts=1 then go to trivial;
+
+comment First we set up auxiliary difference tables;
+for k←0 thru npts do
+	begin xdel[k]←pointx[k+1]-pointx[k];
+	ydel[k]←pointy[k+1]-pointy[k];
+	del[k]←xdel[k]^2+ydel[k]^2;
+	end;
+comment Let $\Delta z = \Delta x + i\Delta y$ in the interval from the $k$th
+point to the $(k+1)$st point. Then $\\{xdel}[k]=\Delta x$ and $\\{ydel}[k]=\Delta y$
+and $\\{del}[k]=|\Delta z|^2$. We will compute the tangent directions so that if the
+cubic spline begins in the direction of $e^{i\theta}\Delta z$ and ends in the
+direction of $e^{-i\varphi}\Delta z$ then $e^{i\theta}=(\\{tanx}[k]+i\cdot
+\\{tany}[k])|\Delta z|/\Delta z$ and $e^{-i\varphi}=(\\{tanx}[k+1]+i\cdot
+\\{tany}[k+1])|\Delta z|/\Delta z$;
+for k←1 thru npts do
+	begin real alpha,beta # desired tangent direction at current point;
+	real gamma # $\sqrt{\\{alpha}^2+\\{beta}^2}$;
+	if abs(tanx[k])&gt;eps or abs(tany[k])&gt;eps then
+		begin alpha←tanx[k]; beta←tany[k] # direction specified by user;
+		end
+	else if del[k-1]≤eps then
+		begin alpha←xdel[k]; beta←ydel[k] # first point of series;
+		end
+	else if del[k]≤eps then
+		begin alpha←xdel[k-1]; beta←ydel[k-1] # last point of series;
+		end
+	else	begin comment Choose tangent direction determined by the circle
+			passing through points $k-1$, $k$, and $k+1$;
+		alpha←xdel[k-1]/del[k-1]+xdel[k]/del[k];
+		beta←ydel[k-1]/del[k-1]+ydel[k]/del[k];
+		end;
+	gamma←sqrt(alpha^2+beta^2);
+	if gamma≤eps then
+		begin alpha←gamma←1.0; beta←0.0;
+		end;
+	tanx[k]←alpha/gamma; tany[k]←beta/gamma;
+	comment Now $\\{tanx}[k]^2+\\{tany}[k]^2=1$;
+	end;
+for k←1 thru npts-1 do
+	begin label linear # go here if the curve is linear not cubic;
+	real tcos, tsin # $\\{tcos}+i\cdot\\{tsin}=e^{i\theta}|\Delta z|$;
+	real fcos, fsin # $\\{fcos}+i\cdot\\{fsin}=e^{i\varphi}|\Delta z|$;
+	real ctp # $\cos(\theta+\varphi)$;
+	real ctp2 # $\cos\biglp(\theta+\varphi)/2\bigrp$;
+	real delta # $\sqrt(\\{del}[k])$;
+	real alpha # temporary storage;
+	real r, s # &quot;velocities&quot;;
+	x[0,k]←pointx[k]; y[0,k]←pointy[k] # the constant coefficient;
+	if del[k]≤eps then go to linear;
+	tcos←xdel[k]*tanx[k]+ydel[k]*tany[k];
+	tsin←-ydel[k]*tanx[k]+xdel[k]*tany[k];
+	fcos←xdel[k]*tanx[k+1]+ydel[k]*tany[k+1];
+	fsin←ydel[k]*tanx[k+1]-xdel[k]*tany[k+1];
+	ctp←(tcos*fcos-tsin*fsin)/del[k];
+	delta←sqrt(del[k]);
+	if ctp&lt;.999 then
+		begin ctp2←sqrt(.5*(0.0 max(ctp+1.0)));
+		alpha←sqrt(8.0)/(sqrt(1.0-ctp)*(1.0+ctp2));
+		r←abs(alpha*fsin); s←abs(alpha*tsin);
+		end
+	else	begin comment $\theta \approx -\varphi$, probably both zero;
+		r←s←2.0*delta;
+		end;
+	if r&gt;maxvr*delta then
+		begin if modtrace then print(nextline,
+		&quot;Spline velocity reduced between points &quot;,
+		indexname(pointi[k]),&quot; and &quot;,indexname(pointi[k+1]),
+		&quot; (r =&quot;,cvf(r/delta),&quot;)&quot;);
+		r←maxvr*delta;
+		end;
+	if s&gt;maxvs*delta then
+		begin if modtrace then print(nextline,
+		&quot;Spline velocity reduced between points &quot;,
+		indexname(pointi[k]),&quot; and &quot;,indexname(pointi[k+1]),
+		&quot; (s =&quot;,cvf(s/delta),&quot;)&quot;);
+		s←maxvs*delta;
+		end;
+	if r&lt;minvr*delta then
+		begin if modtrace then print(nextline,
+		&quot;Sharp turn suppressed between points &quot;,
+		indexname(pointi[k]),&quot; and &quot;,indexname(pointi[k+1]),
+		&quot; (r =&quot;,cvf(r/delta),&quot;)&quot;);
+		r←minvr*delta;
+		end;
+	if s&lt;minvs*delta then
+		begin if modtrace then print(nextline,
+		&quot;Sharp turn suppressed between points &quot;,
+		indexname(pointi[k]), &quot; and &quot;,
+		indexname(pointi[k+1]),
+		&quot; (s =&quot;,cvf(s/delta),&quot;)&quot;);
+		s←minvs*delta;
+		end;
+	comment the desired cubic for $x$ is now
+		pointx[k] + t\cdot xdel[k] + t(1-t)((1-t)α-tβ)
+	where $α$ and $β$ are the desired $x$-derivatives minus $\\{xdel}[k]$:
+		α = r\cdot tanx[k] - xdel[k],  β = s\cdot tanx[k+1] - xdel[k];
+	x[1,k]←r*tanx[k]; alpha←x[1,k]-xdel[k];
+	x[3,k]←alpha+s*tanx[k+1]-xdel[k] # $α+β$;
+	x[2,k]←-x[3,k]-alpha # $-2α-β$;
+	y[1,k]←r*tany[k]; alpha←y[1,k]-ydel[k];
+	y[3,k]←alpha+s*tany[k+1]-ydel[k] # $α+β$;
+	y[2,k]←-y[3,k]-alpha # $-2α-β$;
+	continue;
+	linear: x[1,k]←xdel[k]; y[1,k]←ydel[k];
+	x[2,k]←x[3,k]←y[2,k]←y[3,k]←0.0;
+	end;
+
+trivial: x[0,npts]←pointx[npts]; y[0,npts]←pointy[npts];
+x[1,npts]←x[2,npts]←x[3,npts]←y[1,npts]←y[2,npts]←y[3,npts]←0.0;
+
+comment Finally we rotate the results;
+if xxtr≠1.0 or xytr or xtr or yxtr or yytr≠1.0 or ytr then
+	begin for k←1 thru npts do for j←0 thru 3 do
+		begin real temp;
+		temp←xxtr*x[j,k]+xytr*y[j,k];
+		y[j,k]←yxtr*x[j,k]+yytr*y[j,k];
+		if j=0 then
+			begin y[0,k]←y[0,k]+ytr; temp←temp+xtr;
+			end;
+		x[j,k]←temp;
+		end;
+	end;
+end;
+procedure filldraw(real pensize);
+begin comment This procedure will use the spline curves defined in arrays
+\\x and \\y, and the spline curves defined in arrays \\{xx} and \\{yy}, to
+draw a series of curves that will fill in between these extremes;
+integer w # rounded pen size;
+integer k # runs through the specified pairs of points;
+integer n # one less than the number of curves to be drawn;
+integer j # runs from 0 to $n$;
+
+w←pensize+.5;
+setuppen(w); n←0;
+for k←1 thru npts do
+	begin comment Figure the number of points needed to go from $(x,y)$ to
+	$(\\{xx},\\{yy}) in a straight line with the specified pen, at point $k$;
+	integer m;
+	real alpha,beta;
+	real d # maximum distance we could theoretically put between overlapping
+		pens in the desired direction, if resolution were infinite;
+	alpha←abs(x[0,k]-xx[0,k]); beta←abs(y[0,k]-yy[0,k]);
+	if alpha&gt;eps or beta&gt;eps then
+		begin case curpen of begin
+		[cpen][spen][epen] d←sqrt(alpha^2+beta^2)/w;
+		[hpen] d←sqrt((alpha/w)^2+(beta/hpenht)^2);
+		[vpen] d←sqrt((alpha/vpenwd)^2+(beta/w)^2);
+		[lpen][rpen] d←(alpha/w)max(beta/hpenht);
+		else drawerror(&quot;No pen defined&quot;)
+		  end;
+		comment Working with infinite resolution, we could safely use
+		$\lceil d\rceil +1$ points to connect $x[0,k]$ to $\\{xx}[0,k]$;
+		m←d*safetyfactor + 1 # default safetyfactor is 2.0;
+		if m&gt;n then n←m;
+		end;
+	end;
+
+comment We will use $n+1$ equally spaced spline curves;
+for j←0 thru n do
+	begin real alpha; alpha←j/n;
+	for k←1 thru npts-1 do
+		spdraw(w,x[0,k]+alpha*(xx[0,k]-x[0,k]),
+				x[1,k]+alpha*(xx[1,k]-x[1,k]),
+				x[2,k]+alpha*(xx[2,k]-x[2,k]),
+				x[3,k]+alpha*(xx[3,k]-x[3,k]),
+				y[0,k]+alpha*(yy[0,k]-y[0,k]),
+				y[1,k]+alpha*(yy[1,k]-y[1,k]),
+				y[2,k]+alpha*(yy[2,k]-y[2,k]),
+				y[3,k]+alpha*(yy[3,k]-y[3,k]));
+	end;
+
+comment Finally we fill in the ends;
+spdraw(w,x[0,1],xx[0,1]-x[0,1],0.0,0.0,y[0,1],yy[0,1]-y[0,1],0.0,0.0);
+spdraw(w,x[0,npts],xx[0,npts]-x[0,npts],0.0,0.0,
+	y[0,npts],yy[0,npts]-y[0,npts],0.0,0.0);
+end;
+comment The \\{drawit} procedure begins here;
+
+integer k # runs through the specified points;
+integer j # runs from 0 to 3 (for coefficients);
+
+if drawtrace then
+	begin integer wd,dg # width and number of digits printed;
+	getformat(wd,dg);
+	print(nextline,if ddrawit then &quot;ddraw:  (&quot; else &quot;draw:   (&quot;,
+		strpen,&quot;)   &quot;);
+	if not ddrawit then
+		begin for k←1 thru npts-1 do
+			print(if pointstab[k] then &quot;#&quot; else &quot; &quot;,&quot;   ...   &quot;);
+		if pointstab[npts] then print(&quot;#&quot;);
+		print(&quot;     &quot;);
+		end;
+	if ddrawit then
+		begin print(nextline,&quot;       &quot;);
+		for k←0 thru npts+1 do print(if dpnti[k]&lt;0 then &quot;        &quot;
+			else (indexname(dpnti[k])&amp;&quot;          &quot;)[1 to 10]);
+		setformat(10,4);
+		print(nextline,&quot; x =&quot;);
+		for k←0 thru npts+1 do print(dpntx[k]);
+		print(nextline,&quot; y =&quot;);
+		for k←0 thru npts+1 do print(dpnty[k]);
+		print(nextline,&quot;        tanx =&quot;);
+		for k←1 thru npts do print(dtanx[k]);
+		print(nextline,&quot;        tany =&quot;);
+		for k←1 thru npts do print(dtany[k]);
+		setformat(wd,dg);
+		end;
+	print(nextline,&quot;       &quot;);
+	for k←0 thru npts+1 do print(if pointi[k]&lt;0 then &quot;          &quot;
+		else (indexname(pointi[k])&amp;&quot;          &quot;)[1 to 10]);
+	setformat(10,4);
+	if not ddrawit then
+		begin print(nextline,&quot; w =&quot;);
+		for k←0 thru npts+1 do print(pointw[k]);
+		end;
+	print(nextline,&quot; x =&quot;);
+	for k←0 thru npts+1 do print(pointx[k]);
+	print(nextline,&quot; y =&quot;);
+	for k←0 thru npts+1 do print(pointy[k]);
+	print(nextline,&quot;        tanx =&quot;);
+	for k←1 thru npts do print(tanx[k]);
+	print(nextline,&quot;        tany =&quot;);
+	for k←1 thru npts do print(tany[k]);
+	setformat(wd,dg);
+	end;
+
+plotted←false;
+ccubics;
+if ddrawit then
+	begin pointw[1]←cursize;
+	for k←0 thru npts+1 do
+		begin if k&gt;0 then for j←0 thru 3 do
+			begin xx[j,k]←x[j,k]; yy[j,k]←y[j,k];
+			end;
+		pointx[k]←dpntx[k]; pointy[k]←dpnty[k];
+		tanx[k]←dtanx[k]; tany[k]←dtany[k];
+		end;
+	ccubics;
+	filldraw(cursize);
+	end
+else	begin real maxw,minw # maximum and minimum size of pen;
+	integer mxw,mnw # rounded equivalents of \\{maxw} and \\{minw};
+	maxw←minw←pointw[1];
+	for k←2 thru npts do
+		begin if pointw[k]&lt;minw then minw←pointw[k]
+		else if pointw[k]&gt;maxw then maxw←pointw[k];
+		end;
+	mxw←maxw+.5; mnw←minw+.5;
+	if mxw=mnw then
+		begin comment The nice case (constant pen size);
+		for k←1 thru npts-1 do
+			spdraw(maxw,x[0,k],x[1,k],x[2,k],x[3,k],
+				y[0,k],y[1,k],y[2,k],y[3,k]);
+		end
+	else	begin comment Varying pen size, reduce to ddraw;
+		for k←0 thru npts do wdel[k]←pointw[k+1]-pointw[k];
+		for k←1 thru npts do
+			if pointstab[k] then tanw[k]←0.0
+			else if del[k-1]≤eps then tanw[k]←wdel[k]
+			else if del[k]≤eps then tanw[k]←wdel[k-1]
+			else tanw[k]←(wdel[k-1]/del[k-1]+wdel[k]/del[k])/
+				(1.0/del[k-1]+1.0/del[k]);
+		for k←1 thru npts-1 do
+			begin real alpha; w[1,k]←tanw[k];
+			alpha←tanw[k]-wdel[k];
+			w[3,k]←alpha+tanw[k+1]-wdel[k];
+			w[2,k]←-w[3,k]-alpha;
+			w[0,k]←pointw[k]-minw;
+			end;
+		w[0,npts]←pointw[npts]-minw;
+		w[1,npts]←w[2,npts]←w[3,npts]←0.0;
+		for k←1 thru npts do for j←0 thru 3 do
+			begin case curpen of begin
+			[hpen] begin xx[j,k]←x[j,k]-.5*w[j,k];
+			x[j,k]←x[j,k]+.5*w[j,k];
+			yy[j,k]←y[j,k] end;
+			[vpen] begin xx[j,k]←x[j,k];
+			yy[j,k]←y[j,k]-.5*w[j,k];
+			y[j,k]←y[j,k]+.5*w[j,k] end;
+			[lpen] begin xx[j,k]←x[j,k]-w[j,k];
+			yy[j,k]←y[j,k] end;
+			[rpen] begin xx[j,k]←x[j,k]+w[j,k];
+			yy[j,k]←y[j,k] end;
+			else drawerror(&quot;You can't vary the pen size with &quot;
+				&amp;strpen)
+			  end;
+			end;
+		filldraw(minw);
+		end;
+	end;
+
+if not plotted then
+	begin comment Single point or a curve that was too tiny;
+	integer x0,y0,w;
+	define ccor(val,size)=⊂if size land 1 then val+.5 else val⊃;
+	w←pointw[1]+.5;
+	setuppen(w);
+	case curpen of begin
+	[cpen] begin x0←ccor(x[0,1],w); y0←ccor(y[0,1],w) end;
+	[hpen] begin x0←ccor(x[0,1],w); y0←ccor(y[0,1],hpenht) end;
+	[vpen] begin x0←ccor(x[0,1],vpenwd); y0←ccor(y[0,1],w) end;
+	[lpen][rpen] begin x0←x[0,1]; y0←ccor(y[0,1],hpenht) end;
+	[spen] begin x0←x[0,1]+.5-sxcorr; y0←y[0,1]+.5-sycorr end;
+	[epen] begin x0←x[0,1]+.5-excorr; y0←y[0,1]+.5-eycorr end;
+	else confusion
+	  end;
+	if x0&lt;xrastmin or x0&gt;xrastmax or y0&lt;yrastmin or y0&gt;yrastmax then
+		drawerror(&quot;Point out of range&quot;);
+	fullrastplot(x0,y0);
+	end;
+
+end_of_drawit: if drawdisplay then ddoutrast;
+end;
+comment Now comes very system-dependent code for displaying on the user's screen;
+
+IFSUAI require &quot;ddhdr.sai[gra,hpm]&quot; source_file; comment Hans Moravec's datadisk package;
+comment For documentation of Hans's routines see file \.{guide.gra[gra,hpm]};
+external integer sline # location of row pointers in Hans's code;
+saf integer array bp[0:7] # byte pointers for 4-bit groups;
+integer bwd # buffer word used when converting from 36-bit to 32-bit format;
+integer ddchan # datadisk channel for output;
+integer get,put # byte pointers for getting 4 bits and putting out 32;
+preload_with true; safe boolean array ddnotready[0:0] # initialization needed;
+internaldef ddxmin=-89,ddxmax=414,ddymin=-99,ddymax=380 # datadisk window;
+comment $\\{ddxmin}-1$ and \\{ddxmax} should be congruent to 18, modulo 36;
+comment we must have xrastmin+xpenmin≤ddxmin, ddxmax≤xrastmax+xpenmax,
+	yrastmin+ypenmin≤ddymin, ddymax≤yrastmax+ypenmax,
+	ddxmax-ddxmin&lt;504, ddymax-ddymin&lt;480;
+internaldef ddn=5 # printing is confined to this many lines at bottom of screen;
+
+procedure initdd # do this before messing around with datadisk routines;
+begin integer k;
+ddinit # Get Hans started;
+screen(0,0,511,479);
+ddchan←-1 # output goes to user's screen;
+DEBUGONLY ddchan←gddchn(-1);
+DEBUGONLY print(nextline,&quot;Channel number &quot;,cvos(ddchan));
+DEBUGONLY erase(ddchan);
+DEBUGONLY showa(ddchan);
+for k←0 thru 7 do bp[k]←point(4,bwd,4*k+7);
+DEBUGONLY if false then begin # omit the following line when debugging;
+pppos(0,ddn*12-1) # set &quot;page printer position&quot;;
+DEBUGONLY end # omit the previous line when debugging;
+end;
+
+procedure cleardd # clear Hans's buffer;
+begin if ddnotready[0] then return;
+drken; rectan(0,0,511,479); liten;
+end;
+
+internal procedure ddoutrast # displays the raster on datadisk screen;
+begin comment The following code (suggested by Mike Farmwald) assumes that
+$\\{bitsperwd}=36$ and refers to internal buffers of Hans's routines;
+integer j,y,yl,yh,xl,xr,bytes;
+	begin &quot;am I a DD?&quot;
+	integer i;
+	start_code  setom i; ttcall 6,i; end;  comment The GETLIN UUO;
+	if i=-1 then i←0 # i=-1 means a detached job;
+	if (i land '20000000000)=0 then
+		begin error(&quot;Whoops, you need a Datadisc for display modes&quot;);
+		control←control land lnot displaymodes;
+		return;
+		end;
+	end &quot;am I a DD?&quot;;
+if ddnotready[0] then
+	begin ddnotready[0]←false; initdd; cleardd;
+	end;
+xl←xleft max rcol(ddxmin); xr←xright min rcol(ddxmax);
+yl←ylow max ddymin; yh←yhigh min ddymax;
+bytes←9*(xr-xl+1) # number of 4-bit bytes to transmit;
+for y←yl thru yh do
+	begin integer xw; xw←xl*rspan+y;
+	get←point(4,rast[xw],-1);
+	put←point(32,memory[memory[location(sline)+ddymax-y]+location(dbuf)],-1);
+		# the location of 32-bit pattern in Hans's buffer;
+	bwd←0;
+ 	for j←0 thru bytes-1 do
+		begin dpb(ildb(get),bp[j land 7]) # deposit 4 bits into \\{bwd};
+		if (j land 7) = 7 then
+			begin idpb(bwd,put); bwd←0;
+			end;
+		if (j mod 9) = 8 then
+			begin xw←xw+rspan; get←point(4,rast[xw],-1);
+			end;
+		end;
+	if (bytes land 7) ≠ 0 then idpb(bwd,put) # deposit remaining bits;
+	end;
+dpyup(ddchan) # Hans's buffer to screen;
+end; ENDSUAI
+
+IFPARC
+require &quot;adis.sai&quot; source_file;
+ENDPARC
+end
+
+</PRE>
+</BODY>
+</HTML>

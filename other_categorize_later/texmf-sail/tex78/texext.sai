@@ -1,0 +1,13 @@
+require &quot;TEXHDR.SAI&quot; source_file;
+internal procedure initext # do this when initializing TEX;
+internal procedure extop # do this when &quot;\x&quot; sensed in user input;
+internal procedure dumpext(integer p) # do this in procedure dumpnodelist;
+internal procedure destroyext(integer p) # do this in procedure dsnodelist;
+internal procedure eqdestroyext(integer p) # do this in procedure eqdestroy;
+internal procedure hpackext(integer p) # do this in procedure hpackage;
+internal procedure vpackext(integer p) # do this in procedure vpackage;
+internal procedure pageext(integer p) # do this in the addtopage routine;
+internal procedure justext(integer p) # do this in the justification routine;
+internal procedure houtext(integer p; reference real x,y) # do this in shipout;
+internal procedure voutext(integer p; reference real x,y) # do this in shipout;
+end
