@@ -468,4 +468,27 @@ Some problems with Knuth-style literate programming:
 
 ----------------------------------------------------------------------
 
+> Literate programming has a niche: write once, read many programs which are maintained by a single person and which seldom have many major improvements.
+
+> This simply doesn't describe most projects that I've been associated with in a lifetime (I'm now retired) of professional software development. It's not a surprise that Literate Programming is the product of a university professor, whose job is exposition to students, rather than the tens of thousands of working software developers who have to work with code on a daily basis.
+
+-- Comment by John Roth at http://languagelog.ldc.upenn.edu/nll/?p=10693
+
+See also an interesting comment by Matt Pharr on that thread: http://languagelog.ldc.upenn.edu/nll/?p=10693#comment-563359
+(Matt Pharr won an Academy Award for a literate-programming book! And mentioned it in his acceptance speech!)
+
+> (Regarding John Roth's university professor comment: I've been a professional software developer ever since leaving grad school.)
+>
+> ...
+> 
+> I don't believe that literate programming is necessarily appropriate for all software; as many folks have pointed out, a lot of software isn't so complex that it's necessary, and the literate programming approach definitely introduces additional burden. I'd estimate that the total work involved is basically the sum of the work to write a software system plus the work to write a book. As it turns out that writing a book is a big undertaking, this is a pretty substantial effort. Many programmers certainly aren't good writers or don't enjoy writing.
+
+----------------------------------------------------------------------
+
+Comment by Daly (of Axiom) at https://news.ycombinator.com/item?id=10071207 (haven't read the rest of the thread):
+
+> There are some "gold standard" literate programs: "Physically Based Rendering" by Pharr and Humphreys won an academy award. "Lisp in Small Pieces" contains a complete lisp implementation including the interpreter and compiler. The book "Implementing Elliptic Curve Cryptography" is another example.
+
+----------------------------------------------------------------------
+
 TODO for myself: get all the *early* Knuth programs and documentation (in WEB) that came out of the TeX project: TeX (tex, tripman, glue), TeXware (pooltype, tftopl, pltotf, dvitype), mf (mf, trapman), mfware (gftype, gftopk, gftodvi, mft), etc (vftovp, vptovf), web (weave, tangle, webman). Put them up.
