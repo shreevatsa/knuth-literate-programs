@@ -1,0 +1,132 @@
+%!PS
+%%BoundingBox: -6 -4 119 117 
+%%HiResBoundingBox: -5.23035 -3.04414 118.61615 116.42995 
+%%Creator: MetaPost 1.208
+%%CreationDate: 2021.09.27:0927
+%%Pages: 1
+%*Font: cmtt10 9.96265 9.96265 31:ff
+%%BeginProlog
+%%EndProlog
+%%Page: 1 1
+ 0 0 0 setrgbcolor 0 0.5 dtransform truncate idtransform setlinewidth pop
+ [] 0 setdash 1 setlinejoin 10 setmiterlimit
+newpath 0 0 moveto
+113.3858 0 lineto
+113.3858 113.3858 lineto
+0 113.3858 lineto
+ closepath stroke
+ 1 setlinecap
+newpath 0 0 moveto
+113.3858 113.3858 lineto stroke
+newpath 0 0 moveto
+113.3858 113.3858 lineto stroke
+newpath 0 113.3858 moveto
+113.3858 0 lineto stroke
+newpath 0 113.3858 moveto
+113.3858 0 lineto stroke
+newpath 0 28.34645 moveto
+85.03935 113.3858 lineto stroke
+newpath 28.34645 0 moveto
+113.3858 85.03935 lineto stroke
+newpath 0 85.03935 moveto
+85.03935 0 lineto stroke
+newpath 28.34645 113.3858 moveto
+113.3858 28.34645 lineto stroke
+newpath 0 56.6929 moveto
+56.6929 113.3858 lineto stroke
+newpath 56.6929 0 moveto
+113.3858 56.6929 lineto stroke
+newpath 0 56.6929 moveto
+56.6929 0 lineto stroke
+newpath 56.6929 113.3858 moveto
+113.3858 56.6929 lineto stroke
+newpath 0 85.03935 moveto
+28.34645 113.3858 lineto stroke
+newpath 85.03935 0 moveto
+113.3858 28.34645 lineto stroke
+newpath 0 28.34645 moveto
+28.34645 0 lineto stroke
+newpath 85.03935 113.3858 moveto
+113.3858 85.03935 lineto stroke
+8.94289 -3.04414 moveto
+(14) cmtt10 9.96265 fshow
+-5.23035 11.12909 moveto
+(15) cmtt10 9.96265 fshow
+37.28934 -3.04414 moveto
+(23) cmtt10 9.96265 fshow
+23.1161 11.12909 moveto
+(24) cmtt10 9.96265 fshow
+8.94289 25.3023 moveto
+(25) cmtt10 9.96265 fshow
+-5.23035 39.47554 moveto
+(26) cmtt10 9.96265 fshow
+65.63579 -3.04414 moveto
+(32) cmtt10 9.96265 fshow
+51.46255 11.12909 moveto
+(33) cmtt10 9.96265 fshow
+37.28934 25.3023 moveto
+(34) cmtt10 9.96265 fshow
+23.1161 39.47554 moveto
+(35) cmtt10 9.96265 fshow
+8.94289 53.64876 moveto
+(36) cmtt10 9.96265 fshow
+-5.23035 67.82199 moveto
+(37) cmtt10 9.96265 fshow
+93.98224 -3.04414 moveto
+(41) cmtt10 9.96265 fshow
+79.809 11.12909 moveto
+(42) cmtt10 9.96265 fshow
+65.63579 25.3023 moveto
+(43) cmtt10 9.96265 fshow
+51.46255 39.47554 moveto
+(44) cmtt10 9.96265 fshow
+37.28934 53.64876 moveto
+(45) cmtt10 9.96265 fshow
+23.1161 67.82199 moveto
+(46) cmtt10 9.96265 fshow
+8.94289 81.99521 moveto
+(47) cmtt10 9.96265 fshow
+-5.23035 96.16844 moveto
+(48) cmtt10 9.96265 fshow
+108.15546 11.12909 moveto
+(51) cmtt10 9.96265 fshow
+93.98224 25.3023 moveto
+(52) cmtt10 9.96265 fshow
+79.809 39.47554 moveto
+(53) cmtt10 9.96265 fshow
+65.63579 53.64876 moveto
+(54) cmtt10 9.96265 fshow
+51.46255 67.82199 moveto
+(55) cmtt10 9.96265 fshow
+37.28934 81.99521 moveto
+(56) cmtt10 9.96265 fshow
+23.1161 96.16844 moveto
+(57) cmtt10 9.96265 fshow
+8.94289 110.34166 moveto
+(58) cmtt10 9.96265 fshow
+108.15546 39.47554 moveto
+(62) cmtt10 9.96265 fshow
+93.98224 53.64876 moveto
+(63) cmtt10 9.96265 fshow
+79.809 67.82199 moveto
+(64) cmtt10 9.96265 fshow
+65.63579 81.99521 moveto
+(65) cmtt10 9.96265 fshow
+51.46255 96.16844 moveto
+(66) cmtt10 9.96265 fshow
+37.28934 110.34166 moveto
+(67) cmtt10 9.96265 fshow
+108.15546 67.82199 moveto
+(73) cmtt10 9.96265 fshow
+93.98224 81.99521 moveto
+(74) cmtt10 9.96265 fshow
+79.809 96.16844 moveto
+(75) cmtt10 9.96265 fshow
+65.63579 110.34166 moveto
+(76) cmtt10 9.96265 fshow
+108.15546 96.16844 moveto
+(84) cmtt10 9.96265 fshow
+93.98224 110.34166 moveto
+(85) cmtt10 9.96265 fshow
+showpage
+%%EOF
