@@ -41,7 +41,7 @@ struct {
 FILE *infile, *outfile;
 int prime[1000]; /* 1000 primes will take us past 60 million */
 int pr; /* the number of primes known so far */
-char x[64]; /* exponents of the binary representation of $n$ */
+char x[64]; /* exponents of the binary representation of $n$, less 1 */
 int main(int argc, char* argv[])
 {
   register int i,j,p,q,n,s,ubp,ubq,lbp,lbq;
@@ -299,7 +299,7 @@ if (i<=q) {
   if (i<q) {
     lbq=j+1;@+goto q_search;
   }
-q_ready: ubq=lbq=harmless; goto happiness; /* we found |p| */
+q_ready: ubq=lbq=harmless; goto happiness; /* we found |q| */
 }
 for (ubq=j-1, i=(i+1)>>1; q<i; ubq--) i=(i+1)>>1;
 q_done:@;

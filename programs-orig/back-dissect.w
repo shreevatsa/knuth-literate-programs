@@ -727,7 +727,7 @@ case of bipartite matching.)
 @<Uncover all other columns of |cur_node|@>=
 uncover(cur_node->left->col);
       
-@ @<Set |best_col| to  the best column for branching@>=
+@ @<Set |best_col| to the best column for branching@>=
 minlen=max_nodes;
 if (vbose>2) fprintf(stderr,"Level %d:",level);
 for (cur_col=root.next;cur_col!=&root;cur_col=cur_col->next) {

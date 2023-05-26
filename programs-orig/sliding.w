@@ -116,7 +116,7 @@ int verbose;
 main(int argc, char *argv[])
 {
   register int j,k,t;
-  int d;
+  volatile int d;
   @<Process the command line@>;
   @<Read the puzzle specification; abort if it isn't right@>;
   @<Initialize@>;
@@ -745,7 +745,7 @@ while (sourceh>maxposh || (sourceh==maxposh && source>=maxpos)) {
   if (d==0) exit(0);
   printf("\n%d:\n",d);
   k=source&(memsize-1);
-  unpack(aboard,apiece,place,&pos[k+2]);
+  unpack(aboard,apiece,aplace,&pos[k+2]);
   print_board(aboard,apiece);
   if (source<pos[k+1]) sourceh--;
   source=source-pos[k+1];
@@ -850,7 +850,7 @@ found a known configuration~$\beta$ that begins at $j$ in the |pos| array.
 @<Handle the tricky case and |return|@>=
 {
   if (bound<shortcut) return 0; /* return if $\beta$ not at distance $d$ */
-  n=(j-source)%(memsize-1); /* find the distance from $\beta$ to $\alpha$ */
+  n=(j-source)&(memsize-1); /* find the distance from $\beta$ to $\alpha$ */
   if (pos[j+1]==n) return 0; /* return if $\alpha$ preceded $\beta$ */
   pos[j+1]=n; /* otherwise make $\alpha$ precede $\beta$ */
   return 1; /* and continue the depth-first search */

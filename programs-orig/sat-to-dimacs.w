@@ -65,7 +65,7 @@ case 's': k|=(sscanf(argv[j]+1,"%d",&random_seed)-1);@+break;
 default: k=1; /* unrecognized command-line option */
 }
 if (k || hbits<0 || hbits>30 || buf_size<=0) {
-  fprintf(stderr,"Usage: %s [v<n>] [h<n>] [b<n>] [s<n>] < foo.dat\n",argv[0]);
+  fprintf(stderr,"Usage: %s [v<n>] [h<n>] [b<n>] [s<n>] < foo.sat\n",argv[0]);
   exit(-1);
 }
 

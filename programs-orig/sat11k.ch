@@ -760,7 +760,7 @@ $$h(l)=0.1+\alpha\sum_{l\to l'}\hat h(l')+
 where $\alpha$ is a magic constant and where $\hat h(l)$ is a
 multiple of~$h(l)$ such that $\sum_l\hat h(l)=2n$. (In other
 words, we ``normalize'' the $h$'s so that the average score is~1.)
-The default value $\alpha=3.3$ is recommended, but of course other
+The default value $\alpha=3.5$ is recommended, but of course other
 magic values can be tried by using the command-line parameter~`\.a'
 to change~$\alpha$.
 
@@ -802,13 +802,13 @@ $$h(l)\;=\;\alpha+s(l)+\sum_{l\to l'}s(l'),$$
 where $s(l)$ is the number of occurrences of $\bar l$ in big clauses that are
 currently active. This quantity $h(l)$ estimates the potential number of
 big-clause reductions that occur when $l$ becomes true.
-The default value $\alpha=1.001$ is recommended, but of course other
+The default value $\alpha=0.001$ is recommended, but of course other
 magic values can be tried by using the command-line parameter~`\.a'.
 @z
 @x
 @ The subroutine |hscores| converts $h$ values to $h'$ values according
 to the equation above. It also makes sure that $h'(l)$ doesn't
-exceed |max_score| (which is 25.0 by default). Furthermore, it computes
+exceed |max_score| (which is 20.0 by default). Furthermore, it computes
 |rating[thevar(l)]=hp(l)*hp(bar(l))|, a number that will be used to select
 the final list of candidates.
 

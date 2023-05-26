@@ -3,11 +3,10 @@
     printf(""O"lld:\n",count);
     for (k=0;k<level;k++) {
       pp=choice[k];
-      cc=pp<last_col? pp: nd[pp].col;
-      if (!first_tweak[k]) print_row(pp,stdout,nd[cc].down,scor[k]);
-      else print_row(pp,stdout,first_tweak[k],scor[k]);
+      cc=pp<last_itm? pp: nd[pp].itm;
+      if (!first_tweak[k]) print_option(pp,stdout,nd[cc].down,scor[k]);
+      else print_option(pp,stdout,first_tweak[k],scor[k]);
     }
-    if (p) @<Print the free rows@>;
     fflush(stdout);
   }
 @y
@@ -16,11 +15,11 @@
     printf(""O"lld:",count);
     for (k=0;k<level;k++) {
       p=choice[k];
-      c=p<last_col? p: nd[p].col;
+      c=p<last_itm? p: nd[p].itm;
       h=first_tweak[k]? first_tweak[k]: nd[c].down;
-      if (p==nd[h].col) continue; /* null choice */
+      if (p==nd[h].itm) continue; /* null choice */
       for (q=p;;q++) {
-        c=nd[q].col;
+        c=nd[q].itm;
         if (c<=0) {
           q=nd[q].up-1;
           continue;
@@ -29,7 +28,7 @@
           xa=decode(cl[c].name[1]);
           xb=decode(cl[c].name[2]);
           q++;
-          c=nd[q].col;
+          c=nd[q].itm;
           if (cl[c].name[0]!='y') confusion("xab not followed by ycd");
           yc=decode(cl[c].name[1]);
           yd=decode(cl[c].name[2]);

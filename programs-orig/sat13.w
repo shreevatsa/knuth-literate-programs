@@ -22,7 +22,7 @@ revolutionized the field, making {\mc SAT}-solvers applicable to large-scale
 industrial problems.
 
 My model for {\mc SAT13} has been E\'en and S\"orensson's MiniSAT solver,
-together with the Biere's PicoSAT solver, both of which were at one
+together with Biere's PicoSAT solver, both of which were at one
 time representative of world-class CDCL implementations. The technology has
 continued to improve, and to become more complex than appropriate for
 my book to survey; therefore I have not added all the latest bells and whistles.
@@ -137,8 +137,8 @@ buffer.
 `\.s$\langle\,$integer$\,\rangle$' to define the seed for any random numbers
 that are used.
 \item{$\bullet$}
-`\.d$\langle\,$integer$\,\rangle$' to set |delta| for periodic state reports.
-(See |print_state|.)
+`\.d$\langle\,$integer$\,\rangle$' to set |delta| for periodic state reports
+(default 10000000000). (See |print_state|.)
 \item{$\bullet$}
 `\.D$\langle\,$positive integer$\,\rangle$' to set |doomsday|, the
 number of conflicts after which this world comes to an end.
@@ -182,7 +182,8 @@ probability that a variable's default initial value is true.
 `\.x$\langle\,$filename$\,\rangle$' to output a
 solution-eliminating clause to the specified file. If the given problem is
 satisfiable in more than one way, a different solution can be obtained by
-appending that file to the input.
+appending that file to the input. (In principle, all solutions could be
+found by repeated use of this feature, together with a restart file.)
 \item{$\bullet$}
 `\.l$\langle\,$filename$\,\rangle$' to output all of the learned clauses
 of length $\le |learn_save|$
@@ -237,8 +238,8 @@ char *polarity_out_name; /* its name */
 ullng imems,mems; /* mem counts */
 ullng bytes; /* memory used by main data structures */
 ullng nodes; /* the number of nodes entered */
-ullng thresh=0; /* report when |mems| exceeds this, if |delta!=0| */
-ullng delta=0; /* report every |delta| or so mems */
+ullng thresh=10000000000; /* report when |mems| exceeds this, if |delta!=0| */
+ullng delta=10000000000; /* report every |delta| or so mems */
 ullng timeout=0x1fffffffffffffff; /* give up after this many mems */
 uint memk_max=memk_max_default; /* binary log of the maximum size of |mem| */
 uint max_cells_used; /* how much of |mem| has ever held data? */
@@ -1108,6 +1109,7 @@ if (vals!=eptr)
 @ The |print_stats| subroutine presents a digest of the current goings-on.
 First it shows the number of literals learned at level~zero~(\.z).
 Then it shows recent smoothed-average values of decision depth~(\.d),
+trail length~(\.t),
 mems per conflict~(\.m),
 propagations per conflict~(\.p),
 resolutions per conflict~(\.r),

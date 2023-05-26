@@ -2,7 +2,7 @@
 @ ``9. The sum of all question numbers whose answers are correct and the same as
 this one is:
 (A)~$\in[59\dts62]$ (B)~$\in[52\dts55]$ (C)~$\in[44\dts49]$
-(D)~$\in[61\dts67]$ (E)~$\in[44\dts53]$''
+(D)~$\in[59\dts67]$ (E)~$\in[44\dts53]$''
 
 @<Cases for the big...@>=
 case pack(0,9,A): case pack(0,9,B): case pack(0,9,C): case pack(0,9,D):
@@ -29,7 +29,7 @@ case E: i=(j>=44 && j<=53);@+break;
 @ ``9. The sum of all question numbers whose answers are correct and the same as
 this one is:
 (A)~$\in[59\dts62]$ (B)~$\in[52\dts55]$ (C)~$\in[44\dts49]$
-(D)~$\in[61\dts67]$ (E)~$\in[39\dts43]$''
+(D)~$\in[59\dts67]$ (E)~$\in[39\dts43]$''
 
 @<Cases for the big...@>=
 case pack(0,9,A): case pack(0,9,B): case pack(0,9,C): case pack(0,9,D):

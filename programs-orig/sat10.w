@@ -1022,7 +1022,7 @@ for (k=1;k<=level;k++) {
 printf("\n");
 if (level<vars) {
   if (verbose&show_unused_vars) printf("(Unused:");
-  for (v=0;v<vars;v++) if (val[v]==unknown) {
+  for (v=1;v<=vars;v++) if (val[v]==unknown) {
     if (verbose&show_unused_vars) printf(" "O".8s",vmem[v].name.ch8);
     if (out_file) fprintf(out_file," "O".8s",vmem[v].name.ch8);
   }

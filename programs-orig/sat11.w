@@ -154,8 +154,8 @@ int primary_vars; /* the number of primary variables */
 ullng imems,mems; /* mem counts */
 ullng bytes; /* memory used by main data structures */
 ullng nodes; /* the number of nodes entered */
-ullng thresh=0; /* report when |mems| exceeds this, if |delta!=0| */
-ullng delta=0; /* report every |delta| or so mems */
+ullng thresh=10000000000; /* report when |mems| exceeds this, if |delta!=0| */
+ullng delta=10000000000; /* report every |delta| or so mems */
 ullng timeout=0x1fffffffffffffff; /* give up after this many mems */
 uint memk_max=memk_max_default; /* binary log of the maximum size of |mem| */
 float alpha=3.5; /* magic constant for heuristic scores */
@@ -215,6 +215,8 @@ preselection.
 \item{$\bullet$}
 `\.i$\langle\,$positive integer$\,\rangle$' to adjust |dl_max_iter|, the
 maximum number of iterations allowed during a double-lookahead.
+(An exceptionally large value will actually {\it disable\/} double-lookahead,
+because there won't be enough available ``truth space.'')
 \item{$\bullet$}
 `\.r$\langle\,$positive float$\,\rangle$' to adjust |dl_rho|, the
 damping factor for |dl_trigger|.
@@ -2060,7 +2062,7 @@ $$h(l)=0.1+\alpha\sum_{l\to l'}\hat h(l')+
 where $\alpha$ is a magic constant and where $\hat h(l)$ is a
 multiple of~$h(l)$ such that $\sum_l\hat h(l)=2n$. (In other
 words, we ``normalize'' the $h$'s so that the average score is~1.)
-The default value $\alpha=3.3$ is recommended, but of course other
+The default value $\alpha=3.5$ is recommended, but of course other
 magic values can be tried by using the command-line parameter~`\.a'
 to change~$\alpha$.
 
@@ -2097,7 +2099,7 @@ for (k=0;k<lits;k++) o,hmem[k]=1.0;
 
 @ The subroutine |hscores| converts $h$ values to $h'$ values according
 to the equation above. It also makes sure that $h'(l)$ doesn't
-exceed |max_score| (which is 25.0 by default). Furthermore, it computes
+exceed |max_score| (which is 20.0 by default). Furthermore, it computes
 |rating[thevar(l)]=hp(l)*hp(bar(l))|, a number that will be used to select
 the final list of candidates.
 
@@ -3139,7 +3141,7 @@ but decreases slightly after each lookahead.
 Double-lookahead has a weaker level of trustworthiness than
 |proto_truth|. It is the dynamically specified level |dl_truth|, at the
 top of a region of stamp space that allows for a maximum number of
-permitted iterations. That maximum number, |dl_max_iter|, is 8 by default,
+permitted iterations. That maximum number, |dl_max_iter|, is 32 by default,
 but of course users are allowed to fiddle with it to their hearts' content.
 Literals that are true at level |dl_truth| are conditionally true under the
 hypothesis that |looklit| is true.

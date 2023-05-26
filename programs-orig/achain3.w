@@ -21,6 +21,9 @@ the more I think about it. If it fails, we would have
 $l_{k+1}(n)>l_{k+1}(2n)$, by the previous inequality; but addition
 chains are full of surprises.
 
+[Indeed, Neill Clift found the counterexample $l_7(142025)=20$, $l_8(142025)=22$
+in 2022!]
+
 Two parameters are given on the given line. If they are \.{foo} and
 \.{bar}, this program reads from files \.{foo-1}, \.{foo-2}, etc.,
 and writes to files \.{bar-1}, \.{bar-2}, etc., with bytes of
@@ -360,6 +363,9 @@ start with 1,~2,~3. For example, one of them is
 
 (I learned subsequently that Sch\"onhage had conjectured $l_1(n)=l_2(n)$
 in 1975. Moreover, Bleichenbacher and Flammenkamp mentioned
-the first three counterexamples in an unpublished preprint of 1997.)
+the first three counterexamples in an unpublished preprint of 1997.
+In fact, the counterexample $n=38587$ had actually been found already
+by Tsai and Chin in 1992 [{\sl Proc.\ Nat.\ Sci.\ Council\/ \bf A16}
+(Taiwan:\ 1992), 506--514].)
 
 @*Index.

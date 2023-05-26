@@ -39,7 +39,7 @@ struct {
 FILE *infile, *outfile;
 int prime[1000]; /* 1000 primes will take us past 60 million */
 int pr; /* the number of primes known so far */
-char x[64]; /* exponents of the binary representation of $n$ */
+char x[64]; /* exponents of the binary representation of $n$, less 1 */
 int main(int argc, char* argv[])
 {
   register int i,j,n,p,q,r,s,ubp,ubq,lbp,lbq,ptrp,ptrq;

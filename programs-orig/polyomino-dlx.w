@@ -28,7 +28,7 @@ for instance, `\.{[0-2][b-b]}' specifies three cells,
 Individual cells may be specified more than once, but they appear
 just once in the box. For example,
 $$\.{[123]2}\qquad \.{2[123]}$$
-specifies a cross of five cells, namely \.{222} and its four neighbors.
+specifies a cross of five cells, namely \.{22} and its four neighbors.
 The cells of a box needn't be connected.
 
 Cell specifications can optionally be followed by a suffix. For example,

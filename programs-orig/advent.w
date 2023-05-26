@@ -375,7 +375,8 @@ new_word("cage",CAGE);
 new_word("rod",ROD);
 new_word("bird",BIRD);
 new_word("door",DOOR);
-new_word("pillo",PILLOW);
+new_word("pillo",PILLOW);@+
+new_word("velve",PILLOW);
 new_word("snake",SNAKE);
 new_word("fissu",CRYSTAL);
 new_word("table",TABLET);
@@ -522,7 +523,7 @@ is not particularly rewarding.  Anyway,\n\
 nothing exciting happens.";
 new_word("throw",TOSS);@+
 new_word("toss",TOSS);
-default_msg[TOSS]="Peculiar.  Nothing unexpected happens.";
+default_msg[TOSS]=default_msg[DROP];
 new_word("wake",WAKE);@+
 new_word("distu",WAKE);
 default_msg[WAKE]=default_msg[EAT];
@@ -2071,7 +2072,7 @@ make_loc(climb,@/  @q26@>
 "You clamber up the plant and scurry through the hole at the top.",0,0);
 make_inst(FORCE,0,narrow);
 @#
-make_loc(check,"",0,0);  @q31@>
+make_loc(check,0,0,0);  @q31@>
 make_inst(FORCE,not(PLANT,2),upnout);
 make_inst(FORCE,0,didit);
 @#
@@ -2346,7 +2347,7 @@ new_obj(GEYSER,0,GEYSER,view);
 new_note(0);
 new_obj(MESSAGE,0,MESSAGE,limbo);
 new_note("There is a message scrawled in the dust in a flowery script, reading:\n\
-\"This is not the maze where the pirate hides his treasure chest.\"");
+\"This is not the maze where the pirate leaves his treasure chest.\"");
 new_obj(BEAR,0,BEAR,barr);
 new_note("There is a ferocious cave bear eying you from the far end of the room!");
 new_note("There is a gentle cave bear sitting placidly in one corner.");
@@ -2457,7 +2458,7 @@ void listen()@+{
       if (isspace(*p)) break; *q=tolower(*p);
     }
     *q='\0'; /* end of |word1| */
-    for (p++; isspace(*p); p++) ;
+    for (; isspace(*p); p++) ;
     if (*p==0) {
       *word2='\0';@+ return;
     }
@@ -2465,7 +2466,7 @@ void listen()@+{
       if (isspace(*p)) break; *q=tolower(*p);
     }
     *q='\0'; /* end of |word2| */
-    for (p++; isspace(*p); p++) ;
+    for (; isspace(*p); p++) ;
     if (*p==0) return;
     printf(" Please stick to 1- and 2-word commands.\n");
   }
@@ -2700,7 +2701,7 @@ if (dark && !forced_move(loc)) {
     p=long_desc[loc];
 else p=short_desc[loc];
 if (toting(BEAR)) printf("You are being followed by a very large, tame bear.\n");
-printf("\n%s\n",p);
+if (p) printf("\n%s\n",p);
 if (forced_move(loc)) goto try_move;
 @<Give optional \.{plugh} hint@>;
 if (!dark) @<Describe the objects at this location@>;
@@ -2844,7 +2845,7 @@ out of a possible %d.\n",score()-4,max_score);
  if (!yes("Do you indeed wish to quit now?",ok,ok)) continue;
  goto give_up;
 @#
-case QUIT:@+ if (!yes("Do you really wish to quit now?",ok,ok))
+case QUIT:@+ if (!yes("Do you really want to quit now?",ok,ok))
    continue;
 give_up: gave_up=true;@+goto quit;
 
@@ -2895,7 +2896,7 @@ case BLAST:@+ if (closed && prop[ROD2]>=0) {
  } else goto report_default;
 @#
 case RUB:@+ if (obj==LAMP) goto report_default;
- default_to(TOSS);
+ report("Peculiar.  Nothing unexpected happens.");
 
 @ If asked to find an object that isn't visible, we give a caveat.
 
@@ -3300,7 +3301,7 @@ have no bird seed.");
    report("The snake has now devoured your bird.");
   case BEAR:@+ if (!here(FOOD)) {
      if (prop[BEAR]==0) break;
-     if (prop[BEAR]==3) change_to(EAT);
+     if (prop[BEAR]==3) verb=EAT;
      goto report_default;
    }
    destroy(FOOD);@+prop[BEAR]=1;
@@ -3320,8 +3321,7 @@ down considerably and even becomes rather friendly.");
 @<Handle cases of trans...@>=
 case OPEN: case CLOSE:@+
  switch(obj) {
-   case OYSTER: k=1;
-   case CLAM: @<Open/close clam/oyster@>;
+   case OYSTER: case CLAM: @<Open/close clam/oyster@>;
    case GRATE: case CHAIN:@+ if (!here(KEYS)) report("You have no keys!");
      @<Open/close grate/chain@>;
    case KEYS: report("You can't lock or unlock the keys.");
@@ -4052,6 +4052,10 @@ since you've found the chest. Therefore the long descriptions of
 Dear reader, all the clues to this final puzzle are presented in the
 program itself, so you should have no trouble finding the solution.
 
+[Two statements marked `bugfix' have been inserted here, on the
+recommendation of Arthur O'Dwyer, because they correct a subtle
+error in Woods's original implementation.]
+
 @<Close the cave@>=
 {
   printf("The sepulchral voice intones, \
@@ -4073,6 +4077,7 @@ smoke). . . .    Then your eyes refocus; you look around and find...\n");
   move(ROD2,swend);@+prop[ROD2]=-1;
   move(PILLOW,swend);@+prop[PILLOW]=-1;
   move(MIRROR_,swend);
+  place[WATER]=limbo;@+place[OIL]=limbo; /* bugfix */
   for (j=1;j<=max_obj;j++) if (toting(j)) destroy(j);
   closed=true;
   bonus=10;
@@ -4390,11 +4395,11 @@ It is possible (but unusual) to earn exactly 1 point.
 k=score();
 printf("You scored %d point%s out of a possible %d, using %d turn%s.\n",
    k,k==1? "": "s",max_score,turns,turns==1? "": "s");
-for (j=0;class_score[j]<=k;j++);
+for (j=0;class_score[j]<k;j++);
 printf("%s\nTo achieve the next higher rating",class_message[j]);
 if (j<highest_class)
-  printf(", you need %d more point%s.\n",class_score[j]-k,
-                 class_score[j]==k+1? "": "s");
+  printf(", you need %d more point%s.\n",class_score[j]+1-k,
+                 class_score[j]==k? "": "s");
 else printf(" would be a neat trick!\nCongratulations!!\n");
 
 @ @<Glob...@>=

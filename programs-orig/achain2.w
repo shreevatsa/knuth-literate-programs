@@ -36,7 +36,7 @@ int tail[128],outdeg[128],outsum[128],limit[128];
 FILE *infile, *outfile;
 int prime[1000]; /* 1000 primes will take us past 60 million */
 int pr; /* the number of primes known so far */
-char x[64]; /* exponents of the binary representation of $n$ */
+char x[64]; /* exponents of the binary representation of $n$, less 1 */
 int main(int argc, char* argv[])
 {
   register int i,j,n,p,q,r,s,ubp,ubq,lbp,lbq,ptrp,ptrq;
@@ -182,6 +182,12 @@ value~|t| that we need to know when |outdeg[j]=1|.
 (Has anybody seen this idea before? At my age I thought I had
 seen all such simple tricks long ago, but maybe there still
 are many more waiting to be discovered.)
+
+(Note added 08 Oct 2005: I just found this idea attributed to
+David Wood, by Eric Bach and Marcos Kiwi in {\sl Theoretical
+Computer Science\/ \bf235} (2000), 5. Bach and Kiwi go on
+to generalize the idea so that more than one element can be
+identified, using power sums.)
 
 One consequence: If |outdeg[s-1]==0|, we must either have
 $a[s-1]={1\over2}a[s]$ or $a[s-1]\ge{2\over3}a[s]$. Because

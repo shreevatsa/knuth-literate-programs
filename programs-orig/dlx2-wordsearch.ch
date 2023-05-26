@@ -1,7 +1,7 @@
 @x
   if (spacing && (count mod spacing==0)) {
     printf(""O"lld:\n",count);
-    for (k=0;k<=level;k++) print_row(choice[k],stdout);
+    for (k=0;k<=level;k++) print_option(choice[k],stdout);
     fflush(stdout);
   }
 @y [this was hacked from dlx2-polyom.ch in the obvious way]
@@ -9,7 +9,7 @@
     register cc,d,l,t,x,y;
     for (k=0;k<=level;k++) {
       for (r=choice[k]+1;;) {
-        cc=nd[r].col;
+        cc=nd[r].itm;
         if (cc<=0) {
           r=nd[r].up;@+continue;
         }

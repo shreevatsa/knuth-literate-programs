@@ -10,6 +10,7 @@ Then comes the desired integer $n$.
 
 @c
 #include <stdio.h>
+#include <stdlib.h>
 unsigned char l[nmax];
 int a[128],b[128];
 unsigned int undo[128*128];

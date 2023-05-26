@@ -284,6 +284,7 @@ else {
   mate[j]=0,mate[k]=0;
   mate[jm]=km,mate[km]=jm;
   printstate(j,jj,ll);
+  mate[jm]=j,mate[km]=k,mate[j]=jm,mate[k]=km; /* restore original state */
 }
 done:
 
