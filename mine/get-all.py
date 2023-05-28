@@ -36,5 +36,5 @@ for link in links:
     subprocess.call(['wget', '-N', url])
     if filename.endswith('.gz'):
         subprocess.call(['gunzip', '-k', '-f', filename])
-    if filename in ['tictactoe.tgz']:
+    if filename in ['sat-life.tgz', 'tictactoe.tgz']:
         subprocess.call(['tar', 'xvfz', filename])
