@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Examples of literate programming</title>
+  <style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <style type="text/css">li {
+margin-block-start: 2em;
+}
+</style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Examples of literate programming</h1>
+</header>
+<h2 id="introduction">Introduction</h2>
+<p>This page contains PDF versions of some literate programs by Donald
+Knuth, posted on his webpage at <a href="https://cs.stanford.edu/~knuth/programs.html" class="uri">https://cs.stanford.edu/~knuth/programs.html</a>. Most of
+them are in the CWEB system, in which the programmer (Knuth in this
+case) writes a <code>.w</code> file, which is processed either:</p>
+<ul>
+<li>(for the compiler) <code>foo.w</code> —-<code>ctangle</code>–&gt;
+<code>foo.c</code> (producing a <code>.c</code> file that is not very
+human-readable), or</li>
+<li>(for the human reader) <code>foo.w</code> –<code>cweave</code>–&gt;
+<code>cweave.tex</code> (producing a <code>.tex</code> file to be
+typeset into PDF, which is the version that is meant to be read).</li>
+</ul>
+<p>Prof. Knuth has posted the <code>.w</code> files on his webpage, but
+I’m afraid that many casual readers may not take the time to install
+<code>cweave</code> and <code>tex</code>, and thus may try to read the
+<code>.w</code> file directly. So here I’ve put the typeset versions for
+anyone to read.</p>
+<p>This is the note on his website:</p>
+<blockquote>
+<p>I write lots of <a href="https://cs.stanford.edu/~knuth/cweb.html">CWEB</a> programs,
+primarily for my own edification. If there is sufficient interest, I’ll
+make a large subset of them available via the Internet. For now, I’m
+listing only a few. […]</p>
+</blockquote>
+<p>He also adds a note that many of the programs “use the conventions
+and library of <a href="https://cs.stanford.edu/~knuth/sgb.html">The
+Stanford GraphBase</a>”.</p>
+<p>Here are the programs as listed on his webpage, with the
+<code>.w</code> and <code>.ch</code> links changed to corresponding
+<code>.pdf</code> files (from running <code>cweave</code> and
+typesetting them). There may be some errors in the conversion; let me
+(Shreevatsa) know. (Several “I”, “my” etc. below refer to Prof. Knuth,
+as the list is copied from his webpage.)</p>
+<h2 id="cweb-programs">CWEB programs</h2>
+<ul>
+<li><p><a href="hwtime.pdf">HWTIME</a> Brief demonstration of CWEB:
+“Hello, world” plus time (October 1992) (“used as a handout for a
+lecture on literate programming that I once gave at Frys Electronics in
+Sunnyvale”)</p></li>
+<li><p><a href="sham.pdf">SHAM</a> Enumerates symmetrical Hamiltonian
+cycles (December 1992) (“The next two show (by quite different methods)
+that exactly 2,432,932 knight’s tours are unchanged by 180-degree
+rotation of the chessboard.”)</p></li>
+<li><p><a href="obdd.pdf">OBDD</a> Enumerates perfect matchings of
+bipartite graphs (May 1996)</p></li>
+<li><p><a href="reflect.pdf">REFLECT</a>; also a <a href="reflect-ch.pdf">change file for REFLECT</a>. Enumerates
+equivalence classes of reflection networks, aka CC systems (January
+1991)</p></li>
+<li><p><a href="hull.pdf">HULL</a>, <a href="hulls.pdf">HULLS</a>, <a href="hullt.pdf">HULLT</a>, <a href="hulltr.pdf">HULLTR</a> Programs
+used as examples in <a href="https://cs.stanford.edu/~knuth/aah.html">Axioms and Hulls</a>;
+also change files for <a href="hulld-ngon.pdf">ngons</a>, <a href="hulld-square.pdf">square deletion</a>, and <a href="hulld-unif.pdf">uniform input distribution</a> (“was used to
+compute some of the tables in <a href="https://cs.stanford.edu/~knuth/aah.html">Axioms and Hulls</a> that
+several people have asked about.”)</p></li>
+<li><p><a href="tcalc.pdf">TCALC</a> Interactively calculates with
+humungous numbers (December 1994)</p></li>
+<li><p><a href="decagon.pdf">DECAGON</a>; also a <a href="decagon-star.pdf">change file for DECAGON (stars)</a>; also a <a href="decagon-color.pdf">change file for DECAGON (color)</a>; also a <a href="decagon-colorstar.pdf">change file for DECAGON (color stars)</a>.
+Packs golden triangles into decagons, stars, pentagons, etc. (September
+1994)</p></li>
+<li><p><a href="antislide.pdf">ANTISLIDE</a>; also a <a href="antislide-nocorner.pdf">change file for ANTISLIDE</a> Finds
+solutions to Strijbos’s antisliding block puzzle (November
+1994)</p></li>
+<li><p><a href="antislide3.pdf">ANTISLIDE3</a> Improved version of
+ANTISLIDE, finds all nonisomorphic solutions (December 1996)</p></li>
+<li><p><a href="setset.pdf">SETSET</a> Enumerates nonisomorphic
+unplayable hands in the game of SET® (February 2001)</p></li>
+<li><p><a href="setset-all.pdf">SETSET-ALL</a> Improvement of
+SETSET—fifty times faster—when a huge automorphism group is considered
+(March 2001)</p></li>
+<li><p><a href="setset-random.pdf">SETSET-RANDOM</a> Simple Monte Carlo
+routine to validate the previous two programs (March 2001)</p></li>
+<li><p><a href="sliding.pdf">SLIDING</a> Finds solutions to sliding
+block puzzles (November 2001; revised January 2009 and September
+2020)</p></li>
+<li><p><a href="straighten.pdf">STRAIGHTEN</a> Computes irreducible
+matrix representations of permutations (August 2003)</p></li>
+<li><p><a href="domination.pdf">DOMINATION</a> Computes the covering
+relation for an interesting partial ordering of multiset permutations
+(August 2003)</p></li>
+<li><p><a href="fog2mf.pdf">FOG2MF</a> Rudimentary conversion from
+Fontographer to METAFONT (August 1996)</p></li>
+<li><p><a href="lagfib.pdf">LAGFIB</a> Calculator of weights related to
+the random number generator below (July 1997)</p></li>
+<li><p><a href="garsia-wachs.pdf">GARSIA-WACHS</a> Simple implementation
+of Algorithm 6.2.2G (January 1998, revised September 2004)</p></li>
+<li><p><a href="halftone.pdf">HALFTONE</a> Preprocessor for typeset
+halftones; also example input files <a href="https://cs.stanford.edu/~knuth/programs/lisa-64">lisa-64</a>, <a href="https://cs.stanford.edu/~knuth/programs/lisa-rot">lisa-rot</a>, <a href="https://cs.stanford.edu/~knuth/programs/lisa-128">lisa-128</a>, <a href="https://cs.stanford.edu/~knuth/programs/lin-64">lin-64</a>, <a href="https://cs.stanford.edu/~knuth/programs/lin-rot">lin-rot</a>, <a href="https://cs.stanford.edu/~knuth/programs/lin-128">lin-128</a>, <a href="https://cs.stanford.edu/~knuth/programs/lib-64">lib-64</a>, <a href="https://cs.stanford.edu/~knuth/programs/lib-rot">lib-rot</a>, <a href="https://cs.stanford.edu/~knuth/programs/lib-128">lib-128</a> (June
+1998)</p></li>
+<li><p><a href="dot-diff.pdf">DOT-DIFF</a> Preprocessor for halftones by
+dot diffusion; also an example input file <a href="https://cs.stanford.edu/~knuth/programs/lisa-512">lisa-512</a>,
+and a <a href="dot-diff-eps.pdf">change file for EPS output</a> (June
+1998)</p></li>
+<li><p><a href="togpap.pdf">TOGPAP</a> Generates examples of halftones
+for paper P116 on dot diffusion (June 1998)</p></li>
+<li><p><a href="dance.pdf">DANCE</a>, <a href="polyominoes.pdf">POLYOMINOES</a>, <a href="polyiamonds.pdf">POLYIAMONDS</a>, <a href="polysticks.pdf">POLYSTICKS</a>, <a href="queens.pdf">QUEENS</a>
+Generates examples for paper P159 on dancing links (July 1999); and
+another, <a href="sudoku.pdf">SUDOKU</a> (February 2005); also a <a href="dance-random.pdf">change file for Monte Carlo
+estimates</a> (corrected 25 Jan 07)</p></li>
+<li><p><a href="gdance.pdf">GDANCE</a>, <a href="macmahon-triangles-sym-tile.pdf">MACMAHON-TRIANGLES-SYM-TILE</a>, <a href="xgdance.pdf">XGDANCE</a>, <a href="gdance-cutoff.pdf">GDANCE-CUTOFF</a> Experimental extensions of
+the Dancing Links algorithm (November 2000)</p></li>
+<li><p><a href="hamdance.pdf">HAMDANCE</a> A dancing-link-based program
+for Hamiltonian circuits (May 2001, slightly revised March 2010), which
+you might want to compare to the more traditional algorithm of <a href="ham.pdf">HAM</a></p></li>
+<li><p><a href="polynum.pdf">POLYNUM</a>, <a href="polyslave.pdf">POLYSLAVE</a>, and their change files <a href="polynum-restart.pdf">POLYNUM-RESTART</a> and <a href="polyslave-restart.pdf">POLYSLAVE-RESTART</a> for long runs.
+Enumerates polyominoes with Iwan Jensen’s algorithm, thousands of times
+faster than previous approaches (but is a memory hog); also <a href="https://cs.stanford.edu/~knuth/programs/jensen.txt">notes from
+Jensen</a> about potential further improvements and the probable value
+of t(48); also a MetaPost source file <a href="https://cs.stanford.edu/~knuth/programs/polyomino.mp">polyomino.mp</a> to
+make an illustration for the documentation of both POLYNUM and a
+now-obsolete program <a href="polyenum.pdf">POLYENUM</a></p></li>
+<li><p><a href="advent.pdf">ADVENT</a> The original Crowther/Woods
+Adventure game, Version 1.0, translated into CWEB form (version of 21
+January 2022); this program was published as Chapter 27 of my <a href="https://cs.stanford.edu/~knuth/fg.html">Fun and Games book</a>,
+and errata can be in the corrections to pages 235–394 that appear on
+that webpage</p></li>
+<li><p><a href="rost.pdf">ROST</a> Monte Carlo confirmation of exercise
+5.1.4–40 (October 1998)</p></li>
+<li><p><a href="ran-prim.pdf">RAN-PRIM</a> Monte Carlo exploration of
+exercise 5.3.4–40 (October 1998)</p></li>
+<li><p><a href="strongchain.pdf">STRONGCHAIN</a> finds shortest strong
+addition chains, also called Lucas chains or Chebyshev chains (August
+2000)</p></li>
+<li><p><a href="koda-ruskey.pdf">KODA-RUSKEY</a> A fascinating
+generalized reflected Gray-code generator (new version, June
+2001)</p></li>
+<li><p><a href="li-ruskey.pdf">LI-RUSKEY</a> An even more fascinating,
+massive generalization of the previous program (June 2001); also a
+PostScript illustration <a href="https://cs.stanford.edu/~knuth/programs/li-ruskey.1">li-ruskey.1</a> made
+by the MetaPost source file <a href="https://cs.stanford.edu/~knuth/programs/li-ruskey.mp">li-ruskey.mp</a></p></li>
+<li><p><a href="spiders.pdf">SPIDERS</a> A further improvement to the
+previous two (December 2001), and its PostScript illustration <a href="https://cs.stanford.edu/~knuth/programs/deco.5">deco.5</a></p></li>
+<li><p><a href="topswops.pdf">TOPSWOPS</a> and <a href="topswops-fwd.pdf">TOPSWOPS-FWD</a> Two ways to find the longest
+plays of John Conway’s “topswops” game (August 2001)</p></li>
+<li><p><a href="co-debruijn.pdf">CO-DEBRUIJN</a> A quick-and-dirty
+implementation of the recursive coroutines Algorithms 7.2.1.1R and
+7.2.1.1D, which generate a de Bruijn cycle; also a Mathematica
+program <a href="https://cs.stanford.edu/~knuth/programs/co-debruijn.m">co-debruijn.m</a> to
+check the ranking and unranking functions in exercises 7.2.1.1–97
+through 99</p></li>
+<li><p><a href="posets0.pdf">POSETS0</a> and <a href="posets.pdf">POSETS</a> Two programs to evaluate the numbers in
+Sloane’s sequence A006455, formerly M1805 (December 2001)</p></li>
+<li><p><a href="erection.pdf">ERECTION</a>. The algorithms described in
+my paper “Random Matroids” (March 2003)</p></li>
+<li><p><a href="unavoidable.pdf">UNAVOIDABLE</a>. A longest word that
+avoids all n-letter subwords in an interesting minimal set constructed
+by Champernaud, Hansel, and Perrin (July 2003)</p></li>
+<li><p><a href="unavoidable2.pdf">UNAVOIDABLE2</a>. A longest word that
+avoids all n-letter subwords in an interesting minimal set constructed
+by Mykkeltveit (August 2003)</p></li>
+<li><p><a href="grayspan.pdf">GRAYSPAN</a>, <a href="spspan.pdf">SPSPAN</a>, <a href="grayspspan.pdf">GRAYSPSPAN</a>,
+and a <a href="../programs-orig/spspan.mp">MetaPost source file for
+SPSPAN</a>, plus an auxiliary program <a href="spgraph.pdf">SPGRAPH</a>.
+Three instructive ways to generate all spanning trees of a graph (August
+2003)</p></li>
+<li><p><a href="sand.pdf">SAND</a> A hastily written program to
+experiment with sandpiles as in exercise 7.2.1.6–103 (December
+2004)</p></li>
+<li><p><a href="zeilberger.pdf">ZEILBERGER</a>, <a href="francon.pdf">FRANÇON</a>, <a href="viennot.pdf">VIENNOT</a>, an <a href="tcb.pdf">explanatory introduction</a>, and a <a href="../programs-orig/kepler.mp">MetaPost source file for VIENNOT</a>.
+Three Catalan bijections related to Strahler numbers, pruning orders,
+and Kepler towers (February 2005)</p></li>
+<li><p><a href="linked-trees.pdf">LINKED-TREES</a>. An amazingly short
+program to generate linked trees with given node degrees (March
+2005)</p></li>
+<li><p><a href="vacillate.pdf">VACILLATE</a>. A program to experiment
+with set partitions and vacillating tableau loops (May 2005)</p></li>
+<li><p><a href="embed.pdf">EMBED</a>. An algorithm of Hagauer, Imrich,
+and Klavžar to embed a median graph in a hypercube (June 2005)</p></li>
+<li><p><a href="lp.pdf">LP</a>. An expository implementation of linear
+programming (August 2005)</p></li>
+<li><p><a href="horn-count.pdf">HORN-COUNT</a>. A program to enumerate
+Horn functions; also a change file <a href="krom-count.pdf"><code>krom-count.ch</code></a>, which adapts it to
+Krom functions (aka 2SAT instances) (August 2005)</p></li>
+<li><p><a href="15puzzle-korf0.pdf">15PUZZLE-KORF0</a> and <a href="15puzzle-korf1.pdf">15PUZZLE-KORF1</a>. Two programs to solve
+15-puzzle problems rather fast (but not state-of-the-art) (August
+2005)</p></li>
+<li><p><a href="achain0.pdf">ACHAIN0</a>, <a href="achain1.pdf">ACHAIN1</a>, <a href="achain2.pdf">ACHAIN2</a>, <a href="achain3.pdf">ACHAIN3</a>, <a href="achain4.pdf">ACHAIN4</a>, and
+<a href="achain-all.pdf">ACHAIN-ALL</a>. A series of programs to find
+minimal addition chains (September 2005), plus a trivial auxiliary
+program <a href="achain-decode.pdf">ACHAIN-DECODE</a>.</p></li>
+<li><p><a href="hyperbolic.pdf">HYPERBOLIC</a> and a <a href="../programs-orig/hyperbolic.mp">MetaPost source file for
+HYPERBOLIC</a></p>
+</dt>
+<dd>
+<p>A program that analyzes and helps to draw the hyperbolic plane tiling
+made from 36-45-90 triangles (October 2005)</p>
+</dd></li>
+<li><p><a href="../programs-orig/boolchains.tgz">BOOLCHAINS</a></p>
+<dd>
+<p>A suite of programs that find the complexity of almost all Boolean
+functions of five variables (December 2005)</p>
+</dd></li>
+<li><p><a href="fchains4x.pdf">FCHAINS4X</a> and a <a href="fchains4x-dontcares.pdf">change file for don’t-cares</a></p>
+<dd>
+<p>Programs for interactive minimization of multiple-output 4-input
+Boolean functions using the `greedy footprint’ method (February 2006,
+revised October 2010)</p>
+</dd></li>
+<li><p><a href="../programs-orig/tictactoe.tgz">TICTACTOE</a>, a gzipped
+tar file <code>tictactoe.tgz</code></p>
+<dd>
+<p>Various programs used when preparing the tic-tac-toe examples in
+Section 7.1.2 (March 2006)</p>
+</dd></li>
+<li><p><a href="prime-sieve.pdf">PRIME-SIEVE</a> and its much faster
+(but more complex) cousin <a href="prime-sieve-sparse.pdf">PRIME-SIEVE-SPARSE</a>, plus a change file
+<a href="prime-sieve-boot.pdf">PRIME-SIEVE-BOOT</a> to compute several
+million primes to be input by the other programs.</p>
+<dd>
+<p>Programs for the segmented sieve of Eratosthenes on 64-bit machines,
+tuned for finding all large gaps between primes in the neighborhood of
+10^18 (May 2006)</p>
+</dd></li>
+<li><p><a href="maxcliques.pdf">MAXCLIQUES</a></p>
+<dd>
+<p>The Moody–Hollis algorithm for listing all maximal cliques, all
+maximal independent sets, and/or all minimal vertex covers (July 2006,
+corrected November 2008)</p>
+</dd></li>
+<li><p><a href="ulam.pdf">ULAM</a> and a <a href="ulam-longlong.pdf">change file for 64-bit machines</a></p>
+<dd>
+<p>Short program to compute the Ulam numbers 1, 2, 3, 4, 6, … (September
+2006) — but see the vastly improved version below, dated July 2016!</p>
+</dd></li>
+<li><p><a href="hwb-fast.pdf">HWB-FAST</a></p>
+<dd>
+<p>Short program to compute the profile of the hidden weight function,
+given a permutation of the variables (April 2008)</p>
+</dd></li>
+<li><p><a href="yplay.pdf">YPLAY</a></p>
+<dd>
+<p>Simple program to play with Schensted’s Y function (April 2008)</p>
+</dd></li>
+<li><p><a href="bdd12.pdf">BDD12</a></p>
+<dd>
+<p>A program to find the best and worst variable orderings for a given
+BDD (May 2008)</p>
+</dd></li>
+<li><p><a href="bdd14.pdf">BDD14</a> and a <a href="bddl-rgrowth.pdf">typical driver program</a> to generate input for
+it</p>
+<dd>
+<p>Bare-bones BDD package that I used for practice when preparing
+Section 7.1.4 of TAOCP (May 2008; version of September 2011)</p>
+</dd></li>
+<li><p><a href="bdd15.pdf">BDD15</a></p>
+<dd>
+<p>Bare-bones ZDD package that I used for practice when preparing
+Section 7.1.4 of TAOCP (August 2008)</p>
+</dd></li>
+<li><p><a href="simpath.pdf">SIMPATH</a>, <a href="simpath-reduce.pdf">SIMPATH-REDUCE</a>, <a href="../programs-orig/simpath-example.tgz">SIMPATH-EXAMPLE</a>, and
+change files for <a href="simpath-cycles.pdf">cycles</a>, <a href="simpath-ham.pdf">Hamiltonian paths</a>, and <a href="simpath-ham-any.pdf">Hamiltonian paths with one endpoint
+given</a></p>
+</dt>
+<dd>
+<p>Several programs to make ZDDs for simple paths of graphs (August
+2008)</p>
+</dd></li>
+<li><p><a href="simpath-directed-cycles.pdf">SIMPATH-DIRECTED-CYCLES</a></p>
+<dd>
+<p>And another for simple cycles in directed graphs (August 2008)</p>
+</dd></li>
+<li><p><a href="euler-trail.pdf">EULER-TRAIL</a></p>
+<dd>
+<p>A simple algorithm that computes an Eulerian trail of a given
+connected graph (March 2010)</p>
+</dd></li>
+<li><p><a href="celtic-paths.pdf">CELTIC-PATHS</a></p>
+<dd>
+<p>A fun program to typeset certain Celtic knots, using special fonts <a href="../programs-orig/celtica.mf">CELTICA</a>, <a href="../programs-orig/celtica13.mf">CELTICA13</a>, <a href="../programs-orig/celticb.mf">CELTICB</a>, <a href="../programs-orig/celticb13.mf">CELTICB13</a>; you also need this
+<a href="../programs-orig/celtic-picture.1">simple illustration</a>
+(August 2010)</p>
+</dd></li>
+<li><p><a href="../programs-orig/nnncmbx.mf">NNNCMBX.MF</a></p>
+<dd>
+<p>The font used for my paper ``N-ciphered texts’’ (1981, 1987,
+2010)</p>
+</dd></li>
+<li><p><a href="dragon-calc.pdf">DRAGON-CALC</a></p>
+<dd>
+<p>An interactive program to compute with and display generalized dragon
+curves (September 2010)</p>
+</dd></li>
+<li><p><a href="squaregraph.pdf">SQUAREGRAPH</a></p>
+<dd>
+<p>Brute-force enumeration of all small squaregraphs — an very
+interesting class of median graphs, generalizing polyominoes (August
+2011)</p>
+</dd></li>
+<li><p><a href="squaregraph-rand.pdf">SQUAREGRAPH-RAND</a></p>
+<dd>
+<p>A short routine that generates more-or-less random pairs of chord
+edges, obtaining squaregraphs by “crocheting” them around the
+boundary</p>
+</dd></li>
+<li><p><a href="treeprobs.pdf">TREEPROBS</a> and an <a href="../programs-orig/treeprobs.1">illustration for its
+documentation</a></p>
+<dd>
+<p>Computes probabilities in Bayesian binary tree networks (July
+2011)</p>
+</dd></li>
+<li><p><a href="graph-sig-v0.pdf">GRAPH-SIG-V0</a></p>
+<dd>
+<p>A simple program that helps find automorphisms of a graph (July
+2015)</p>
+</dd></li>
+<li><p><a name="skew-ternary"></a> <a href="skew-ternary-calc.pdf">SKEW-TERNARY-CALC</a> and a
+<a href="programs/skew-ternary-calc.mp">MetaPost file for its
+illustrations</a></p>
+<dd>
+<p>Computes planar graphs that correspond to ternary trees in an amazing
+way; here’s a <a href="../programs-orig/skew-ternary-calc.pdf">PDF file
+for its documentation</a></p>
+</dd></li>
+<li><p><a href="random-ternary.pdf">RANDOM-TERNARY</a></p>
+<dd>
+<p>Implementation of Panholzer and Prodinger’s beautiful algorithm for
+generating random ternary trees<br> (see also the change files <a href="random-ternary-quads.pdf">RANDOM-TERNARY-QUADS</a> and <a href="skew-ternary-calc-raw.pdf">SKEW-TERNARY-CALC-RAW</a> with which
+you can use this with SKEW-TERNARY-CALC)</p>
+</dd></li>
+<li><p><a href="dimacs-to-sat.pdf">DIMACS-TO-SAT</a> and <a href="sat-to-dimacs.pdf">SAT-TO-DIMACS</a></p>
+</dt>
+<dd>
+<p>Filters to convert between DIMACS format for SAT problems and the
+symbolic semantically meaningful format used in the programs below</p>
+</dd></li>
+<li><p><a href="sat0.pdf">SAT0</a></p>
+<dd>
+<p>My implementation of Algorithm 7.2.2.2A (very basic SAT solver)</p>
+</dd></li>
+<li><p><a href="sat0w.pdf">SAT0W</a></p>
+<dd>
+<p>My implementation of Algorithm 7.2.2.2B (teeny tiny SAT solver)</p>
+</dd></li>
+<li><p><a href="sat8.pdf">SAT8</a></p>
+<dd>
+<p>My implementation of Algorithm 7.2.2.2W (WalkSAT)</p>
+</dd></li>
+<li><p><a href="sat9.pdf">SAT9</a></p>
+<dd>
+<p>My implementation of Algorithm 7.2.2.2S (survey propagation SAT
+solver)</p>
+</dd></li>
+<li><p><a href="sat10.pdf">SAT10</a></p>
+<dd>
+<p>My implementation of Algorithm 7.2.2.2D (Davis-Putnam SAT solver)</p>
+</dd></li>
+<li><p><a href="sat11.pdf">SAT11</a></p>
+<dd>
+<p>My implementation of Algorithm 7.2.2.2L (lookahead 3SAT solver)</p>
+</dd></li>
+<li><p><a href="sat11k.pdf">SAT11K</a></p>
+<dd>
+<p>Change file to adapt SAT11 to clauses of arbitrary length</p>
+</dd></li>
+<li><p><a href="sat12.pdf">SAT12</a> and the companion program <a href="sat12-erp.pdf">SAT12-ERP</a></p>
+</dt>
+<dd>
+<p>My implementation of a simple preprocessor for SAT</p>
+</dd></li>
+<li><p><a href="sat13.pdf">SAT13</a></p>
+<dd>
+<p>My implementation of Algorithm 7.2.2.2C (conflict-driven clause
+learning SAT solver)</p>
+</dd></li>
+<li><p><a href="../programs-orig/sat-life.tgz">SAT-LIFE</a></p>
+<dd>
+<p>Various programs to formulate Game of Life problems as SAT problems
+(July 2013)</p>
+</dd></li>
+<li><p><a href="sat-nfa.pdf">SAT-NFA</a></p>
+<dd>
+<p>Produce a forcing encoding of regular languages into SAT via
+nondeterministic finite automata (April 2016)</p>
+</dd></li>
+<li><p><a href="../programs-orig/SATexamples.tgz">SATexamples</a></p>
+<dd>
+<p>Programs for various examples of SAT in Section 7.2.2.2 of TAOCP;
+also more than a hundred benchmarks (updated 08 July 2015)</p>
+</dd></li>
+<li><p><a href="back-20q.pdf">BACK-20Q</a> and a <a href="back-20q-backmod9,15.pdf">change file</a> for the paradoxical
+variant, and <a href="back-20q-backmod9,15-indet.pdf">another</a></p>
+<dd>
+<p>A backtrack program to analyze Don Woods’s Twenty Questions (August
+2015)</p>
+</dd></li>
+<li><p><a href="back-mxn-words-new.pdf">BACK-MXN-WORDS-NEW</a> and <a href="back-mxn-words-mxn.pdf">BACK-MXN-WORDS-MXM</a>. with <a href="words.tgz">some word lists</a></p>
+</dt>
+<dd>
+<p>Demonstration backtrack programs for word rectangles (August
+2015)</p>
+</dd></li>
+<li><p><a href="back-pdi.pdf">BACK-PDI</a></p>
+<dd>
+<p>A backtrack program to find perfect digital invariants
+(e.g. 153=1<sup>3+5</sup>3+3^3) (September 2015)</p>
+</dd></li>
+<li><p><a href="back-pi-day.pdf">BACK-PI-DAY</a></p>
+<dd>
+<p>A backtrack program that solves exercise 7.2.2–68 with an interesting
+bitwise method (March 2018)</p>
+</dd></li>
+<li><p><a href="commafree-eastman.pdf">COMMAFREE-EASTMAN</a> and <a href="commafree-eastman-new.pdf">COMMAFREE-EASTMAN-NEW</a></p>
+</dt>
+<dd>
+<p>Eastman’s encoding algorithm for commafree codes of odd block lengths
+(September 2015 and December 2015)</p>
+</dd></li>
+<li><p><a href="sat-commafree.pdf">SAT-COMMAFREE</a></p>
+<dd>
+<p>Clauses to construct binary commafree codes with one codeword per
+cycle class (September 2015)</p>
+</dd></li>
+<li><p><a href="back-commafree4.pdf">BACK-COMMAFREE4</a></p>
+<dd>
+<p>Finds all commafree 4-letter codes of given size on small alphabets
+(September 2015)</p>
+</dd></li>
+<li><p><a href="back-skeleton.pdf">BACK-SKELETON</a></p>
+<dd>
+<p>Finds potential skeleton multiplication puzzles whose special digits
+obey a given pixel pattern (January 2016)</p>
+</dd></li>
+<li><p><a href="back-dissect.pdf">BACK-DISSECT</a></p>
+<dd>
+<p>Finds dissections of a square into a given shape (February 2016)</p>
+</dd></li>
+<li><p><a href="back-graceful-kmp3.pdf">BACK-GRACEFUL-KMP3</a></p>
+<dd>
+<p>Finds graceful labelings of the graphs <span class="math inline"><em>K</em><sub><em>m</em></sub> × <em>P</em><sub>3</sub></span>
+(August 2020)</p>
+</dd></li>
+<li><p><a href="ulam-gibbs.pdf">ULAM-GIBBS</a> and the auxiliary
+illustration file <a href="../programs-orig/ulam-gibbs.1"><tt>ulam-gibbs.1</tt></a></p>
+<dd>
+<p>Computes billions of Ulam numbers if you’ve got enough memory (July
+2016) <a href="ulam-gibbs.ps">(read the documentation)</a></p>
+</dd></li>
+<li><p><a href="dlx1.pdf">DLX1</a></p>
+<dd>
+<p>Algorithm 7.2.2.1X for exact cover via dancing links (September 2016
+and August 2017, an update of the old DANCE program above)</p>
+</dd></li>
+<li><p><a href="queens-dlx.pdf">QUEENS-DLX</a></p>
+<dd>
+<p>Simple program to generate DLX data for the n queens problem</p>
+</dd></li>
+<li><p><a href="polyomino-dlx.pdf">POLYOMINO-DLX</a>, <a href="polyiamond-dlx.pdf">POLYIAMOND-DLX</a>, and <a href="polycube-dlx.pdf">POLYCUBE-DLX</a></p>
+<dd>
+<p>Programs to generate polyform data for the DLX solvers</p>
+</dd></li>
+<li><p><a href="sudoku-dlx.pdf">SUDOKU-DLX</a>, <a href="sudoku-general-dlx.pdf">SUDOKU-GENERAL-DLX</a>, and <a href="dlx1-sudoku.pdf">DLX1-SUDOKU</a></p>
+<dd>
+<p>Improved programs for solving sudoku puzzles with DLX1</p>
+</dd></li>
+<li><p><a href="fillomino-dlx.pdf">FILLOMINO-DLX</a></p>
+<dd>
+<p>Converting a fillomino puzzle to an exact cover problem (May
+2020)</p>
+</dd></li>
+<li><dt>
+<p><a href="ian-dlx.pdf">DE-BRUIJN-DLX</a> <a href="ian-dlx.pdf">IAN-DLX</a> <a href="macmahon-triangles-dlx.pdf">MACMAHON-TRIANGLES-DLX</a> <a href="masyu-dlx.pdf">MASYU-DLX</a> <a href="pi-day-dlx.pdf">PI-DAY-DLX</a> <a href="slitherlink-dlx.pdf">SLITHERLINK-DLX</a> <a href="torto-dlx.pdf">TORTO-DLX</a> <a href="windmill-dominoes-dlx.pdf">WINDMILL-DOMINOES-DLX</a> <a href="word-rect-dlx.pdf">WORD-RECT-DLX</a></p>
+</dt>
+<dd>
+<p>Miscellaneous additional driver programs for exact covering</p>
+</dd></li>
+<li><p><a href="dlx2.pdf">DLX2</a></p>
+<dd>
+<p>Algorithm 7.2.2.1C, the extension to color-controlled covers
+(September 2016, an update of the old GDANCE program above)</p>
+</dd></li>
+<li><p><a href="dlx-pre.pdf">DLX-PRE</a></p>
+<dd>
+<p>A preprocessor for DLX data (March 2017)</p>
+</dd></li>
+<li><dt>
+<p><a href="dlx2-polyom.pdf">DLX2-POLYOM</a> and <a href="dlx2-wordsearch.pdf">DLX2-WORDSEARCH</a> and <a href="dlx2-sharp.pdf">DLX2-SHARP</a> and <a href="dlx2-cutoff.pdf">DLX2-CUTOFF</a> and <a href="dlx2-kludge.pdf">DLX2-KLUDGE</a> and <a href="dlx2-cutoff-kludge.pdf">DLX2-CUTOFF-KLUDGE</a> <a href="dlx2-loop.pdf">DLX2-LOOP</a></p>
+</dt>
+<dd>
+<p>Examples of change files typically used to reformat solutions found
+by DLX2 or to change its logic for column choice, etc.</p>
+</dd></li>
+<li><p><a href="dlx3.pdf">DLX3</a></p>
+<dd>
+<p>Algorithm 7.2.2.1M, the extension to general column sums (December
+2017)</p>
+</dd></li>
+<li><dt>
+<p><a href="dlx3-sharp.pdf">DLX3-SHARP</a> and <a href="dlx3-sharp-wordcross.pdf">DLX3-SHARP-WORDCROSS</a> and <a href="dlx3-redrect.pdf">DLX3-REDRECT</a> and <a href="dlx3-motley.pdf">DLX3-MOTLEY</a></p>
+</dt>
+<dd>
+<p>Examples of change files for DLX3 (November 2017)</p>
+</dd></li>
+<li><dt>
+<p><a href="redrect-dlx.pdf">REDRECT-DLX</a> and <a href="motley-dlx.pdf">MOTLEY-DLX</a> and <a href="queendom-dlx.pdf">QUEENDOM-DLX</a></p>
+</dt>
+<dd>
+<p>Examples of driver files for DLX3 (March 2017)</p>
+</dd></li>
+<li><p><a href="dlx5.pdf">DLX5</a></p>
+<dd>
+<p>Algorithm 7.2.2.1C$, the extension to min-cost covers (July 2018)</p>
+</dd></li>
+<li><p><a href="dlx6.pdf">DLX6</a></p>
+<dd>
+<p>Algorithm 7.2.2.1Z, “dancing with ZDDs” (February 2019)</p>
+</dd></li>
+<li><p><a href="dlx6-noMRV.pdf">DLX6-NOMRV</a></p>
+<dd>
+<p>a change file that branches on items in strictly left-to-right
+order</p>
+</dd></li>
+<li><p><a href="ssxcc1.pdf">SSXCC1</a></p>
+<dd>
+<p>an experimental rewrite of DLX2, using sparse-set data structures
+instead of dancing links (November 2020, revised November 2022)</p>
+</dd></li>
+<li><dt>
+<p><a href="ssxcc2.pdf">SSXCC2</a> and <a href="ssxcc3.pdf">SSXCC3</a></p>
+</dt>
+<dd>
+<p>like SSXCC1 but with an experimental branching heuristic (November
+2022)</p>
+</dd></li>
+<li><p><a href="xccdc1.pdf">XCCDC1</a></p>
+<dd>
+<p>a major extension of SSXCC1, maintains full domain consistency
+(November 2022)</p>
+</dd></li>
+<li><dt>
+<p><a href="xccdc2.pdf">XCCDC2</a> and <a href="xccdc3.pdf">XCCDC3</a></p>
+</dt>
+<dd>
+<p>like XCCDC1 but with an experimental branching heuristic (November
+2022)</p>
+</dd></li>
+<li><p><a href="infty-queens.pdf">INFTY-QUEENS</a></p>
+<dd>
+<p>Exploration of the infinity queens problem (November 2017)</p>
+</dd></li>
+<li><dt>
+<p><a href="graceful-count.pdf">GRACEFUL-COUNT</a> and <a href="graceful-count-small.pdf">GRACEFUL-COUNT-SMALL</a></p>
+</dt>
+<dd>
+<p>Counting graceful labelings that are connected (with graceful data
+structures!) (November 2019)</p>
+</dd></li>
+<li><dt>
+<p><a href="graceful-dlx.pdf">GRACEFUL-DLX</a> and <a href="graceful-dlx-domains.pdf">GRACEFUL-DLX-DOMAINS</a> and <a href="graceful-dlx-presets.pdf">GRACEFUL-DLX-PRESETS</a></p>
+</dt>
+<dd>
+<p>To generate DLX2 data for graceful labeling (October 2020)</p>
+</dd></li>
+<li><p><a href="squarepal.pdf">SQUAREPAL</a></p>
+<dd>
+<p>Finds n-bit binary squares that are palindromic (December 2019)</p>
+</dd></li>
+<li><p><a href="histoscape-count.pdf">HISTOSCAPE-COUNT</a> and <a href="histoscape-unrank.pdf">HISTOSCAPE-UNRANK</a></p>
+</dt>
+<dd>
+<p>Enumerates <span class="math inline"><em>m</em> × <em>n</em></span>
+histoscapes that are trivalent polyhedra, or finds the <span class="math inline"><em>k</em></span>th solution in that enumeration
+(April 2020)</p>
+</dd></li>
+<li><p><a href="whirlpool-count.pdf">WHIRLPOOL-COUNT</a></p>
+<dd>
+<p>Enumerates <span class="math inline"><em>m</em> × <em>n</em></span>
+whirlpool permutations for small <span class="math inline"><em>m</em></span> and <span class="math inline"><em>n</em></span> (April 2020)</p>
+</dd></li>
+<li><dt>
+<p><a href="whirlpool2n-encode.pdf">WHIRLPOOL2N-ENCODE</a> and <a href="whirlpool2n-decode.pdf">WHIRLPOOL2N-DECODE</a></p>
+</dt>
+<dd>
+<p>Exhibits a bijection between <span class="math inline">2 × <em>n</em></span> whirlpool permutations and
+up-up-or-down-down permutations of size <span class="math inline">2<em>n</em> − 1</span> (May 2020)</p>
+</dd></li>
+<li><p><a href="graph-hash.pdf">GRAPH-HASH</a></p>
+<dd>
+<p>Quick way to compute an isomorphic variant that distinguishes small
+graphs (December 2020)</p>
+</dd></li>
+<li><p><a href="hopcroft-karp.pdf">HOPCROFT-KARP</a></p>
+<dd>
+<p>The Hopcroft–Karp algorithm for maximum cardinality bipartite
+matching (April 2021)</p>
+</dd></li>
+<li><dt>
+<p><a href="matula.pdf">MATULA</a> and <a href="../programs-orig/matula.S">illustration matula.S</a> and <a href="../programs-orig/matula.T">illustration matula.T</a> and <a href="../programs-orig/matula.ST">illustration matula.ST</a></p>
+</dt>
+<dd>
+<p>Efficient subtree isomorphism testing (May 2021)</p>
+</dd></li>
+<li><dt>
+<p><a href="matula-big.pdf">MATULA-BIG</a> and <a href="matula-big-planted.pdf">MATULA-BIG-PLANTED</a></p>
+</dt>
+<dd>
+<p>Change files for MATULA allowing large trees in rectree format (May
+2021)</p>
+</dd></li>
+<li><p><a href="matula-exhaustive.pdf">MATULA-EXHAUSTIVE</a></p>
+<dd>
+<p>Change file for MATULA that tests all m-trees against all n-trees
+(May 2021)</p>
+</dd></li>
+<li><p><a href="tchoukaillon-arrays.pdf">TCHOUKAILLON-ARRAYS</a></p>
+<dd>
+<p>Generates some fascinating numerical patterns (June 2021)</p>
+</dd></li>
+<li><p><a href="offline-tree-insertion.pdf">OFFLINE-TREE-INSERTION</a></p>
+<dd>
+<p>Tarjan’s efficient solution to a new exercise about binary tree
+insertion (September 2021)</p>
+</dd></li>
+<li><dt>
+<p><a href="floorplan-to-twintree.pdf">FLOORPLAN-TO-TWINTREE</a>, <a href="floorplan-to-twintree-ttform.pdf">FLOORPLAN-TO-TWINTREE-TTFORM</a>,
+<a href="twintree-to-baxter.pdf">TWINTREE-TO-BAXTER</a>, <a href="baxter-to-floorplan.pdf">BAXTER-TO-FLOORPLAN</a></p>
+</dt>
+<dd>
+<p>A trilogy of interesting bijections between floorplans, twintrees,
+and Baxter permutations (September 2021)</p>
+</dd></li>
+<li><dt>
+<p><a href="queenon-partition.pdf">QUEENON-PARTITION</a>, <a href="../programs-orig/queenon-partition.mp">QUEENON-PARTITION.mp</a>,
+<a href="../programs-orig/queenon-partition.0">QUEENON-PARTITION.0</a>,
+<a href="../programs-orig/queenon-partition.1">QUEENON-PARTITION.1</a></p>
+</dt>
+<dd>
+<p>A program to compute and illustrate Simkin’s discretizations of
+“queenons” (September 2021)</p>
+</dd></li>
+<li><dt>
+<p><a href="partial-latin-gad.pdf">PARTIAL-LATIN-GAD</a> and changefile
+<a href="partial-latin-gad-swap.pdf">PARTIAL-LATIN-GAD-SWAP</a></p>
+</dt>
+<dd>
+<p>Finds all ways to complete a partially specified latin square (a
+“quasigroup with holes”) (October 2021)</p>
+</dd></li>
+<li><dt>
+<p><a href="random-dfs-a.pdf">RANDOM-DFS-A</a> and <a href="random-dfs-b.pdf">RANDOM-DFS-B</a></p>
+</dt>
+<dd>
+<p>Empirical tests on the arcs of “jungles” produced by depth-first
+search on random digraphs, using two random models (November 2021)</p>
+</dd></li>
+</ul>
+</body>
+</html>
