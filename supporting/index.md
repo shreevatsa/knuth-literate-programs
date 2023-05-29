@@ -9,7 +9,7 @@ This page contains PDF versions of some literate programs by Donald Knuth, poste
 - (for the compiler) `foo.w` —-`ctangle`--> `foo.c` (producing a `.c` file that is not very human-readable), or
 - (for the human reader) `foo.w` --`cweave`--> `cweave.tex` (producing a `.tex` file to be typeset into PDF, which is the version that is meant to be read).
 
-Prof. Knuth has posted the `.w` files on his webpage, but I'm afraid that many casual readers may not take the time to install `cweave` and `tex`, and thus may try to read the `.w` file directly. So here I've put the typeset versions for anyone to read.
+Prof. Knuth has posted the `.w` files on his webpage, but I'm afraid that many casual readers may not take the time to install `cweave` and `tex`, and thus may try to read the `.w` file directly. So here I've put the typeset versions for convenience.
 
 This is the note on his website:
 
