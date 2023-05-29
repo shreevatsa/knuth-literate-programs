@@ -60,7 +60,8 @@ Here are the programs as listed on his webpage, with the `.w` and `.ch` links ch
 
 - [TOGPAP](togpap.pdf) Generates examples of halftones for paper P116 on dot diffusion (June 1998)
 
-- [DANCE](dance.pdf), [POLYOMINOES](polyominoes.pdf), [POLYIAMONDS](polyiamonds.pdf), [POLYSTICKS](polysticks.pdf), [QUEENS](queens.pdf) Generates examples for paper P159 on dancing links (July 1999); and another, [SUDOKU](sudoku.pdf) (February 2005); also a [change file for Monte Carlo estimates](dance-random.pdf) (corrected 25 Jan 07)
+- [DANCE](dance.pdf), [POLYOMINOES](polyominoes.pdf), [POLYIAMONDS](polyiamonds.pdf), [POLYSTICKS](polysticks.pdf), [QUEENS](queens.pdf)
+  Generates examples for paper P159 on dancing links (July 1999); and another, [SUDOKU](sudoku.pdf) (February 2005); also a [change file for Monte Carlo estimates](dance-random.pdf) (corrected 25 Jan 07)
 
 - [GDANCE](gdance.pdf), [MACMAHON-TRIANGLES-SYM-TILE](macmahon-triangles-sym-tile.pdf), [XGDANCE](xgdance.pdf), [GDANCE-CUTOFF](gdance-cutoff.pdf) Experimental extensions of the Dancing Links algorithm (November 2000)
 
@@ -323,7 +324,7 @@ made from 36-45-90 triangles (October 2005)</dd>
     <dd>Finds dissections of a square into a given shape (February 2016)</dd>
 
 -   [BACK-GRACEFUL-KMP3](back-graceful-kmp3.pdf)
-    <dd>Finds graceful labelings of the graphs $K_m\sqprod P_3$ (August 2020)</dd>
+    <dd>Finds graceful labelings of the graphs $K_m \times P_3$ (August 2020)</dd>
 
 -   [ULAM-GIBBS](ulam-gibbs.pdf) and the auxiliary
     illustration file
