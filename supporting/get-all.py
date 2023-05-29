@@ -118,8 +118,8 @@ for f in tqdm.tqdm(glob.glob('*.w')):
         changefile = changefile[:-3]
         outfile = changefile + '-ch' if changefile == basename else changefile
         subprocess.run(['cweave', basename + '.w', changefile + '.ch', outfile])
-        pdf(changefile)
-        subprocess.run(['cp', changefile + '.pdf', '../../programs/'])
+        pdf(outfile)
+        subprocess.run(['cp', outfile + '.pdf', '../../programs/'])
     os.chdir(wd)
     print('Back to', wd)
 subprocess.run(['rm', '-vrf', 'tmp/'])
