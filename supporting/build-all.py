@@ -1,57 +1,14 @@
-"""Download all CWEB programs from Knuth's webpage."""
-
-import os
-import os.path
 import glob
-import requests
 import subprocess
 import tqdm
-from bs4 import BeautifulSoup
-
-def fetch():
-    prefix = 'https://cs.stanford.edu/~knuth/'
-
-    print('Getting the programs.html page, to parse links.')
-    response = requests.get(prefix + 'programs.html')
-    links = BeautifulSoup(response.content, 'html.parser').find_all('a')
-
-    for link in links:
-        href = link.get('href')
-        if not href:
-            # Something that happens to be true for this page: non-links are names.
-            assert list(link.attrs.keys()) == ['name']
-            continue
-        # Ignore links to other html pages
-        if href.endswith('.html'):
-            continue
-        # Hack for detecting start of "Programs in languages other than CWEB"
-        if href == 'news02.html#rng':
-            break
-
-        # Hack for certain files that are not under programs/
-        if href in ['words.tgz', 'ulam-gibbs.ps']:
-            filename = href
-        else:
-            assert href.startswith('programs/')
-            filename = href[len('programs/'):]
-
-        url = prefix + href
-        print(f'Downloading from {url} if updated.')
-        subprocess.run(['wget', '-N', url])
-        if filename.endswith('.gz'):
-            subprocess.run(['gunzip', '-k', '-f', filename])
-        if filename in ['sat-life.tgz', 'tictactoe.tgz']:
-            subprocess.run(['tar', 'xvfz', filename])
-
-    additional = ['cvm-estimates.w']
-    for f in additional:
-        subprocess.run(['wget', '-N', prefix + f])
-
+import os
+import os.path
 
 def pdf(basename):
     print(f'Running pdftex on {basename}...', end='')
     env = os.environ.copy()
-    env['SOURCE_DATE_EPOCH'] = '1685324667'
+    env['SOURCE_DATE_EPOCH'] = '524493240'
+    env['FORCE_SOURCE_DATE'] = '1' 
     out = subprocess.run(['pdftex', basename], capture_output=True, text=True, env=env).stdout
     if "Non-PDF special ignored" in out:
         print('    --->    Running tex + dvipdfmx instead.')
@@ -59,9 +16,7 @@ def pdf(basename):
         subprocess.run(['dvipdfmx', basename + '.dvi'], env=env)
     print('Done')
 
-
-fetch()
-print('Done downloading all files. Now building them.')
+print('Building all files.')
 
 subprocess.run(['mkdir', '-p', 'tmp/'])
 subprocess.run(['cp', 
