@@ -5,6 +5,7 @@ import os.path
 import glob
 import requests
 import subprocess
+import tqdm
 from bs4 import BeautifulSoup
 
 def fetch():
@@ -48,12 +49,15 @@ def fetch():
 
 
 def pdf(basename):
-    print(f'\n\n\n\nRunning pdftex on {basename}')
-    out = subprocess.run(['pdftex', basename], capture_output=True, text=True).stdout
+    print(f'Running pdftex on {basename}...', end='')
+    env = os.environ.copy()
+    env['SOURCE_DATE_EPOCH'] = '1685324667'
+    out = subprocess.run(['pdftex', basename], capture_output=True, text=True, env=env).stdout
     if "Non-PDF special ignored" in out:
         print('    --->    Running tex + dvipdfmx instead.')
-        subprocess.run(['tex', basename])
-        subprocess.run(['dvipdfmx', basename + '.dvi'])
+        subprocess.run(['tex', r'\year=1986\month=8\day=15\time=754', '\input', basename])
+        subprocess.run(['dvipdfmx', basename + '.dvi'], env=env)
+    print('Done')
 
 
 fetch()
@@ -77,8 +81,8 @@ os.chdir('tmp/')
 for mp in glob.glob('*.mp'):
     subprocess.run(['mpost', mp])
 os.chdir(wd)
-for f in glob.glob('*.w'):
-    print('\n\n\n\n\n')
+for f in tqdm.tqdm(glob.glob('*.w')):
+    print('\n\n\n\n\n', f, sep='')
     basename = os.path.basename(f)
     assert basename.endswith('.w')
     basename = basename[:-2]
@@ -112,7 +116,8 @@ for f in glob.glob('*.w'):
     for changefile in glob.glob(basename + '*.ch'):
         assert changefile.endswith('.ch')
         changefile = changefile[:-3]
-        subprocess.run(['cweave', basename + '.w', changefile + '.ch', changefile])
+        outfile = changefile + '-ch' if changefile == basename else changefile
+        subprocess.run(['cweave', basename + '.w', changefile + '.ch', outfile])
         pdf(changefile)
         subprocess.run(['cp', changefile + '.pdf', '../../programs/'])
     os.chdir(wd)
