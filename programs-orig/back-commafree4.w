@@ -397,7 +397,7 @@ void sanity(void) {
 @ Here we check also the inverse property of the inverse lists.
 
 @d bluecheck(loc,off) {
-      for (p=loc+off,q=mem[loc+mmmm];p<q;p++) {
+      for (p=loc+off,q=mem[p+mmmm];p<q;p++) {
         x=mem[p],alpha=hexconv[x];
         if (mem[alpha]!=blue) fprintf(stderr," %04x in list %d is %s!\n",
                                 x,loc+off,mem[alpha]==green?"green":"red");

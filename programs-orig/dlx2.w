@@ -859,20 +859,17 @@ tends to grow monotonically.)
 
 @<Sub...@>=
 void print_progress(void) {
-  register int l,k,d,c,p;
+  register int l,k,d,c,p,ds=0;
   register double f,fd;
   fprintf(stderr," after "O"lld mems: "O"lld sols,",mems,count);
   for (f=0.0,fd=1.0,l=0;l<level;l++) {
     c=nd[choice[l]].itm,d=nd[c].len;
     for (k=1,p=nd[c].down;p!=choice[l];k++,p=nd[p].down) ;
     fd*=d,f+=(k-1)/fd; /* choice |l| is |k| of |d| */
-    fprintf(stderr," "O"c"O"c",
+    if (l<show_levels_max) fprintf(stderr," "O"c"O"c",
       k<10? '0'+k: k<36? 'a'+k-10: k<62? 'A'+k-36: '*',
       d<10? '0'+d: d<36? 'a'+d-10: d<62? 'A'+d-36: '*');
-    if (l>=show_levels_max) {
-      fprintf(stderr,"...");
-      break;
-    }
+    else if (!ds) ds=1,fprintf(stderr,"...");
   }
   fprintf(stderr," "O".5f\n",f+0.5/fd);
 }

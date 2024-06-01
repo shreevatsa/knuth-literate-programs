@@ -948,10 +948,16 @@ other items!
 @<Output the item names@>;
 @<Output the options@>;
 
-@ @<Output the item names@>=
-for (c=1;c<last_itm;c++) {
-  if (c==second) printf(" |");
-  if (o,nd[c].len) printf(" "O".8s", cl[c].name);
+@ In order to be tidy, we don't output a vertical line when all
+the secondary items have been removed.
+
+@<Output the item names@>=
+for (c=p=1;c<last_itm;c++) {
+  if (c==second) p=0; /* no longer primary */
+  if (o,nd[c].len) {
+    if (p==0) p=-1,printf(" |");
+    printf(" "O".8s", cl[c].name);
+  }
 }
 printf("\n");
 

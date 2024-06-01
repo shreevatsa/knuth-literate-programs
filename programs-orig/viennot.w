@@ -53,6 +53,11 @@ $p_j-1$, $p_j$, or $p_j+1$ (modulo~$2^k$).
 The walls also contain little struts, not shown in the diagram, which
 keep the bricks of each ring from tipping over.)
 
+An auxiliary program, {\mc BACK-KEPLER-TOWERS}, generates all Kepler towers
+by ``brute force,'' directly from this definition. One can use it to verify
+experimentally that the number of Kepler towers with $n$ bricks is exactly
+the Catalan number~$C_n$, if $n$ isn't too large.
+
 @ And what is a nested string? A nested string (aka Dyck word) of order~$n$
 is a sequence $d_0$, $d_1$, \dots,~$d_{2n-1}$ of $\pm1$s whose partial
 sums $y_k=d_0+\cdots+d_k$ are nonnegative, and whose overall sum

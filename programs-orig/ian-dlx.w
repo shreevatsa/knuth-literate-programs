@@ -1,5 +1,5 @@
 @*Intro. This program makes {\mc DLX3} data for an interesting problem
-posed by Ian Cullis in 2022: Fill a $10\times10$ array with 1s, 2s, 3s, 4s
+posed by Ian Tullis in 2022: Fill a $10\times10$ array with 1s, 2s, 3s, 4s
 so that there are exactly $k$ occurrences of $k$ in each row and each column.
 Also the 2s should form nontouching dominoes, the 3s should form nontouching
 trominoes, and the 4s should form nontouching ell-tetrominoes, where

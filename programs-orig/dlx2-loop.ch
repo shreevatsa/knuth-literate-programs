@@ -26,7 +26,7 @@ item is part of a doubly linked list.
 And there are two fields |left|, |right|, 
 for this special loop extension.
 
-If a second item represents an edge, its |left| and |right| fields
+If a secondary item represents an edge, its |left| and |right| fields
 point to the primary items for the vertices linked by this edge.
 
 The |left| and |right| field of such primary items are used for
@@ -145,6 +145,19 @@ void count_frags(void) {
                               frags,f);
 }               
 
+@ @<Sub...@>=
+void print_verts() {
+  register int c;
+  for (c=1;c<second;c++) {
+    if (((decode(cl[c].name[0])&1)==0) &&
+        ((decode(cl[c].name[1])&1)==0) && cl[c].name[2]==0) {
+      fprintf(stderr,""O".8s: mate "O".8s inner "O".8s\n",
+             cl[c].name,cl[c].mate? cl[cl[c].mate].name: "null",
+                        cl[c].inner? cl[cl[c].inner].name: "null");
+    } /* maybe I should print |c| too? */
+  }
+}
+
 @ @d decode(c) ((c)>='0' && (c)<='9'? (c)-'0':
                 (c)>='a' && (c)<='z'? (c)-'a'+10:
                 (c)>='A' && (c)<='Z'? (c)-'A'+36: -1)
@@ -225,21 +238,25 @@ recover from an improper clobbering of |mate| fields.
   }
   u=cl[cc].left,v=cl[cc].right;
   oo,mu=cl[u].mate,mv=cl[v].mate;
-  if (!mu) { /* |u| not an endpoint */
-    if (!mv) { /* |v| not an endpoint */
+  if (mu && cl[u].inner) {
+    if (vbose&show_choices) fprintf(stderr,"(not allowing "O".8s degree 3)\n",
+                                      cl[u].name);
+    return -1;
+  }
+  if (mv && cl[v].inner) {
+    if (vbose&show_choices) fprintf(stderr,"(not allowing "O".8s degree 3)\n",
+                                      cl[v].name);
+    return -1;
+  }
+  if (!mu) { /* |u| not in any fragment */
+    if (!mv) { /* |v| not in any fragment */
       oo,cl[u].mate=v,cl[v].mate=u,frags++;
     }@+else { /* |mv| is the endpoint opposite |v| */
       ooo,cl[u].mate=mv,cl[mv].mate=u,cl[v].inner=1;
     }
-  }@+else if (!mv) { /* |u| is an endpoint but |v| isn't */
+  }@+else if (!mv) { /* |mu| is the endpoint opposite |u| */
     ooo,cl[v].mate=mu,cl[mu].mate=v,cl[u].inner=1;
-  }@+else {
-    if (cl[u].inner || cl[v].inner) { /* no mems for |inner| after |mate| */
-      if (vbose&show_choices)
-        fprintf(stderr," (not causing degree 3 with "O".8s)\n",
-                                         cl[cc].name);
-      return -1;
-    }
+  }@+else { /* |u| and |v| are endpoints of fragments */
     if (mu==v) { /* also |mv==u|, loop is closing */
       if (frags!=1) {
         if (vbose&show_choices)

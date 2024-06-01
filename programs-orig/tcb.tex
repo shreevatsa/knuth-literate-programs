@@ -1,5 +1,23 @@
+\input epsf
 \font\mc=cmr9
 
+\null\vfill
+\noindent
+[This is a reprint, with slight amendments, of
+$$\displaylines{
+\hbox{\bf Three Catalan Bijections}\cr
+\noalign{\bigskip}
+\hbox{D. Knuth}\cr
+\noalign{\bigskip}
+\hbox{Report No.~04, 2004/2005, spring}\cr
+\hbox{{\mc ISSN} 1103-467X}\cr
+\hbox{{\mc ISRN} IML-R- -04-04/05- -SE+spring}\cr}$$
+from Institut Mittag-Leffler of The Royal
+Swedish Academy of Sciences. It reports on work supported by the
+Swedish Research Council while the author was in residence at
+IML in Djursholm, Sweden, during January and February of 2005.]
+
+\pageno=1
 \centerline{\bf Three Catalan Bijections}
 \bigskip
 \centerline{by Donald E. Knuth}
@@ -24,7 +42,8 @@ bijections also preserve the parameter~$m$.
 Given a number $n>1$, each program generates all $C_n$ objects of
 one type, bijects them into objects of another type, verifies that
 the parameter~$m$ has not changed, and applies the inverse bijection
-to prove constructively that the correspondence is indeed one-to-one.
+to prove constructively that the correspondence is indeed one-to-one
+(at least for this value of~$n$).
 
 Program 1, called {\mc ZEILBERGER}, converts between (1) and (2).
 Program~2, {\mc FRAN\c{C}ON}, converts between (2) and~(3). And
@@ -54,7 +73,7 @@ has the interesting property that the bijection and its inverse
 both carry out their work in the same direction as they translate
 one object to another. By contrast, the inverse bijections in Programs
 1 and~3 essentially cause time to run backward when they undo the
-effects of forward-runnning bijections.
+effects of forward-running bijections.
 
 Program 3 introduces a new bijection that was recently explained
 pictorially to the author by its creator, Xavier Viennot. The
@@ -117,5 +136,3 @@ programs.html} and used without restriction.
 \input viennot.tex
 \deadcycles=0
 \end
-
-
