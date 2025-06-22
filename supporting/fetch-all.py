@@ -1,3 +1,10 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "bs4",
+#     "requests",
+# ]
+# ///
 """Download all CWEB programs from Knuth's webpage."""
 
 import requests

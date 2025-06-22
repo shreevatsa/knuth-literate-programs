@@ -139,7 +139,7 @@ void makemove(int i,int j,int c) {
   for (ii=i+deli[k],jj=j+delj[k]; board[ii][jj]>=0;
               ii+=deli[k],jj+=delj[k])
     if (board[ii][jj]==c) goto reverse;
-  continue; /* no occureeces of |c| in direction |k| */
+  continue; /* no occurrences of |c| in direction |k| */
 reverse:@+for (ii-=deli[k],jj-=delj[k];ii!=i || jj!=j;
                ii-=deli[k],jj-=delj[k]) board[ii][jj]=c;
 }
