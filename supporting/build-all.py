@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.12"
+# dependencies = [
+#     "tqdm",
+# ]
+# ///
 import glob
 import subprocess
 import tqdm
